@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: waygo_backend
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/waygo_db
+    username: postgres
+    password: password # Replace with your local DB password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8080
+
+# JWT Configuration
+waygo:
+  jwt:
+    secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    expiration: 86400000 # 24 hours in MS
