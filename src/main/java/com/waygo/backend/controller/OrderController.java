@@ -70,4 +70,10 @@ public class OrderController {
     public ResponseEntity<ApiResponse<List<Order>>> getPassengerHistory(@PathVariable Long userId) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getPassengerHistory(userId), "User history retrieved"));
     }
+
+    @GetMapping("/history/driver/{userId}")
+    @Operation(summary = "Get trip history for a driver")
+    public ResponseEntity<ApiResponse<List<Order>>> getDriverHistory(@PathVariable Long userId) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getDriverHistory(userId), "Driver history retrieved"));
+    }
 }

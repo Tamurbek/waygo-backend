@@ -68,4 +68,11 @@ public class AuthController {
             "Login successful"
         ));
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<User>> getCurrentUser(@RequestHeader("Authorization") String token) {
+        String phone = jwtService.extractUsername(token.substring(7));
+        User user = userRepository.findByPhone(phone).orElseThrow();
+        return ResponseEntity.ok(ApiResponse.success(user, "Profile retrieved"));
+    }
 }
