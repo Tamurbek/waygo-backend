@@ -21,6 +21,48 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final com.waygo.backend.service.OtpService otpService;
+
+    @PostMapping("/request-otp")
+    public ResponseEntity<ApiResponse<String>> requestOtp(@RequestParam String phone) {
+        otpService.sendVerificationCode(phone);
+        return ResponseEntity.ok(ApiResponse.success(null, "Verification code sent to " + phone));
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> verifyOtp(
+            @RequestParam String phone,
+            @RequestParam String code,
+            @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) String password,
+            @RequestParam(required = false) User.Role role
+    ) {
+        if (!otpService.verifyCode(phone, code)) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid or expired verification code"));
+        }
+
+        User user = userRepository.findByPhone(phone).orElse(null);
+
+        if (user == null) {
+            // New user registration
+            if (fullName == null || password == null || role == null) {
+                 return ResponseEntity.badRequest().body(ApiResponse.error("User registration requires full name, password, and role"));
+            }
+            user = User.builder()
+                    .phone(phone)
+                    .fullName(fullName)
+                    .password(passwordEncoder.encode(password))
+                    .role(role)
+                    .build();
+            userRepository.save(user);
+        }
+
+        String jwtToken = jwtService.generateToken(user);
+        return ResponseEntity.ok(ApiResponse.success(
+                AuthenticationResponse.builder().token(jwtToken).user(user).build(),
+                "Verification successful"
+        ));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> register(
@@ -44,7 +86,7 @@ public class AuthController {
         String jwtToken = jwtService.generateToken(user);
         
         return ResponseEntity.ok(ApiResponse.success(
-            AuthenticationResponse.builder().token(jwtToken).build(), 
+            AuthenticationResponse.builder().token(jwtToken).user(user).build(), 
             "User registered successfully"
         ));
     }
@@ -64,7 +106,7 @@ public class AuthController {
         String jwtToken = jwtService.generateToken(user);
         
         return ResponseEntity.ok(ApiResponse.success(
-            AuthenticationResponse.builder().token(jwtToken).build(), 
+            AuthenticationResponse.builder().token(jwtToken).user(user).build(), 
             "Login successful"
         ));
     }
