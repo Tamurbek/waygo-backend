@@ -2,6 +2,8 @@ package com.waygo.backend.service;
 
 import com.waygo.backend.entity.Transaction;
 import com.waygo.backend.entity.User;
+import com.waygo.backend.exception.InsufficientBalanceException;
+import com.waygo.backend.exception.ResourceNotFoundException;
 import com.waygo.backend.repository.TransactionRepository;
 import com.waygo.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +23,13 @@ public class TransactionService {
     @Transactional
     public Transaction processPayment(Long senderId, Long receiverId, BigDecimal amount) {
         User sender = userRepository.findById(senderId)
-                .orElseThrow(() -> new RuntimeException("Sender not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sender not found with id: " + senderId));
         
         User receiver = userRepository.findById(receiverId)
-                .orElseThrow(() -> new RuntimeException("Receiver not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Receiver not found with id: " + receiverId));
 
         if (sender.getBalance().compareTo(amount) < 0) {
-            throw new RuntimeException("Insufficient balance");
+            throw new InsufficientBalanceException("Insufficient balance for transaction. Required: " + amount + ", Available: " + sender.getBalance());
         }
 
         // Transfer funds

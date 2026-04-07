@@ -1,15 +1,16 @@
 package com.waygo.backend.controller;
 
 import com.waygo.backend.dto.ApiResponse;
+import com.waygo.backend.dto.order.OrderCreateDTO;
 import com.waygo.backend.entity.Order;
 import com.waygo.backend.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -22,27 +23,19 @@ public class OrderController {
 
     @PostMapping("/create")
     @Operation(summary = "Passenger creates a new booking request")
-    public ResponseEntity<ApiResponse<Order>> create(
-            @RequestParam Long passengerId,
-            @RequestParam String from,
-            @RequestParam String to,
-            @RequestParam BigDecimal price) {
-        
-        Order order = orderService.createOrder(passengerId, from, to, price);
+    public ResponseEntity<ApiResponse<Order>> create(@Valid @RequestBody OrderCreateDTO dto) {
+        Order order = orderService.createOrder(dto);
         return ResponseEntity.ok(ApiResponse.success(order, "Order created successfully"));
     }
 
     @PostMapping("/{orderId}/accept")
     @Operation(summary = "Driver accepts an order")
-    public ResponseEntity<ApiResponse<Order>> accept(
-            @PathVariable Long orderId,
-            @RequestParam Long driverId) {
-        
-        Order order = orderService.acceptOrder(orderId, driverId);
+    public ResponseEntity<ApiResponse<Order>> accept(@PathVariable Long orderId) {
+        Order order = orderService.acceptOrder(orderId);
         return ResponseEntity.ok(ApiResponse.success(order, "Order accepted by driver"));
     }
 
-    @PostMapping("/{orderId}/status")
+    @PatchMapping("/{orderId}/status")
     @Operation(summary = "Update trip status (ARRIVED, STARTED, etc.)")
     public ResponseEntity<ApiResponse<Order>> updateStatus(
             @PathVariable Long orderId,

@@ -1,14 +1,16 @@
 package com.waygo.backend.service;
 
+import com.waygo.backend.dto.order.OrderCreateDTO;
 import com.waygo.backend.entity.Order;
 import com.waygo.backend.entity.User;
+import com.waygo.backend.exception.ResourceNotFoundException;
+import com.waygo.backend.exception.UnauthorizedAccessException;
 import com.waygo.backend.repository.OrderRepository;
-import com.waygo.backend.repository.UserRepository;
+import com.waygo.backend.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -16,66 +18,93 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
     private final TransactionService transactionService;
+    private final SecurityUtils securityUtils;
+    private final NotificationService notificationService;
 
     @Transactional
-    public Order createOrder(Long passengerId, String from, String to, BigDecimal price) {
-        User passenger = userRepository.findById(passengerId)
-                .orElseThrow(() -> new RuntimeException("Passenger not found"));
+    public Order createOrder(OrderCreateDTO dto) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null) {
+            throw new UnauthorizedAccessException("You must be logged in to create an order");
+        }
 
         Order order = Order.builder()
                 .passenger(passenger)
-                .fromAddress(from)
-                .toAddress(to)
-                .price(price)
+                .fromAddress(dto.getFromAddress())
+                .toAddress(dto.getToAddress())
+                .fromLat(dto.getFromLat())
+                .fromLon(dto.getFromLon())
+                .toLat(dto.getToLat())
+                .toLon(dto.getToLon())
+                .price(dto.getPrice())
                 .status(Order.OrderStatus.PENDING)
                 .build();
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyNewOrder(savedOrder);
+        return savedOrder;
     }
 
     @Transactional
-    public Order acceptOrder(Long orderId, Long driverId) {
+    public Order acceptOrder(Long orderId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can accept orders");
+        }
+
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
-        
-        User driver = userRepository.findById(driverId)
-                .orElseThrow(() -> new RuntimeException("Driver not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         if (order.getStatus() != Order.OrderStatus.PENDING) {
-            throw new RuntimeException("Order is already accepted or cancelled");
+            throw new IllegalStateException("Order is no longer available for acceptance");
         }
 
         order.setDriver(driver);
         order.setStatus(Order.OrderStatus.ACCEPTED);
         
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
     }
 
     @Transactional
     public Order completeTrip(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        if (order.getStatus() != Order.OrderStatus.STARTED) {
-            throw new RuntimeException("Cannot complete a trip that hasn't started");
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null || (!currentUser.getId().equals(order.getDriver().getId()) && currentUser.getRole() != User.Role.ADMIN)) {
+            throw new UnauthorizedAccessException("Only the assigned driver or admin can complete the trip");
         }
 
-        // Process final payment automatically!
+        if (order.getStatus() != Order.OrderStatus.STARTED && order.getStatus() != Order.OrderStatus.ACCEPTED) {
+            throw new IllegalStateException("Trip must be accepted or started to be completed");
+        }
+
+        // Process final payment automatically
         transactionService.processPayment(order.getPassenger().getId(), order.getDriver().getId(), order.getPrice());
 
         order.setStatus(Order.OrderStatus.COMPLETED);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
     }
 
     @Transactional
     public Order updateStatus(Long orderId, Order.OrderStatus status) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null || (!currentUser.getId().equals(order.getDriver().getId()) && !currentUser.getId().equals(order.getPassenger().getId()))) {
+            throw new UnauthorizedAccessException("You are not part of this order");
+        }
+
         order.setStatus(status);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
     }
 
     public List<Order> getPassengerHistory(Long passengerId) {

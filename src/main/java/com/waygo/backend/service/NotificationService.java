@@ -1,0 +1,36 @@
+package com.waygo.backend.service;
+
+import com.waygo.backend.entity.Order;
+import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class NotificationService {
+
+    private final SimpMessagingTemplate messagingTemplate;
+
+    public void notifyNewOrder(Order order) {
+        // Notify all drivers about a new pending order
+        messagingTemplate.convertAndSend("/topic/orders/new", order);
+    }
+
+    public void notifyOrderStatusUpdate(Order order) {
+        // Notify the specific passenger about their order status update
+        messagingTemplate.convertAndSendToUser(
+                order.getPassenger().getPhone(),
+                "/queue/order-status",
+                order
+        );
+        
+        // Also notify the driver if assigned
+        if (order.getDriver() != null) {
+            messagingTemplate.convertAndSendToUser(
+                    order.getDriver().getPhone(),
+                    "/queue/order-status",
+                    order
+            );
+        }
+    }
+}
