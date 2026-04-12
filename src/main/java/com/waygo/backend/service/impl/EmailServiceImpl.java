@@ -16,6 +16,7 @@ import org.thymeleaf.context.Context;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "waygo.mail.provider", havingValue = "smtp")
 public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;

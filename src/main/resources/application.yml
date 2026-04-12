@@ -57,3 +57,5 @@ waygo:
     password: ${ESKIZ_PASSWORD:0ko2ifH5jKWLLwZSoTlsaiXu3IIwM9CYcAJDroFg}
     from: ${ESKIZ_FROM:4546}
     baseUrl: https://notify.eskiz.uz/api/
+  mail:
+    provider: ${MAIL_PROVIDER:console} # SMTPlar tayyor bo'lgach 'smtp' ga o'zgartiramiz
