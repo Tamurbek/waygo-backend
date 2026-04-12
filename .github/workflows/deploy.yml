@@ -16,7 +16,16 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             cd /var/www/waygo_backend
-            git fetch origin
-            git reset --hard origin/main
-            docker-compose up -d --build
-            echo "Deployment successful!"
+            # Hozirgi ishlayotgan versiyani saqlab qo'yamiz
+            OLD_COMMIT=$(git rev-parse HEAD)
+            
+            echo "Starting deployment of new changes..."
+            if git fetch origin && git reset --hard origin/main && docker-compose up -d --build; then
+              echo "Deployment successful!"
+            else
+              echo "Deployment failed! Rolling back to previous stable version ($OLD_COMMIT)..."
+              git reset --hard $OLD_COMMIT
+              docker-compose up -d --build
+              echo "Rollback completed."
+              exit 1
+            fi
