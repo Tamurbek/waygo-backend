@@ -17,7 +17,7 @@ public class OtpService {
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     private static final String OTP_KEY_PREFIX = "otp:";
-    private static final long OTP_EXPIRATION_MINUTES = 5;
+    private static final long OTP_EXPIRATION_MINUTES = 2;
 
     public String sendVerificationCode(String phone) {
         String code = generateOtp();
