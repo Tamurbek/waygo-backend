@@ -22,6 +22,25 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
+  mail:
+    host: mail.ssale.uz
+    port: 465
+    username: support@ssale.uz # Replace with your actual Ahost email
+    password: YOUR_PASSWORD_HERE # Add your email password here
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            enable: true
+          socketFactory:
+            port: 465
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
+    default-encoding: UTF-8
+
 server:
   port: 8080
 
