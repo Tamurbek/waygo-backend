@@ -17,9 +17,19 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (userRepository.count() == 0) {
-            String defaultPassword = passwordEncoder.encode("password123");
-            
+        String defaultPassword = passwordEncoder.encode("password123");
+        
+        // System Admin (doim tekshirib kiritiladi)
+        if (userRepository.findByEmail("admin@waygo.uz").isEmpty()) {
+            userRepository.save(User.builder()
+                    .email("admin@waygo.uz")
+                    .fullName("System Admin")
+                    .password(defaultPassword)
+                    .role(User.Role.ADMIN)
+                    .build());
+        }
+
+        if (userRepository.count() <= 1) { // 1 marta admin qo'shilgan bo'lsa
             // Test Passengers
             userRepository.save(User.builder()
                     .phone("+998901234567")
