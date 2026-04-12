@@ -119,6 +119,35 @@ public class OrderService {
         return orderRepository.findByDriverIdOrderByCreatedAtDesc(driverId);
     }
 
+    @Transactional
+    public Order updateOrder(Long orderId, OrderCreateDTO dto) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null || !currentUser.getId().equals(order.getPassenger().getId())) {
+            throw new UnauthorizedAccessException("You can only edit your own orders");
+        }
+
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new IllegalStateException("You can only edit orders that are still pending");
+        }
+
+        order.setFromAddress(dto.getFromAddress());
+        order.setToAddress(dto.getToAddress());
+        order.setFromLat(dto.getFromLat());
+        order.setFromLon(dto.getFromLon());
+        order.setToLat(dto.getToLat());
+        order.setToLon(dto.getToLon());
+        order.setDepartureDate(dto.getDepartureDate());
+        order.setDepartureTime(dto.getDepartureTime());
+        order.setPassengerCount(dto.getPassengerCount());
+        order.setNotes(dto.getNotes());
+        order.setPrice(dto.getPrice());
+
+        return orderRepository.save(order);
+    }
+
     public List<Order> getPendingOrders() {
         return orderRepository.findByStatus(Order.OrderStatus.PENDING);
     }

@@ -28,6 +28,13 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Order created successfully"));
     }
 
+    @PutMapping("/{orderId}")
+    @Operation(summary = "Passenger updates an existing booking request")
+    public ResponseEntity<ApiResponse<Order>> update(@PathVariable Long orderId, @Valid @RequestBody OrderCreateDTO dto) {
+        Order order = orderService.updateOrder(orderId, dto);
+        return ResponseEntity.ok(ApiResponse.success(order, "Order updated successfully"));
+    }
+
     @PostMapping("/{orderId}/accept")
     @Operation(summary = "Driver accepts an order")
     public ResponseEntity<ApiResponse<Order>> accept(@PathVariable Long orderId) {
