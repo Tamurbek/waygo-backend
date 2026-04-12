@@ -18,7 +18,6 @@
                         <th>Avatar</th>
                         <th>Ism</th>
                         <th>Telefon</th>
-                        <th>Balans</th>
                         <th>Ro'yxatdan o'tgan</th>
                         <th>Amallar</th>
                     </tr>
@@ -30,14 +29,13 @@
                         </td>
                         <td style="font-weight: 500;" th:text="${passenger.fullName != null ? passenger.fullName : 'Kiritilmagan'}">Aziz</td>
                         <td th:text="${passenger.phone}">+998...</td>
-                        <td th:text="${#numbers.formatDecimal(passenger.balance, 0, 'COMMA', 0, 'POINT')} + ' UZS'">0 UZS</td>
                         <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(passenger.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
                         <td>
                             <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Tarix</a>
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(passengers)}">
-                        <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 4rem;">Mijozlar mavjud emas</td>
+                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 4rem;">Mijozlar mavjud emas</td>
                     </tr>
                 </tbody>
             </table>

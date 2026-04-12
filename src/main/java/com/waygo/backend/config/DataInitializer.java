@@ -36,14 +36,14 @@ public class DataInitializer implements CommandLineRunner {
                     .fullName("Temur Yo'ldoshev")
                     .password(defaultPassword)
                     .role(User.Role.PASSENGER)
-                    .balance(new BigDecimal("100000"))
+                    .balance(BigDecimal.ZERO)
                     .build());
 
             userRepository.save(User.builder()
                     .phone("+998901112233")
                     .fullName("Yo'lovchi Ali")
                     .role(User.Role.PASSENGER)
-                    .balance(new BigDecimal("50000"))
+                    .balance(BigDecimal.ZERO)
                     .build());
 
             // Test Drivers
