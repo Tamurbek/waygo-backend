@@ -1,5 +1,6 @@
 package com.waygo.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.waygo.backend.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,5 +15,7 @@ public class OtpVerificationRequest {
     private String fullName;
     private String password;
     private User.Role role;
+    
+    @JsonProperty("isLogin")
     private boolean isLogin;
 }
