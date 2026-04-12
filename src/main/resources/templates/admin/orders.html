@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+    <div th:replace="~{admin/fragments :: sidebar('orders')}"></div>
+
+    <div class="main-content">
+        <h1 th:text="${title}">Buyurtmalar</h1>
+        
+        <div class="card" style="margin-top: 2rem;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Mijoz</th>
+                        <th>Haydovchi</th>
+                        <th>Yo'nalish</th>
+                        <th>Narxi</th>
+                        <th>Status</th>
+                        <th>Sana</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="order : ${orders}">
+                        <td th:text="'#' + ${order.id}">#101</td>
+                        <td>
+                            <div style="font-weight: 500;" th:text="${order.passenger.fullName != null ? order.passenger.fullName : 'No Name'}">Mijoz</div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim);" th:text="${order.passenger.phone}">+998...</div>
+                        </td>
+                        <td>
+                            <div th:if="${order.driver != null}">
+                                <div style="font-weight: 500;" th:text="${order.driver.fullName != null ? order.driver.fullName : 'No Name'}">Haydovchi</div>
+                                <div style="font-size: 0.75rem; color: var(--text-dim);" th:text="${order.driver.phone}">+998...</div>
+                            </div>
+                            <div th:unless="${order.driver != null}" style="color: var(--pending); font-style: italic; font-size: 0.85rem;">
+                                Qidirilmoqda...
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 500;" th:text="${order.fromAddress}">Chilonzor</div>
+                            <div style="color: var(--text-dim); font-size: 0.8rem;" th:text="${order.toAddress}">Yunusobod</div>
+                        </td>
+                        <td style="font-weight: 600;" th:text="${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'">15k</td>
+                        <td>
+                            <span class="status-badge" 
+                                  th:classappend="${'status-' + #strings.toLowerCase(order.status)}"
+                                  th:text="${order.status}">PENDING</span>
+                        </td>
+                        <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(order.createdAt, 'dd.MM HH:mm')}">Date</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(orders)}">
+                        <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 5rem;">Tizimda hali buyurtmalar mavjud emas</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

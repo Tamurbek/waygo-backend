@@ -7,6 +7,11 @@ spring:
     username: postgres
     password: password # Replace with your local DB password
     driver-class-name: org.postgresql.Driver
+  
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
   jpa:
     hibernate:
@@ -26,6 +31,7 @@ waygo:
     secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
     expiration: 86400000 # 24 hours in MS
   sms:
+    # provider: ${SMS_PROVIDER:console} # Set to 'eskiz' to use real SMS service
     provider: ${SMS_PROVIDER:eskiz} # Set to 'eskiz' to use real SMS service
   eskiz:
     email: ${ESKIZ_EMAIL:temuryoldoshev10@gmail.com}

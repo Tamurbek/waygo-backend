@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+    <div th:replace="~{admin/fragments :: sidebar('dashboard')}"></div>
+
+    <div class="main-content">
+        <div class="header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem;">
+            <h1 th:text="${title}">Dashboard</h1>
+            <div style="background: var(--surface); padding: 0.5rem 1rem; border-radius: 2rem; display: flex; align-items: center; gap: 0.75rem; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success);"></div>
+                <span style="font-size: 0.875rem; font-weight: 500;">Live Status</span>
+            </div>
+        </div>
+
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden;">
+                <div style="font-size: 0.875rem; color: var(--text-dim);">Jami Haydovchilar</div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--primary);" th:text="${driverCount}">124</div>
+                <div style="position: absolute; right: -10px; bottom: -10px; font-size: 4rem; opacity: 0.05;">🚖</div>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden;">
+                <div style="font-size: 0.875rem; color: var(--text-dim);">Jami Mijozlar</div>
+                <div style="font-size: 2rem; font-weight: 700;" th:text="${passengerCount}">500</div>
+                <div style="position: absolute; right: -10px; bottom: -10px; font-size: 4rem; opacity: 0.05;">👤</div>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden;">
+                <div style="font-size: 0.875rem; color: var(--text-dim);">Faol Buyurtmalar</div>
+                <div style="font-size: 2rem; font-weight: 700; color: var(--success);" th:text="${activeOrders}">18</div>
+                <div style="position: absolute; right: -10px; bottom: -10px; font-size: 4rem; opacity: 0.05;">⌛</div>
+            </div>
+            <div class="card" style="display: flex; flex-direction: column; gap: 0.5rem; position: relative; overflow: hidden; background: linear-gradient(135deg, var(--surface) 0%, rgba(255,215,0,0.05) 100%);">
+                <div style="font-size: 0.875rem; color: var(--text-dim);">Tizim holati</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">ONLINE</div>
+                <div style="position: absolute; right: -10px; bottom: -10px; font-size: 4rem; opacity: 0.05;">🚀</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.25rem;">Oxirgi Buyurtmalar</h2>
+                <a th:href="@{/admin/orders}" class="btn btn-outline" style="font-size: 0.75rem;">Barchasini ko'rish</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Mijoz</th>
+                        <th>Yo'nalish</th>
+                        <th>Narxi</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="order : ${latestOrders}">
+                        <td th:text="'#' + ${order.id}">#1024</td>
+                        <td th:text="${order.passenger.fullName != null ? order.passenger.fullName : order.passenger.phone}">Aziz Rahimov</td>
+                        <td>
+                            <span th:text="${order.fromAddress}">Chilonzor</span>
+                            <span style="color: var(--text-dim); margin: 0 0.5rem;">→</span>
+                            <span th:text="${order.toAddress}">Yunusobod</span>
+                        </td>
+                        <td style="font-weight: 600;" th:text="${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'">25,000 UZS</td>
+                        <td>
+                            <span class="status-badge" 
+                                  th:classappend="${'status-' + #strings.toLowerCase(order.status)}"
+                                  th:text="${order.status}">Tugallangan</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(latestOrders)}">
+                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 3rem;">Hozircha buyurtmalar mavjud emas</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

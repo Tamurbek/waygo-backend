@@ -11,6 +11,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    container_name: waygo_redis
+    ports:
+      - "6379:6379"
+
   app:
     build: .
     container_name: waygo_backend_app
@@ -21,9 +27,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waygo_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       - db
+      - redis
 
 volumes:
   postgres_data:

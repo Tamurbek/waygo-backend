@@ -1,10 +1,11 @@
 package com.waygo.backend.service.impl;
 
+import com.waygo.backend.entity.SystemSettings;
 import com.waygo.backend.service.SmsService;
+import com.waygo.backend.service.SystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -17,21 +18,12 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 @Slf4j
-@Service
+@Service("eskizSmsService")
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "waygo.sms.provider", havingValue = "eskiz")
 public class EskizSmsServiceImpl implements SmsService {
 
     private final RestTemplate restTemplate;
-
-    @Value("${waygo.eskiz.email}")
-    private String email;
-
-    @Value("${waygo.eskiz.password}")
-    private String password;
-
-    @Value("${waygo.eskiz.from:4546}")
-    private String from;
+    private final SystemSettingsService settingsService;
 
     @Value("${waygo.eskiz.baseUrl:https://notify.eskiz.uz/api/}")
     private String baseUrl;
@@ -63,15 +55,15 @@ public class EskizSmsServiceImpl implements SmsService {
     }
 
     private void refreshToken() {
-        log.info("Refreshing Eskiz API token for {}", email);
+        SystemSettings settings = settingsService.getSettings();
+        log.info("Refreshing Eskiz API token for {}", settings.getEskizEmail());
         String url = baseUrl + "auth/login";
 
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("email", email);
-        body.add("password", password);
+        body.add("email", settings.getEskizEmail());
+        body.add("password", settings.getEskizPassword());
 
         HttpHeaders headers = new HttpHeaders();
-        // Eskiz documentation suggests multipart/form-data for login
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
@@ -79,12 +71,14 @@ public class EskizSmsServiceImpl implements SmsService {
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                Map data = (Map) response.getBody().get("data");
+                @SuppressWarnings("unchecked")
+                Map<String, Object> bodyMap = response.getBody();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) bodyMap.get("data");
                 if (data != null && data.containsKey("token")) {
                     this.token = (String) data.get("token");
-                    // Tokens usually last 30 days, we'll refresh every 25 days to be safe
                     this.tokenExpiry = LocalDateTime.now().plusDays(25);
-                    log.info("Eskiz Token refreshed successfully. Valid until: {}", tokenExpiry);
+                    log.info("Eskiz Token refreshed successfully.");
                 } else {
                     throw new RuntimeException("Login response missing token data");
                 }
@@ -98,6 +92,7 @@ public class EskizSmsServiceImpl implements SmsService {
     }
 
     private void executeSendSms(String phone, String message) {
+        SystemSettings settings = settingsService.getSettings();
         String url = baseUrl + "message/sms/send";
 
         String cleanPhone = phone.replaceAll("\\D", "");
@@ -110,7 +105,7 @@ public class EskizSmsServiceImpl implements SmsService {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         body.add("mobile_phone", cleanPhone);
         body.add("message", message);
-        body.add("from", from);
+        body.add("from", settings.getEskizFrom());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -132,3 +127,4 @@ public class EskizSmsServiceImpl implements SmsService {
         return phone.substring(0, 4) + "****" + phone.substring(phone.length() - 3);
     }
 }
+

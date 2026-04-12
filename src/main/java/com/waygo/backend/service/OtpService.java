@@ -13,27 +13,36 @@ import org.springframework.stereotype.Service;
 public class OtpService {
 
     private final SmsService smsService;
-    private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
+    private final SystemSettingsService settingsService;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+
+    private static final String OTP_KEY_PREFIX = "otp:";
+    private static final long OTP_EXPIRATION_MINUTES = 5;
 
     public String sendVerificationCode(String phone) {
         String code = generateOtp();
-        otpStorage.put(phone, code);
+        redisTemplate.opsForValue().set(
+                OTP_KEY_PREFIX + phone, 
+                code, 
+                java.time.Duration.ofMinutes(OTP_EXPIRATION_MINUTES)
+        );
         
-        // Eskiz TEST rejimida bo'lgani uchun vaqtincha faqat shu matnni yuboramiz:
-        String message = "Bu Eskiz dan test";
+        // System settings dan shablonni olamiz
+        String template = settingsService.getSettings().getOtpMessageTemplate();
+        String message = String.format(template, code);
+        
         smsService.sendSms(phone, message);
         
-        // Asl matn (Moderatsiyadan o'tgach shuni ishlatasiz):
-        // String message = "WayGO mobil ilovasiga kirish uchun tasdiqlash kodingiz: " + code;
-        
-        log.info("OTP code generated for {}: {}", phone, code);
+        log.info("OTP code generated and saved to Redis for {}: {}", phone, code);
         return code;
     }
 
     public boolean verifyCode(String phone, String code) {
-        String storedCode = otpStorage.get(phone);
+        String key = OTP_KEY_PREFIX + phone;
+        String storedCode = redisTemplate.opsForValue().get(key);
+        
         if (storedCode != null && storedCode.equals(code)) {
-            otpStorage.remove(phone);
+            redisTemplate.delete(key);
             return true;
         }
         return false;

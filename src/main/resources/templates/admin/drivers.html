@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+    <div th:replace="~{admin/fragments :: sidebar('drivers')}"></div>
+
+    <div class="main-content">
+        <h1 th:text="${title}">Haydovchilar</h1>
+        
+        <div class="card" style="margin-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h2 style="font-size: 1.125rem;">Barcha haydovchilar</h2>
+                <div style="font-size: 0.875rem; color: var(--text-dim);" th:text="${#lists.size(drivers)} + ' ta ro\'yxatga olingan'">0 ta</div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Avatar</th>
+                        <th>F.I.SH</th>
+                        <th>Telefon</th>
+                        <th>Balans</th>
+                        <th>Sana</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="driver : ${drivers}">
+                        <td>
+                            <img th:src="${driver.imageUrl != null ? driver.imageUrl : 'https://ui-avatars.com/api/?background=FFD700&color=000&name=' + (driver.fullName != null ? driver.fullName : driver.phone)}" class="avatar">
+                        </td>
+                        <td style="font-weight: 500;" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</td>
+                        <td th:text="${driver.phone}">+998...</td>
+                        <td>
+                            <span style="font-weight: 600; color: var(--success);" th:text="${#numbers.formatDecimal(driver.balance, 0, 'COMMA', 0, 'POINT')} + ' UZS'">0 UZS</span>
+                        </td>
+                        <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Profil</a>
+                                <a href="#" class="btn" style="background: rgba(255, 77, 77, 0.1); color: var(--error); padding: 0.4rem 0.8rem; font-size: 0.75rem;">Bloklash</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(drivers)}">
+                        <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 4rem;">Hozircha haydovchilar ro'yxatga olinmagan</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

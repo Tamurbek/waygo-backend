@@ -5,8 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 @Slf4j
-@Service
-@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "waygo.sms.provider", havingValue = "console", matchIfMissing = true)
+@Service("consoleSmsService")
 public class ConsoleSmsServiceImpl implements SmsService {
 
     @Override

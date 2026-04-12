@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+    <div th:replace="~{admin/fragments :: sidebar('settings')}"></div>
+
+    <div class="main-content">
+        <h1 th:text="${title}">Tizim Sozlamalari</h1>
+
+        <div th:if="${param.importSuccess}" class="status-badge status-active" style="width: 100%; padding: 1rem; margin-bottom: 2rem; border-radius: 0.5rem; text-align: center; background: rgba(0, 255, 128, 0.2);">
+            ✓ Ma'lumotlar zahiradan muvaffaqiyatli tiklandi!
+        </div>
+
+        <div th:if="${param.importError}" class="status-badge status-error" style="width: 100%; padding: 1rem; margin-bottom: 2rem; border-radius: 0.5rem; text-align: center; background: rgba(255, 77, 77, 0.2);">
+            ✖ Xatolik yuz berdi: <span th:text="${param.importError}"></span>
+        </div>
+
+        <div class="card" style="max-width: 800px;">
+            <form th:action="@{/admin/settings}" th:object="${settings}" method="post">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">SMS Gateway</h3>
+                    
+                    <div class="form-group">
+                        <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">SMS Provayderi</label>
+                        <select th:field="*{smsProvider}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                            <option value="console">Console Mode (Simulator)</option>
+                            <option value="eskiz">Eskiz.uz (Haqiqiy xizmat)</option>
+                        </select>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Eskiz Email</label>
+                            <input type="email" th:field="*{eskizEmail}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Eskiz Password</label>
+                            <input type="password" th:field="*{eskizPassword}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Eskiz 'From' raqami</label>
+                        <input type="text" th:field="*{eskizFrom}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                    </div>
+
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">Xabarlar</h3>
+                    
+                    <div class="form-group">
+                        <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">OTP Kod Shablonini (%s belgisi shart)</label>
+                        <textarea th:field="*{otpMessageTemplate}" rows="3" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;"></textarea>
+                    </div>
+
+                    <div style="margin-top: 1rem;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Sozlamalarni saqlash</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card" style="max-width: 800px; margin-top: 2rem; border-color: rgba(0, 255, 128, 0.2);">
+            <h3 style="color: var(--success); margin-bottom: 1rem;">Ma'lumotlar Zahirasi (Backup)</h3>
+            <p style="color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                Tizimdagi barcha foydalanuvchilar, buyurtmalar va sozlamalarni JSON formatida yuklab oling. 
+                Bu fayl orqali ma'lumotlarni qayta tiklash yoki boshqa serverga ko'chirish mumkin.
+            </p>
+            <a th:href="@{/admin/backup/download}" class="btn" style="background: rgba(0, 255, 128, 0.1); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); text-decoration: none; display: inline-block;">
+                ⬇ JSON (.json)
+            </a>
+            <a th:href="@{/admin/backup/sql}" class="btn" style="background: rgba(0, 122, 255, 0.1); color: #007AFF; border: 1px solid rgba(0, 122, 255, 0.3); text-decoration: none; display: inline-block; margin-left: 0.5rem;">
+                ⬇ Full SQL (.sql)
+            </a>
+
+            <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+                <h4 style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-dim);">Serverdagi zahira fayllari:</h4>
+                <table style="margin-top: 0; font-size: 0.85rem;">
+                    <thead>
+                        <tr>
+                            <th>Fayl nomi</th>
+                            <th>Sana</th>
+                            <th>Hajmi</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="backup : ${backups}">
+                            <td th:text="${backup.name}">backup.json</td>
+                            <td th:text="${backup.date}">12.04.2026</td>
+                            <td th:text="${backup.size}">10 KB</td>
+                            <td>
+                                <a th:href="@{'/admin/backup/file/' + ${backup.name}}" style="color: var(--primary); text-decoration: none;">Yuklab olish</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(backups)}">
+                            <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 1rem;">Serverda zahira fayllari yo'q</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card" style="max-width: 800px; margin-top: 2rem; border-color: rgba(255, 215, 0, 0.2);">
+            <h3 style="color: var(--primary); margin-bottom: 1rem;">Zahiradan tiklash (Import)</h3>
+            <p style="color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                Avvalroq olingan <b>.json</b> zahira faylini tanlang. <br>
+                <span style="color: var(--error);">Diqqat: Tiklash jarayonida joriy barcha ma'lumotlar o'chirib tashlanadi!</span>
+            </p>
+            <form th:action="@{/admin/backup/import}" method="post" enctype="multipart/form-data" style="display: flex; gap: 1rem; align-items: center;">
+                <input type="file" name="file" accept=".json" required style="flex: 1;">
+                <button type="submit" class="btn btn-outline" onclick="return confirm('Haqiqatdan ham tizimni ushbu zahira nusxasidan qayta tiklamoqchimisiz? Barcha joriy ma\'lumotlar o\'chib ketadi!')">
+                    📤 Tiklash (Restore)
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
