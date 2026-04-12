@@ -24,4 +24,9 @@ public class OrderCreateDTO {
     @NotNull(message = "Price is required")
     @Positive(message = "Price must be positive")
     private BigDecimal price;
+
+    private String departureDate;
+    private String departureTime;
+    private Integer passengerCount;
+    private String notes;
 }

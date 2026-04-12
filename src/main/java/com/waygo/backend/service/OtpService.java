@@ -15,14 +15,19 @@ public class OtpService {
     private final SmsService smsService;
     private final Map<String, String> otpStorage = new ConcurrentHashMap<>();
 
-    public void sendVerificationCode(String phone) {
+    public String sendVerificationCode(String phone) {
         String code = generateOtp();
         otpStorage.put(phone, code);
         
-        String message = "WayGO: Tasdiqlash kodingiz: " + code;
+        // Eskiz TEST rejimida bo'lgani uchun vaqtincha faqat shu matnni yuboramiz:
+        String message = "Bu Eskiz dan test";
         smsService.sendSms(phone, message);
         
+        // Asl matn (Moderatsiyadan o'tgach shuni ishlatasiz):
+        // String message = "WayGO mobil ilovasiga kirish uchun tasdiqlash kodingiz: " + code;
+        
         log.info("OTP code generated for {}: {}", phone, code);
+        return code;
     }
 
     public boolean verifyCode(String phone, String code) {
@@ -35,6 +40,6 @@ public class OtpService {
     }
 
     private String generateOtp() {
-        return String.format("%06d", new Random().nextInt(1000000));
+        return String.format("%04d", new Random().nextInt(10000));
     }
 }

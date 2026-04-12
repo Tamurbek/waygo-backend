@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -17,6 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "authorities", "password"})
 public class User implements UserDetails {
 
     @Id
@@ -27,6 +30,8 @@ public class User implements UserDetails {
     private String phone;
 
     private String fullName;
+
+    private String imageUrl;
 
     private String password;
 

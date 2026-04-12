@@ -2,6 +2,8 @@ package com.waygo.backend.controller;
 
 import com.waygo.backend.dto.ApiResponse;
 import com.waygo.backend.dto.AuthenticationResponse;
+import com.waygo.backend.dto.OtpRequest;
+import com.waygo.backend.dto.OtpVerificationRequest;
 import com.waygo.backend.entity.User;
 import com.waygo.backend.repository.UserRepository;
 import com.waygo.backend.security.JwtService;
@@ -22,39 +24,48 @@ public class AuthController {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final com.waygo.backend.service.OtpService otpService;
+    private final com.waygo.backend.service.FileService fileService;
 
     @PostMapping("/request-otp")
-    public ResponseEntity<ApiResponse<String>> requestOtp(@RequestParam String phone) {
-        otpService.sendVerificationCode(phone);
-        return ResponseEntity.ok(ApiResponse.success(null, "Verification code sent to " + phone));
+    public ResponseEntity<ApiResponse<String>> requestOtp(@RequestBody OtpRequest request) {
+        String code = otpService.sendVerificationCode(request.getPhone());
+        return ResponseEntity.ok(ApiResponse.success(code, "Verification code sent to " + request.getPhone()));
     }
 
     @PostMapping("/verify-otp")
     public ResponseEntity<ApiResponse<AuthenticationResponse>> verifyOtp(
-            @RequestParam String phone,
-            @RequestParam String code,
-            @RequestParam(required = false) String fullName,
-            @RequestParam(required = false) String password,
-            @RequestParam(required = false) User.Role role
+            @RequestBody OtpVerificationRequest request
     ) {
+        String phone = request.getPhone();
+        String code = request.getCode();
+        
         if (!otpService.verifyCode(phone, code)) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Invalid or expired verification code"));
         }
 
         User user = userRepository.findByPhone(phone).orElse(null);
 
-        if (user == null) {
+        if (request.isLogin()) {
+            if (user == null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Siz tizimda ro'yxatdan o'tmagansiz. Iltimos, ro'yxatdan o'ting."));
+            }
+        } else {
+            // Register mode
+            if (user != null) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Bu raqam allaqachon ro'yxatdan o'tgan. Iltimos, kirish qismidan foydalaning."));
+            }
+            
             // New user registration
-            if (fullName == null || password == null || role == null) {
+            if (request.getFullName() == null || request.getPassword() == null || request.getRole() == null) {
                  return ResponseEntity.badRequest().body(ApiResponse.error("User registration requires full name, password, and role"));
             }
             user = User.builder()
                     .phone(phone)
-                    .fullName(fullName)
-                    .password(passwordEncoder.encode(password))
-                    .role(role)
+                    .fullName(request.getFullName())
+                    .password(passwordEncoder.encode(request.getPassword()))
+                    .role(request.getRole())
                     .build();
-            userRepository.save(user);
+            user = userRepository.save(user);
         }
 
         String jwtToken = jwtService.generateToken(user);
@@ -82,7 +93,7 @@ public class AuthController {
                 .role(role)
                 .build();
         
-        userRepository.save(user);
+        user = userRepository.save(user);
         String jwtToken = jwtService.generateToken(user);
         
         return ResponseEntity.ok(ApiResponse.success(
@@ -116,5 +127,32 @@ public class AuthController {
         String phone = jwtService.extractUsername(token.substring(7));
         User user = userRepository.findByPhone(phone).orElseThrow();
         return ResponseEntity.ok(ApiResponse.success(user, "Profile retrieved"));
+    }
+
+    @PostMapping(value = "/update-profile", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<User>> updateProfile(
+            @RequestHeader("Authorization") String token,
+            @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) org.springframework.web.multipart.MultipartFile image
+    ) {
+        try {
+            String phone = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByPhone(phone).orElseThrow();
+            
+            if (fullName != null) {
+                user.setFullName(fullName);
+            }
+            
+            if (image != null && !image.isEmpty()) {
+                String fileName = fileService.saveFile(image);
+                // In production, use your domain here. For local testing, we use localhost.
+                user.setImageUrl("http://localhost:8080/uploads/" + fileName);
+            }
+            
+            userRepository.save(user);
+            return ResponseEntity.ok(ApiResponse.success(user, "Profile updated successfully"));
+        } catch (java.io.IOException e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to upload image: " + e.getMessage()));
+        }
     }
 }

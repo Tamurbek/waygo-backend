@@ -34,6 +34,11 @@ public class Order {
     private Double toLat;
     private Double toLon;
 
+    private String departureDate;
+    private String departureTime;
+    private Integer passengerCount;
+    private String notes;
+
     @Column(precision = 19, scale = 4)
     private BigDecimal price;
 

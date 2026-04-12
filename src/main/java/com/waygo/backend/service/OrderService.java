@@ -37,6 +37,10 @@ public class OrderService {
                 .fromLon(dto.getFromLon())
                 .toLat(dto.getToLat())
                 .toLon(dto.getToLon())
+                .departureDate(dto.getDepartureDate())
+                .departureTime(dto.getDepartureTime())
+                .passengerCount(dto.getPassengerCount())
+                .notes(dto.getNotes())
                 .price(dto.getPrice())
                 .status(Order.OrderStatus.PENDING)
                 .build();
