@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "S9dnWmq7T48GRbTkq7"
+spawn ssh -o StrictHostKeyChecking=no root@161.97.127.25 "ls -R /var/www /root | grep waygo_backend"
+expect "password:"
+send "$password\r"
+expect eof

@@ -1,0 +1,21 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "S9dnWmq7T48GRbTkq7"
+spawn ssh -o StrictHostKeyChecking=no root@161.97.127.25
+expect "password:"
+send "$password\r"
+expect "# "
+send "ssh-keygen -t ed25519 -C \"waygo_deploy_key\" -N \"\" -f ~/.ssh/id_ed25519_waygo\r"
+expect "# "
+send "cat ~/.ssh/id_ed25519_waygo.pub\r"
+expect {
+    -re "(ssh-ed25519 \[^\r\n\]+)" {
+        set pub_key $expect_out(1,string)
+        send "echo '---KEY_START---'\r"
+        send "echo '$pub_key'\r"
+        send "echo '---KEY_END---'\r"
+    }
+}
+expect "# "
+send "exit\r"
+expect eof
