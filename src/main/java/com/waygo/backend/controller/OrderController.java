@@ -30,14 +30,14 @@ public class OrderController {
 
     @PutMapping("/{orderId}")
     @Operation(summary = "Passenger updates an existing booking request")
-    public ResponseEntity<ApiResponse<Order>> update(@PathVariable Long orderId, @Valid @RequestBody OrderCreateDTO dto) {
+    public ResponseEntity<ApiResponse<Order>> update(@PathVariable("orderId") Long orderId, @Valid @RequestBody OrderCreateDTO dto) {
         Order order = orderService.updateOrder(orderId, dto);
         return ResponseEntity.ok(ApiResponse.success(order, "Order updated successfully"));
     }
 
     @PostMapping("/{orderId}/accept")
     @Operation(summary = "Driver accepts an order")
-    public ResponseEntity<ApiResponse<Order>> accept(@PathVariable Long orderId) {
+    public ResponseEntity<ApiResponse<Order>> accept(@PathVariable("orderId") Long orderId) {
         Order order = orderService.acceptOrder(orderId);
         return ResponseEntity.ok(ApiResponse.success(order, "Order accepted by driver"));
     }
@@ -45,7 +45,7 @@ public class OrderController {
     @PatchMapping("/{orderId}/status")
     @Operation(summary = "Update trip status (ARRIVED, STARTED, etc.)")
     public ResponseEntity<ApiResponse<Order>> updateStatus(
-            @PathVariable Long orderId,
+            @PathVariable("orderId") Long orderId,
             @RequestParam Order.OrderStatus status) {
         
         Order order = orderService.updateStatus(orderId, status);
@@ -54,7 +54,7 @@ public class OrderController {
 
     @PostMapping("/{orderId}/complete")
     @Operation(summary = "Complete trip and process payment")
-    public ResponseEntity<ApiResponse<Order>> complete(@PathVariable Long orderId) {
+    public ResponseEntity<ApiResponse<Order>> complete(@PathVariable("orderId") Long orderId) {
         Order order = orderService.completeTrip(orderId);
         return ResponseEntity.ok(ApiResponse.success(order, "Trip completed and payment processed"));
     }
@@ -67,13 +67,13 @@ public class OrderController {
 
     @GetMapping("/history/passenger/{userId}")
     @Operation(summary = "Get trip history for a passenger")
-    public ResponseEntity<ApiResponse<List<Order>>> getPassengerHistory(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<List<Order>>> getPassengerHistory(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getPassengerHistory(userId), "User history retrieved"));
     }
 
     @GetMapping("/history/driver/{userId}")
     @Operation(summary = "Get trip history for a driver")
-    public ResponseEntity<ApiResponse<List<Order>>> getDriverHistory(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<List<Order>>> getDriverHistory(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getDriverHistory(userId), "Driver history retrieved"));
     }
 }

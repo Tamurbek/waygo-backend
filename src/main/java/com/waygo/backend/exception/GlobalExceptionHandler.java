@@ -44,10 +44,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(errors, "Validation failed"));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalState(IllegalStateException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         ex.printStackTrace(); // For console logs
+        String errorDetail = ex.getClass().getSimpleName() + ": " + ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("An unexpected error occurred: " + ex.getMessage()));
+                .body(ApiResponse.error("An unexpected error occurred: " + errorDetail));
     }
 }

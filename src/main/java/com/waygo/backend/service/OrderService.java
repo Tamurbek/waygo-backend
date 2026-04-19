@@ -133,17 +133,17 @@ public class OrderService {
             throw new IllegalStateException("You can only edit orders that are still pending");
         }
 
-        order.setFromAddress(dto.getFromAddress());
-        order.setToAddress(dto.getToAddress());
-        order.setFromLat(dto.getFromLat());
-        order.setFromLon(dto.getFromLon());
-        order.setToLat(dto.getToLat());
-        order.setToLon(dto.getToLon());
-        order.setDepartureDate(dto.getDepartureDate());
-        order.setDepartureTime(dto.getDepartureTime());
-        order.setPassengerCount(dto.getPassengerCount());
-        order.setNotes(dto.getNotes());
-        order.setPrice(dto.getPrice());
+        if (dto.getFromAddress() != null) order.setFromAddress(dto.getFromAddress());
+        if (dto.getToAddress() != null) order.setToAddress(dto.getToAddress());
+        if (dto.getFromLat() != null) order.setFromLat(dto.getFromLat());
+        if (dto.getFromLon() != null) order.setFromLon(dto.getFromLon());
+        if (dto.getToLat() != null) order.setToLat(dto.getToLat());
+        if (dto.getToLon() != null) order.setToLon(dto.getToLon());
+        if (dto.getDepartureDate() != null) order.setDepartureDate(dto.getDepartureDate());
+        if (dto.getDepartureTime() != null) order.setDepartureTime(dto.getDepartureTime());
+        if (dto.getPassengerCount() != null) order.setPassengerCount(dto.getPassengerCount());
+        if (dto.getNotes() != null) order.setNotes(dto.getNotes());
+        if (dto.getPrice() != null) order.setPrice(dto.getPrice());
 
         return orderRepository.save(order);
     }
