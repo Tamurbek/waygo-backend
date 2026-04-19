@@ -101,7 +101,10 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         
         User currentUser = securityUtils.getCurrentUser();
-        if (currentUser == null || (!currentUser.getId().equals(order.getDriver().getId()) && !currentUser.getId().equals(order.getPassenger().getId()))) {
+        boolean isPassenger = currentUser != null && currentUser.getId().equals(order.getPassenger().getId());
+        boolean isDriver = currentUser != null && order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId());
+        
+        if (!isPassenger && !isDriver) {
             throw new UnauthorizedAccessException("You are not part of this order");
         }
 
