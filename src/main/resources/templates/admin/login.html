@@ -6,7 +6,7 @@
     <title>WayGO Admin - Kirish</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #FFD700; --dark: #121212; --surface: #1E1E1E; --text: #FFFFFF; --text-dim: #A0A0A0; --error: #FF4D4D; }
+        :root { --primary: #0D6EFD; --dark: #0B0E11; --surface: #1B2026; --text: #F8F9FA; --text-dim: #94A3B8; --error: #DC3545; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { 
             background-color: var(--dark); 
@@ -15,8 +15,8 @@
             justify-content: center; 
             align-items: center; 
             min-height: 100vh;
-            background: radial-gradient(circle at top right, rgba(255,215,0,0.05), transparent),
-                        radial-gradient(circle at bottom left, rgba(255,215,0,0.05), transparent);
+            background: radial-gradient(circle at top right, rgba(13,110,253,0.05), transparent),
+                        radial-gradient(circle at bottom left, rgba(13,110,253,0.05), transparent);
         }
         .login-card {
             background: var(--surface);
@@ -40,7 +40,7 @@
             outline: none;
             transition: 0.2s;
         }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(255,215,0,0.1); }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(13,110,253,0.1); }
         .btn {
             width: 100%;
             padding: 1rem;
@@ -74,7 +74,7 @@
             Noma'lum telefon yoki parol kiritildi.
         </div>
         
-        <div th:if="${param.logout}" class="error-msg" style="color: var(--primary); background: rgba(255,215,0,0.05); border-color: rgba(255,215,0,0.1);">
+        <div th:if="${param.logout}" class="error-msg" style="color: var(--primary); background: rgba(13,110,253,0.05); border-color: rgba(13,110,253,0.1);">
             Tizimdan chiqdingiz.
         </div>
 

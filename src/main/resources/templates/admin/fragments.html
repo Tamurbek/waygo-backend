@@ -7,15 +7,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --primary: #FFD700; 
-            --dark: #121212; 
-            --surface: #1E1E1E; 
-            --text: #FFFFFF; 
-            --text-dim: #A0A0A0; 
-            --success: #00FF80; 
-            --pending: #FFD700; 
-            --error: #FF4D4D; 
-            --info: #007AFF;
+            --primary: #0D6EFD; 
+            --dark: #0B0E11; 
+            --surface: #1B2026; 
+            --text: #F8F9FA; 
+            --text-dim: #94A3B8; 
+            --success: #198754; 
+            --pending: #FFC107; 
+            --error: #DC3545; 
+            --info: #0D6EFD;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--dark); color: var(--text); display: flex; min-height: 100vh; }
@@ -24,7 +24,7 @@
         .sidebar { width: 260px; background-color: var(--surface); border-right: 1px solid rgba(255,255,255,0.05); padding: 2rem 1rem; position: sticky; top: 0; height: 100vh; }
         .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 3rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
         .nav-item { padding: 0.75rem 1rem; border-radius: 0.5rem; color: var(--text-dim); text-decoration: none; margin-bottom: 0.5rem; display: block; transition: all 0.2s; font-weight: 500; }
-        .nav-item:hover, .nav-item.active { background-color: rgba(255, 215, 0, 0.1); color: var(--primary); }
+        .nav-item:hover, .nav-item.active { background-color: rgba(13, 110, 253, 0.1); color: var(--primary); }
         
         /* Layout */
         .main-content { flex: 1; padding: 2rem 3rem; }
@@ -38,7 +38,7 @@
         /* Badges */
         .status-badge { padding: 0.35rem 0.85rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
         .status-completed, .status-active { background: rgba(0, 255, 128, 0.1); color: var(--success); }
-        .status-pending { background: rgba(255, 215, 0, 0.1); color: var(--pending); }
+        .status-pending { background: rgba(255, 193, 7, 0.1); color: var(--pending); }
         .status-cancelled, .status-error { background: rgba(255, 77, 77, 0.1); color: var(--error); }
         .status-started { background: rgba(0, 122, 255, 0.1); color: var(--info); }
         
@@ -46,7 +46,7 @@
         .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #333; }
         .btn { border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-size: 0.875rem; }
         .btn-primary { background: var(--primary); color: var(--dark); }
-        .btn-outline { background: rgba(255,215,0,0.05); color: var(--primary); border: 1px solid rgba(255,215,0,0.2); }
+        .btn-outline { background: rgba(13, 110, 253, 0.05); color: var(--primary); border: 1px solid rgba(13, 110, 253, 0.2); }
         .btn:hover { opacity: 0.85; transform: translateY(-1px); }
     </style>
 </head>
