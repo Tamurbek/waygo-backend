@@ -146,7 +146,7 @@ public class AuthController {
             if (image != null && !image.isEmpty()) {
                 String fileName = fileService.saveFile(image);
                 // In production, use your domain here. For local testing, we use localhost.
-                user.setImageUrl("http://localhost:8080/uploads/" + fileName);
+                user.setImageUrl("https://waygo.uz/uploads/" + fileName);
             }
             
             userRepository.save(user);
