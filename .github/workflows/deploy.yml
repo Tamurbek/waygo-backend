@@ -2,7 +2,8 @@ name: WayGO CI/CD - Deploy to Server
 
 on:
   push:
-    branches: [ main ]
+    tags:
+      - 'v*'
 
 jobs:
   deploy:
@@ -14,18 +15,20 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          envs: GITHUB_REF_NAME
           script: |
-            # Papka nomi serverda chiziqcha bilan (tekshirildi)
+            # Use the tag name passed from GitHub Actions
+            TAG_NAME=${GITHUB_REF_NAME}
             cd /var/www/waygo-backend
             
-            # Hozirgi ishlayotgan versiyani saqlab qo'yamiz
+            # Save current commit for rollback
             OLD_COMMIT=$(git rev-parse HEAD)
             
-            echo "Starting deployment of new changes..."
-            if git fetch origin && git reset --hard origin/main && docker compose up -d --build; then
-              echo "Deployment successful!"
+            echo "Starting deployment of version $TAG_NAME..."
+            if git fetch --tags && git checkout $TAG_NAME && docker compose up -d --build; then
+              echo "Deployment of $TAG_NAME successful!"
             else
-              echo "Deployment failed! Rolling back to previous stable version ($OLD_COMMIT)..."
+              echo "Deployment failed! Rolling back to $OLD_COMMIT..."
               git reset --hard $OLD_COMMIT
               docker compose up -d --build
               echo "Rollback completed."
