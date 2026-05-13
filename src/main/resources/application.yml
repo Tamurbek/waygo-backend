@@ -54,7 +54,7 @@ server:
 waygo:
   jwt:
     secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-    expiration: 86400000 # 24 hours in MS
+    expiration: 2592000000 # 30 days in MS
   sms:
     # provider: ${SMS_PROVIDER:console} # Set to 'eskiz' to use real SMS service
     provider: ${SMS_PROVIDER:eskiz} # Set to 'eskiz' to use real SMS service
