@@ -45,34 +45,43 @@ public class AuthController {
 
         User user = userRepository.findByPhone(phone).orElse(null);
 
-        if (request.isLogin()) {
-            if (user == null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Siz tizimda ro'yxatdan o'tmagansiz. Iltimos, ro'yxatdan o'ting."));
-            }
-        } else {
-            // Register mode
-            if (user != null) {
-                return ResponseEntity.badRequest().body(ApiResponse.error("Bu raqam allaqachon ro'yxatdan o'tgan. Iltimos, kirish qismidan foydalaning."));
+        if (user != null) {
+            // User exists, handle role update if necessary
+            if (request.getRole() != null && user.getRole() != request.getRole()) {
+                // If it's a driver app requesting and user is passenger, upgrade to driver
+                if (request.getRole() == User.Role.DRIVER) {
+                    user.setRole(User.Role.DRIVER);
+                    user = userRepository.save(user);
+                }
             }
             
-            // New user registration
-            if (request.getFullName() == null || request.getPassword() == null || request.getRole() == null) {
-                 return ResponseEntity.badRequest().body(ApiResponse.error("User registration requires full name, password, and role"));
+            String jwtToken = jwtService.generateToken(user);
+            return ResponseEntity.ok(ApiResponse.success(
+                    AuthenticationResponse.builder().token(jwtToken).user(user).build(),
+                    "Login successful"
+            ));
+        } else {
+            // User does not exist
+            if (request.getFullName() != null && request.getPassword() != null && request.getRole() != null) {
+                // Registering with full data
+                user = User.builder()
+                        .phone(phone)
+                        .fullName(request.getFullName())
+                        .password(passwordEncoder.encode(request.getPassword()))
+                        .role(request.getRole())
+                        .build();
+                user = userRepository.save(user);
+                
+                String jwtToken = jwtService.generateToken(user);
+                return ResponseEntity.ok(ApiResponse.success(
+                        AuthenticationResponse.builder().token(jwtToken).user(user).build(),
+                        "Registration successful"
+                ));
+            } else {
+                // New user but no data provided yet - tell frontend to collect data
+                return ResponseEntity.status(404).body(ApiResponse.error(null, "USER_NOT_FOUND"));
             }
-            user = User.builder()
-                    .phone(phone)
-                    .fullName(request.getFullName())
-                    .password(passwordEncoder.encode(request.getPassword()))
-                    .role(request.getRole())
-                    .build();
-            user = userRepository.save(user);
         }
-
-        String jwtToken = jwtService.generateToken(user);
-        return ResponseEntity.ok(ApiResponse.success(
-                AuthenticationResponse.builder().token(jwtToken).user(user).build(),
-                "Verification successful"
-        ));
     }
 
     @PostMapping("/register")

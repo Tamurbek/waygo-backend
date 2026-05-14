@@ -23,6 +23,7 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.findByEmail("admin@waygo.uz").isEmpty()) {
             userRepository.save(User.builder()
                     .email("admin@waygo.uz")
+                    .phone("+998000000000")
                     .fullName("System Admin")
                     .password(defaultPassword)
                     .role(User.Role.ADMIN)

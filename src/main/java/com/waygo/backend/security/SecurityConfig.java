@@ -32,6 +32,11 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, authEx) -> {
+                res.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                res.setContentType("application/json");
+                res.getWriter().write("{\"success\":false,\"message\":\"Unauthorized: " + authEx.getMessage() + "\"}");
+            }))
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
