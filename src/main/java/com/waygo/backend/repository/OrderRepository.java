@@ -7,6 +7,8 @@ import java.util.List;
 public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByPassengerIdOrderByCreatedAtDesc(Long passengerId);
     List<Order> findByDriverIdOrderByCreatedAtDesc(Long driverId);
+    List<Order> findByStatusAndDriverIsNull(Order.OrderStatus status);
+    List<Order> findByStatusAndPassengerIsNull(Order.OrderStatus status);
     List<Order> findByStatus(Order.OrderStatus status);
     long countByStatus(Order.OrderStatus status);
     List<Order> findTop10ByOrderByCreatedAtDesc();

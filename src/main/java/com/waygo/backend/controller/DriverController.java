@@ -42,12 +42,16 @@ public class DriverController {
         if (carType != null) profile.setCarType(carType);
 
         DriverProfile saved = driverProfileRepository.save(profile);
+        
+        // Sync to User entity for easy access in Orders
+        user.setCarModel(carModel);
+        user.setCarNumber(carNumber);
 
         // Update user role to DRIVER if it was PASSENGER
         if (user.getRole() == User.Role.PASSENGER) {
             user.setRole(User.Role.DRIVER);
-            userRepository.save(user);
         }
+        userRepository.save(user);
 
         return ResponseEntity.ok(ApiResponse.success(saved, "Avtomobil muvaffaqiyatli ro'yxatdan o'tkazildi. Endi siz haydovchisiz!"));
     }

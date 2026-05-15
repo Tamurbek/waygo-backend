@@ -41,6 +41,9 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String carNumber;
+    private String carModel;
+
     @Builder.Default
     @Column(precision = 19, scale = 4)
     private BigDecimal balance = BigDecimal.ZERO;

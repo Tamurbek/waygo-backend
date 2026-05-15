@@ -41,10 +41,14 @@ public class OtpService {
         String key = OTP_KEY_PREFIX + phone;
         String storedCode = redisTemplate.opsForValue().get(key);
         
+        log.info("Verifying code for {}. Input: {}, Stored: {}", phone, code, storedCode);
+        
         if (storedCode != null && storedCode.equals(code)) {
             redisTemplate.delete(key);
+            log.info("Code verified successfully for {}", phone);
             return true;
         }
+        log.warn("Code verification failed for {}. Stored code is {}", phone, storedCode == null ? "NULL (expired)" : storedCode);
         return false;
     }
 

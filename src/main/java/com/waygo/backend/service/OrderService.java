@@ -5,6 +5,7 @@ import com.waygo.backend.entity.Order;
 import com.waygo.backend.entity.User;
 import com.waygo.backend.exception.ResourceNotFoundException;
 import com.waygo.backend.exception.UnauthorizedAccessException;
+import com.waygo.backend.repository.DriverProfileRepository;
 import com.waygo.backend.repository.OrderRepository;
 import com.waygo.backend.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -21,16 +22,16 @@ public class OrderService {
     private final TransactionService transactionService;
     private final SecurityUtils securityUtils;
     private final NotificationService notificationService;
+    private final DriverProfileRepository driverProfileRepository;
 
     @Transactional
     public Order createOrder(OrderCreateDTO dto) {
-        User passenger = securityUtils.getCurrentUser();
-        if (passenger == null) {
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null) {
             throw new UnauthorizedAccessException("You must be logged in to create an order");
         }
 
-        Order order = Order.builder()
-                .passenger(passenger)
+        Order.OrderBuilder orderBuilder = Order.builder()
                 .fromAddress(dto.getFromAddress())
                 .toAddress(dto.getToAddress())
                 .fromLat(dto.getFromLat())
@@ -39,12 +40,24 @@ public class OrderService {
                 .toLon(dto.getToLon())
                 .departureDate(dto.getDepartureDate())
                 .departureTime(dto.getDepartureTime())
+                .availableSeats(dto.getAvailableSeats())
                 .passengerCount(dto.getPassengerCount())
                 .notes(dto.getNotes())
                 .price(dto.getPrice())
-                .status(Order.OrderStatus.PENDING)
-                .build();
+                .baggageDescription(dto.getBaggageDescription())
+                .hasAirConditioning(dto.getServices() != null ? dto.getServices().getKonditsioner() : false)
+                .hasBaggage(dto.getServices() != null ? dto.getServices().getBagaj() : false)
+                .hasChildSeat(dto.getServices() != null ? dto.getServices().getChildSeat() : false)
+                .hasTrailer(dto.getServices() != null ? dto.getServices().getTirkama() : false)
+                .status(Order.OrderStatus.PENDING);
 
+        if (currentUser.getRole() == User.Role.DRIVER) {
+            orderBuilder.driver(currentUser);
+        } else {
+            orderBuilder.passenger(currentUser);
+        }
+
+        Order order = orderBuilder.build();
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyNewOrder(savedOrder);
         return savedOrder;
@@ -60,13 +73,36 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        if (order.getStatus() != Order.OrderStatus.PENDING) {
-            throw new IllegalStateException("Order is no longer available for acceptance");
+        if (order.getStatus() != Order.OrderStatus.PENDING || order.getDriver() != null) {
+             if (order.getDriver() != null && order.getPassenger() != null) {
+                 throw new IllegalStateException("Order is no longer available for acceptance");
+             }
         }
 
         order.setDriver(driver);
         order.setStatus(Order.OrderStatus.ACCEPTED);
         
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    public Order joinOrder(Long orderId) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+            throw new UnauthorizedAccessException("Only passengers can join ride offers");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getStatus() != Order.OrderStatus.PENDING || order.getPassenger() != null) {
+            throw new IllegalStateException("Ride offer is no longer available");
+        }
+
+        order.setPassenger(passenger);
+        order.setStatus(Order.OrderStatus.ACCEPTED);
+
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
@@ -86,8 +122,10 @@ public class OrderService {
             throw new IllegalStateException("Trip must be accepted or started to be completed");
         }
 
-        // Process final payment automatically
-        transactionService.processPayment(order.getPassenger().getId(), order.getDriver().getId(), order.getPrice());
+        // Process final payment automatically if passenger exists
+        if (order.getPassenger() != null) {
+            transactionService.processPayment(order.getPassenger().getId(), order.getDriver().getId(), order.getPrice());
+        }
 
         order.setStatus(Order.OrderStatus.COMPLETED);
         Order savedOrder = orderRepository.save(order);
@@ -101,7 +139,7 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         
         User currentUser = securityUtils.getCurrentUser();
-        boolean isPassenger = currentUser != null && currentUser.getId().equals(order.getPassenger().getId());
+        boolean isPassenger = currentUser != null && order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId());
         boolean isDriver = currentUser != null && order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId());
         
         if (!isPassenger && !isDriver) {
@@ -128,7 +166,10 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         User currentUser = securityUtils.getCurrentUser();
-        if (currentUser == null || !currentUser.getId().equals(order.getPassenger().getId())) {
+        boolean isOwner = (order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId())) ||
+                         (order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId()));
+        
+        if (currentUser == null || !isOwner) {
             throw new UnauthorizedAccessException("You can only edit your own orders");
         }
 
@@ -145,13 +186,52 @@ public class OrderService {
         if (dto.getDepartureDate() != null) order.setDepartureDate(dto.getDepartureDate());
         if (dto.getDepartureTime() != null) order.setDepartureTime(dto.getDepartureTime());
         if (dto.getPassengerCount() != null) order.setPassengerCount(dto.getPassengerCount());
+        if (dto.getAvailableSeats() != null) {
+            if (order.getAvailableSeats() == null) {
+                order.setAvailableSeats(new java.util.ArrayList<>());
+            }
+            order.getAvailableSeats().clear();
+            order.getAvailableSeats().addAll(dto.getAvailableSeats());
+        }
         if (dto.getNotes() != null) order.setNotes(dto.getNotes());
         if (dto.getPrice() != null) order.setPrice(dto.getPrice());
+        if (dto.getBaggageDescription() != null) order.setBaggageDescription(dto.getBaggageDescription());
+        
+        if (dto.getServices() != null) {
+            if (dto.getServices().getKonditsioner() != null) order.setHasAirConditioning(dto.getServices().getKonditsioner());
+            if (dto.getServices().getBagaj() != null) order.setHasBaggage(dto.getServices().getBagaj());
+            if (dto.getServices().getChildSeat() != null) order.setHasChildSeat(dto.getServices().getChildSeat());
+            if (dto.getServices().getTirkama() != null) order.setHasTrailer(dto.getServices().getTirkama());
+        }
 
         return orderRepository.save(order);
     }
 
     public List<Order> getPendingOrders() {
-        return orderRepository.findByStatus(Order.OrderStatus.PENDING);
+        User currentUser = securityUtils.getCurrentUser();
+        List<Order> orders;
+        
+        if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
+            // Drivers see passenger requests
+            orders = orderRepository.findByStatusAndDriverIsNull(Order.OrderStatus.PENDING);
+        } else {
+            // Passengers see driver ride offers
+            orders = orderRepository.findByStatusAndPassengerIsNull(Order.OrderStatus.PENDING);
+        }
+
+        // Auto-populate car info if missing in User but present in DriverProfile
+        for (Order order : orders) {
+            if (order.getDriver() != null) {
+                User driver = order.getDriver();
+                if (driver.getCarNumber() == null || driver.getCarModel() == null) {
+                    driverProfileRepository.findByUser(driver).ifPresent(profile -> {
+                        if (driver.getCarNumber() == null) driver.setCarNumber(profile.getCarNumber());
+                        if (driver.getCarModel() == null) driver.setCarModel(profile.getCarModel());
+                    });
+                }
+            }
+        }
+        
+        return orders;
     }
 }

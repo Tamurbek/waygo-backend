@@ -19,7 +19,7 @@ public class Order {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "passenger_id", nullable = false)
+    @JoinColumn(name = "passenger_id")
     private User passenger;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,6 +44,18 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
+
+    @ElementCollection
+    @CollectionTable(name = "order_seats", joinColumns = @JoinColumn(name = "order_id"))
+    @Column(name = "seat_label")
+    @Builder.Default
+    private java.util.List<String> availableSeats = new java.util.ArrayList<>();
+
+    private String baggageDescription;
+    private Boolean hasAirConditioning;
+    private Boolean hasBaggage;
+    private Boolean hasChildSeat;
+    private Boolean hasTrailer;
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

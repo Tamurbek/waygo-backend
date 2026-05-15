@@ -42,6 +42,13 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Order accepted by driver"));
     }
 
+    @PostMapping("/{orderId}/join")
+    @Operation(summary = "Passenger joins a ride offer")
+    public ResponseEntity<ApiResponse<Order>> join(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.joinOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Joined the ride successfully"));
+    }
+
     @PatchMapping("/{orderId}/status")
     @Operation(summary = "Update trip status (ARRIVED, STARTED, etc.)")
     public ResponseEntity<ApiResponse<Order>> updateStatus(

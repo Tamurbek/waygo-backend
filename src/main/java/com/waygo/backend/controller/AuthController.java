@@ -39,6 +39,8 @@ public class AuthController {
         String phone = request.getPhone();
         String code = request.getCode();
         
+        System.out.println("Received verify-otp request: phone=" + phone + ", code=" + code + ", role=" + request.getRole());
+        
         if (!otpService.verifyCode(phone, code)) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Invalid or expired verification code"));
         }
@@ -142,19 +144,20 @@ public class AuthController {
     public ResponseEntity<ApiResponse<User>> updateProfile(
             @RequestHeader("Authorization") String token,
             @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) String carNumber,
+            @RequestParam(required = false) String carModel,
             @RequestParam(required = false) org.springframework.web.multipart.MultipartFile image
     ) {
         try {
             String phone = jwtService.extractUsername(token.substring(7));
             User user = userRepository.findByPhone(phone).orElseThrow();
             
-            if (fullName != null) {
-                user.setFullName(fullName);
-            }
+            if (fullName != null) user.setFullName(fullName);
+            if (carNumber != null) user.setCarNumber(carNumber);
+            if (carModel != null) user.setCarModel(carModel);
             
             if (image != null && !image.isEmpty()) {
                 String fileName = fileService.saveFile(image);
-                // In production, use your domain here. For local testing, we use localhost.
                 user.setImageUrl("https://waygo.uz/uploads/" + fileName);
             }
             

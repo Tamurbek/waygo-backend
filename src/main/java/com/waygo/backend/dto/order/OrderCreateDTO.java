@@ -29,4 +29,15 @@ public class OrderCreateDTO {
     private String departureTime;
     private Integer passengerCount;
     private String notes;
+    private String baggageDescription;
+    private java.util.List<String> availableSeats;
+    private ServicesDTO services;
+
+    @Data
+    public static class ServicesDTO {
+        private Boolean konditsioner;
+        private Boolean bagaj;
+        private Boolean childSeat;
+        private Boolean tirkama;
+    }
 }
