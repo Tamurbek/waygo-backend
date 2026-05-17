@@ -20,15 +20,17 @@ public class NotificationService {
     public void notifyOrderStatusUpdate(Order order) {
         String msg = "WayGO: Buyurtmangiz holati yangilandi: " + order.getStatus();
         
-        // Notify the specific passenger about their order status update
-        messagingTemplate.convertAndSendToUser(
-                order.getPassenger().getPhone(),
-                "/queue/order-status",
-                order
-        );
-        
-        // SMS to passenger
-        smsService.sendSms(order.getPassenger().getPhone(), msg);
+        // Notify the specific passenger about their order status update if present
+        if (order.getPassenger() != null) {
+            messagingTemplate.convertAndSendToUser(
+                    order.getPassenger().getPhone(),
+                    "/queue/order-status",
+                    order
+            );
+            
+            // SMS to passenger
+            smsService.sendSms(order.getPassenger().getPhone(), msg);
+        }
         
         // Also notify the driver if assigned
         if (order.getDriver() != null) {
@@ -38,6 +40,9 @@ public class NotificationService {
                     order
             );
         }
+
+        // Broadcast updated order globally so both user and driver apps receive it in real-time
+        messagingTemplate.convertAndSend("/topic/orders/update", order);
     }
 }
 

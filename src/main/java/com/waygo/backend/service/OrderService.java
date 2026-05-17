@@ -23,6 +23,7 @@ public class OrderService {
     private final SecurityUtils securityUtils;
     private final NotificationService notificationService;
     private final DriverProfileRepository driverProfileRepository;
+    private final com.waygo.backend.repository.RideBookingRepository rideBookingRepository;
 
     @Transactional
     public Order createOrder(OrderCreateDTO dto) {
@@ -146,6 +147,23 @@ public class OrderService {
             throw new UnauthorizedAccessException("You are not part of this order");
         }
 
+        if (status == Order.OrderStatus.CANCELLED && isDriver) {
+            // Driver is cancelling/rejecting their acceptance of a passenger's order!
+            // Instead of setting the order to CANCELLED, we release it back to PENDING!
+            order.setStatus(Order.OrderStatus.PENDING);
+            order.setDriver(null);
+            
+            Order savedOrder = orderRepository.save(order);
+            
+            // Notify the passenger about the release (they will see it went back to pending)
+            notificationService.notifyOrderStatusUpdate(savedOrder);
+            
+            // Notify all other drivers about the newly available pending order!
+            notificationService.notifyNewOrder(savedOrder);
+            
+            return savedOrder;
+        }
+
         order.setStatus(status);
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -233,5 +251,110 @@ public class OrderService {
         }
         
         return orders;
+    }
+
+    @Transactional
+    public Order bookRide(Long orderId, List<String> selectedSeats) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+            throw new UnauthorizedAccessException("Only passengers can request to join ride offers");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        // Create a new RideBooking
+        com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
+                .order(order)
+                .passenger(passenger)
+                .selectedSeats(selectedSeats)
+                .status("PENDING")
+                .build();
+
+        rideBookingRepository.save(booking);
+
+        // Force Eager load by adding to bookings list
+        order.getBookings().add(booking);
+        
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order confirmBooking(Long bookingId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can confirm bookings");
+        }
+
+        com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        Order order = booking.getOrder();
+        if (!order.getDriver().getId().equals(driver.getId())) {
+            throw new UnauthorizedAccessException("You are not the driver of this ride offer");
+        }
+
+        booking.setStatus("ACCEPTED");
+        rideBookingRepository.save(booking);
+
+        // Remove the selected seats from the availableSeats list (thus booking/occupying them)
+        if (order.getAvailableSeats() != null) {
+            for (String seat : booking.getSelectedSeats()) {
+                String mappedSeat = mapSeatIndexToLabel(seat);
+                order.getAvailableSeats().remove(mappedSeat);
+            }
+        }
+
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order rejectBooking(Long bookingId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can reject bookings");
+        }
+
+        com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        Order order = booking.getOrder();
+        if (!order.getDriver().getId().equals(driver.getId())) {
+            throw new UnauthorizedAccessException("You are not the driver of this ride offer");
+        }
+
+        // If the booking was previously ACCEPTED, we must free the seats!
+        if ("ACCEPTED".equals(booking.getStatus())) {
+            if (order.getAvailableSeats() != null) {
+                for (String seat : booking.getSelectedSeats()) {
+                    String mappedSeat = mapSeatIndexToLabel(seat);
+                    if (!order.getAvailableSeats().contains(mappedSeat)) {
+                        order.getAvailableSeats().add(mappedSeat);
+                    }
+                }
+            }
+        }
+
+        booking.setStatus("REJECTED");
+        rideBookingRepository.save(booking);
+
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    private String mapSeatIndexToLabel(String index) {
+        if (index == null) return "";
+        switch (index) {
+            case "1": return "FRONT";
+            case "2": return "BACK_LEFT";
+            case "3": return "BACK_CENTER";
+            case "4": return "BACK_RIGHT";
+            default: return index;
+        }
     }
 }

@@ -51,6 +51,11 @@ public class Order {
     @Builder.Default
     private java.util.List<String> availableSeats = new java.util.ArrayList<>();
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @Builder.Default
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties("order")
+    private java.util.List<RideBooking> bookings = new java.util.ArrayList<>();
+
     private String baggageDescription;
     private Boolean hasAirConditioning;
     private Boolean hasBaggage;

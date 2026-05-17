@@ -83,4 +83,27 @@ public class OrderController {
     public ResponseEntity<ApiResponse<List<Order>>> getDriverHistory(@PathVariable("userId") Long userId) {
         return ResponseEntity.ok(ApiResponse.success(orderService.getDriverHistory(userId), "Driver history retrieved"));
     }
+
+    @PostMapping("/{orderId}/book")
+    @Operation(summary = "Passenger requests to book seats in driver's ride offer")
+    public ResponseEntity<ApiResponse<Order>> book(
+            @PathVariable("orderId") Long orderId,
+            @RequestBody java.util.List<String> selectedSeats) {
+        Order order = orderService.bookRide(orderId, selectedSeats);
+        return ResponseEntity.ok(ApiResponse.success(order, "Booking request sent to driver"));
+    }
+
+    @PostMapping("/bookings/{bookingId}/confirm")
+    @Operation(summary = "Driver confirms a passenger seat booking")
+    public ResponseEntity<ApiResponse<Order>> confirmBooking(@PathVariable("bookingId") Long bookingId) {
+        Order order = orderService.confirmBooking(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Booking confirmed successfully"));
+    }
+
+    @PostMapping("/bookings/{bookingId}/reject")
+    @Operation(summary = "Driver rejects a passenger seat booking")
+    public ResponseEntity<ApiResponse<Order>> rejectBooking(@PathVariable("bookingId") Long bookingId) {
+        Order order = orderService.rejectBooking(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Booking rejected successfully"));
+    }
 }
