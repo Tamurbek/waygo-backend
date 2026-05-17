@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.waygo.backend.entity.RideBooking;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -84,6 +85,12 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(orderService.getDriverHistory(userId), "Driver history retrieved"));
     }
 
+    @GetMapping("/my-bookings")
+    @Operation(summary = "Get current passenger's active bookings with parent order IDs")
+    public ResponseEntity<ApiResponse<List<RideBooking>>> getMyBookings() {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getMyBookings(), "My bookings retrieved"));
+    }
+
     @PostMapping("/{orderId}/book")
     @Operation(summary = "Passenger requests to book seats in driver's ride offer")
     public ResponseEntity<ApiResponse<Order>> book(
@@ -105,5 +112,12 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Order>> rejectBooking(@PathVariable("bookingId") Long bookingId) {
         Order order = orderService.rejectBooking(bookingId);
         return ResponseEntity.ok(ApiResponse.success(order, "Booking rejected successfully"));
+    }
+
+    @DeleteMapping("/bookings/{bookingId}")
+    @Operation(summary = "Passenger cancels their seat booking")
+    public ResponseEntity<ApiResponse<Void>> cancelBooking(@PathVariable("bookingId") Long bookingId) {
+        orderService.cancelBooking(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Booking cancelled successfully"));
     }
 }

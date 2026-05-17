@@ -20,7 +20,7 @@ public class RideBooking {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
-    @JsonIgnoreProperties({"bookings", "driver", "passenger"})
+    @JsonIgnoreProperties({"bookings", "driver", "passenger", "hibernateLazyInitializer", "handler"})
     private Order order;
 
     @ManyToOne(fetch = FetchType.EAGER)

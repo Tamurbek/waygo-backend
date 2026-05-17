@@ -148,20 +148,24 @@ public class OrderService {
         }
 
         if (status == Order.OrderStatus.CANCELLED && isDriver) {
-            // Driver is cancelling/rejecting their acceptance of a passenger's order!
-            // Instead of setting the order to CANCELLED, we release it back to PENDING!
-            order.setStatus(Order.OrderStatus.PENDING);
-            order.setDriver(null);
-            
-            Order savedOrder = orderRepository.save(order);
-            
-            // Notify the passenger about the release (they will see it went back to pending)
-            notificationService.notifyOrderStatusUpdate(savedOrder);
-            
-            // Notify all other drivers about the newly available pending order!
-            notificationService.notifyNewOrder(savedOrder);
-            
-            return savedOrder;
+            if (order.getPassenger() != null) {
+                // Driver is cancelling their acceptance of a passenger's order!
+                // We release it back to PENDING so another driver can accept it.
+                order.setStatus(Order.OrderStatus.PENDING);
+                order.setDriver(null);
+                
+                Order savedOrder = orderRepository.save(order);
+                notificationService.notifyOrderStatusUpdate(savedOrder);
+                notificationService.notifyNewOrder(savedOrder);
+                return savedOrder;
+            } else {
+                // Driver is cancelling their own ride offer (e'lon).
+                // We simply set it to CANCELLED and notify the passengers who booked it.
+                order.setStatus(Order.OrderStatus.CANCELLED);
+                Order savedOrder = orderRepository.save(order);
+                notificationService.notifyOrderStatusUpdate(savedOrder);
+                return savedOrder;
+            }
         }
 
         order.setStatus(status);
@@ -172,6 +176,14 @@ public class OrderService {
 
     public List<Order> getPassengerHistory(Long passengerId) {
         return orderRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
+    }
+
+    public List<com.waygo.backend.entity.RideBooking> getMyBookings() {
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new UnauthorizedAccessException("Not authenticated");
+        }
+        return rideBookingRepository.findByPassengerId(currentUser.getId());
     }
 
     public List<Order> getDriverHistory(Long driverId) {
@@ -222,7 +234,15 @@ public class OrderService {
             if (dto.getServices().getTirkama() != null) order.setHasTrailer(dto.getServices().getTirkama());
         }
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        
+        // Re-announce driver offers so passengers receive the "Yangi haydovchi e'loni!" push notification
+        if (savedOrder.getDriver() != null && savedOrder.getPassenger() == null) {
+            notificationService.notifyNewOrder(savedOrder);
+        }
+        
+        return savedOrder;
     }
 
     public List<Order> getPendingOrders() {
@@ -345,6 +365,39 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
+    }
+
+    @Transactional
+    public void cancelBooking(Long bookingId) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+            throw new UnauthorizedAccessException("Only passengers can cancel bookings");
+        }
+
+        com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        if (!booking.getPassenger().getId().equals(passenger.getId())) {
+            throw new UnauthorizedAccessException("You can only cancel your own bookings");
+        }
+
+        Order order = booking.getOrder();
+
+        // If the booking was previously ACCEPTED, we must free the seats
+        if ("ACCEPTED".equals(booking.getStatus()) && order.getAvailableSeats() != null) {
+            for (String seat : booking.getSelectedSeats()) {
+                String mappedSeat = mapSeatIndexToLabel(seat);
+                if (!order.getAvailableSeats().contains(mappedSeat)) {
+                    order.getAvailableSeats().add(mappedSeat);
+                }
+            }
+        }
+
+        order.getBookings().remove(booking);
+        rideBookingRepository.delete(booking);
+
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
     }
 
     private String mapSeatIndexToLabel(String index) {
