@@ -8,15 +8,25 @@ import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+
 @Configuration
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE orders ALTER COLUMN passenger_id DROP NOT NULL");
+            System.out.println("✅ Fixed passenger_id NOT NULL constraint on orders table");
+        } catch (Exception e) {
+            System.out.println("⚠️ Could not alter orders table passenger_id constraint: " + e.getMessage());
+        }
+
         String defaultPassword = passwordEncoder.encode("password123");
         
         // System Admin (doim tekshirib kiritiladi)
