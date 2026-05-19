@@ -50,10 +50,16 @@ public class AuthController {
         if (user != null) {
             // User exists, handle role update if necessary
             if (request.getRole() != null && user.getRole() != request.getRole()) {
-                // If it's a driver app requesting and user is passenger, upgrade to driver
                 if (request.getRole() == User.Role.DRIVER) {
                     user.setRole(User.Role.DRIVER);
                     user = userRepository.save(user);
+                } else if (request.getRole() == User.Role.PASSENGER) {
+                    if (Boolean.TRUE.equals(request.getConfirmRoleChange())) {
+                        user.setRole(User.Role.PASSENGER);
+                        user = userRepository.save(user);
+                    } else {
+                        return ResponseEntity.status(409).body(ApiResponse.error(null, "DRIVER_ROLE_CONFLICT"));
+                    }
                 }
             }
             

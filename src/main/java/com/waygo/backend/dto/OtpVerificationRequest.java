@@ -18,4 +18,6 @@ public class OtpVerificationRequest {
     
     @JsonProperty("isLogin")
     private boolean isLogin;
+
+    private Boolean confirmRoleChange;
 }
