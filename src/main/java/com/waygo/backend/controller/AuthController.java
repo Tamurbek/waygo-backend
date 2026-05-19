@@ -48,19 +48,10 @@ public class AuthController {
         User user = userRepository.findByPhone(phone).orElse(null);
 
         if (user != null) {
-            // User exists, handle role update if necessary
+            // User exists, handle role update automatically if necessary
             if (request.getRole() != null && user.getRole() != request.getRole()) {
-                if (request.getRole() == User.Role.DRIVER) {
-                    user.setRole(User.Role.DRIVER);
-                    user = userRepository.save(user);
-                } else if (request.getRole() == User.Role.PASSENGER) {
-                    if (Boolean.TRUE.equals(request.getConfirmRoleChange())) {
-                        user.setRole(User.Role.PASSENGER);
-                        user = userRepository.save(user);
-                    } else {
-                        return ResponseEntity.status(409).body(ApiResponse.error(null, "DRIVER_ROLE_CONFLICT"));
-                    }
-                }
+                user.setRole(request.getRole());
+                user = userRepository.save(user);
             }
             
             String jwtToken = jwtService.generateToken(user);
