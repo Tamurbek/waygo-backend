@@ -306,7 +306,20 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        // Create a new RideBooking
+        // Check if passenger already has a PENDING booking on this order — block duplicates
+        java.util.Optional<com.waygo.backend.entity.RideBooking> pendingBooking =
+                rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "PENDING");
+        if (pendingBooking.isPresent()) {
+            throw new IllegalStateException("Siz allaqachon ushbu e'longa so'rov yuborgansiz. Avvalgi so'rovingiz ko'rib chiqilguncha kuting.");
+        }
+
+        // Validate: all requested seats must be in the order's available seats list
+        List<String> availableSeats = order.getAvailableSeats();
+        if (availableSeats == null || !availableSeats.containsAll(selectedSeats)) {
+            throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
+        }
+
+        // Create a new RideBooking (works for both first-time and additional seat requests)
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
                 .passenger(passenger)
@@ -318,7 +331,7 @@ public class OrderService {
 
         // Force Eager load by adding to bookings list
         order.getBookings().add(booking);
-        
+
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
