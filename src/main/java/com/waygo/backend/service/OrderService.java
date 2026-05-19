@@ -168,6 +168,25 @@ public class OrderService {
             }
         }
 
+        if (status == Order.OrderStatus.STARTED) {
+            if (order.getAvailableSeats() != null) {
+                order.getAvailableSeats().clear();
+            }
+        } else if (status == Order.OrderStatus.PENDING) {
+            List<String> allSeats = new java.util.ArrayList<>(java.util.Arrays.asList("FRONT", "BACK_LEFT", "BACK_CENTER", "BACK_RIGHT"));
+            if (order.getBookings() != null) {
+                for (com.waygo.backend.entity.RideBooking b : order.getBookings()) {
+                    if ("ACCEPTED".equals(b.getStatus())) {
+                        for (String seat : b.getSelectedSeats()) {
+                            String mappedSeat = mapSeatIndexToLabel(seat);
+                            allSeats.remove(mappedSeat);
+                        }
+                    }
+                }
+            }
+            order.setAvailableSeats(allSeats);
+        }
+
         order.setStatus(status);
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -253,8 +272,12 @@ public class OrderService {
             // Drivers see passenger requests
             orders = orderRepository.findByStatusAndDriverIsNull(Order.OrderStatus.PENDING);
         } else {
-            // Passengers see driver ride offers
-            orders = orderRepository.findByStatusAndPassengerIsNull(Order.OrderStatus.PENDING);
+            // Passengers see driver ride offers (and started ones where they are accepted)
+            if (currentUser != null) {
+                orders = orderRepository.findPendingAndActiveForPassenger(currentUser.getId(), Order.OrderStatus.PENDING, Order.OrderStatus.STARTED);
+            } else {
+                orders = orderRepository.findByStatusAndPassengerIsNull(Order.OrderStatus.PENDING);
+            }
         }
 
         // Auto-populate car info if missing in User but present in DriverProfile
