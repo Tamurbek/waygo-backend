@@ -310,13 +310,19 @@ public class OrderService {
         java.util.Optional<com.waygo.backend.entity.RideBooking> pendingBooking =
                 rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "PENDING");
         if (pendingBooking.isPresent()) {
-            throw new IllegalStateException("Siz allaqachon ushbu e'longa so'rov yuborgansiz. Avvalgi so'rovingiz ko'rib chiqilguncha kuting.");
+            throw new IllegalStateException("Siz allaqachon ushbu buyurtmaga so'rov yuborgansiz. Avvalgi so'rovingiz ko'rib chiqilguncha kuting.");
         }
 
         // Validate: all requested seats must be in the order's available seats list
         List<String> availableSeats = order.getAvailableSeats();
-        if (availableSeats == null || !availableSeats.containsAll(selectedSeats)) {
+        if (availableSeats == null) {
             throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
+        }
+        for (String seat : selectedSeats) {
+            String mappedSeat = mapSeatIndexToLabel(seat);
+            if (!availableSeats.contains(mappedSeat)) {
+                throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
+            }
         }
 
         // Create a new RideBooking (works for both first-time and additional seat requests)
