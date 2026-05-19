@@ -375,7 +375,7 @@ public class OrderService {
     }
 
     @Transactional
-    public Order rejectBooking(Long bookingId) {
+    public Order rejectBooking(Long bookingId, String seat) {
         User driver = securityUtils.getCurrentUser();
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can reject bookings");
@@ -389,20 +389,40 @@ public class OrderService {
             throw new UnauthorizedAccessException("You are not the driver of this ride offer");
         }
 
-        // If the booking was previously ACCEPTED, we must free the seats!
-        if ("ACCEPTED".equals(booking.getStatus())) {
-            if (order.getAvailableSeats() != null) {
-                for (String seat : booking.getSelectedSeats()) {
-                    String mappedSeat = mapSeatIndexToLabel(seat);
-                    if (!order.getAvailableSeats().contains(mappedSeat)) {
-                        order.getAvailableSeats().add(mappedSeat);
+        if (seat != null && !seat.isEmpty()) {
+            if (booking.getSelectedSeats().contains(seat)) {
+                booking.getSelectedSeats().remove(seat);
+                
+                // If the booking was previously ACCEPTED, we must free the seat
+                if ("ACCEPTED".equals(booking.getStatus())) {
+                    if (order.getAvailableSeats() != null) {
+                        String mappedSeat = mapSeatIndexToLabel(seat);
+                        if (!order.getAvailableSeats().contains(mappedSeat)) {
+                            order.getAvailableSeats().add(mappedSeat);
+                        }
+                    }
+                }
+                
+                if (booking.getSelectedSeats().isEmpty()) {
+                    booking.setStatus("REJECTED");
+                }
+                rideBookingRepository.save(booking);
+            }
+        } else {
+            // If the booking was previously ACCEPTED, we must free the seats!
+            if ("ACCEPTED".equals(booking.getStatus())) {
+                if (order.getAvailableSeats() != null) {
+                    for (String s : booking.getSelectedSeats()) {
+                        String mappedSeat = mapSeatIndexToLabel(s);
+                        if (!order.getAvailableSeats().contains(mappedSeat)) {
+                            order.getAvailableSeats().add(mappedSeat);
+                        }
                     }
                 }
             }
+            booking.setStatus("REJECTED");
+            rideBookingRepository.save(booking);
         }
-
-        booking.setStatus("REJECTED");
-        rideBookingRepository.save(booking);
 
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -410,7 +430,7 @@ public class OrderService {
     }
 
     @Transactional
-    public void cancelBooking(Long bookingId) {
+    public Order cancelBooking(Long bookingId, String seat) {
         User passenger = securityUtils.getCurrentUser();
         if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
             throw new UnauthorizedAccessException("Only passengers can cancel bookings");
@@ -425,21 +445,41 @@ public class OrderService {
 
         Order order = booking.getOrder();
 
-        // If the booking was previously ACCEPTED, we must free the seats
-        if ("ACCEPTED".equals(booking.getStatus()) && order.getAvailableSeats() != null) {
-            for (String seat : booking.getSelectedSeats()) {
-                String mappedSeat = mapSeatIndexToLabel(seat);
-                if (!order.getAvailableSeats().contains(mappedSeat)) {
-                    order.getAvailableSeats().add(mappedSeat);
+        if (seat != null && !seat.isEmpty()) {
+            if (booking.getSelectedSeats().contains(seat)) {
+                booking.getSelectedSeats().remove(seat);
+                
+                if ("ACCEPTED".equals(booking.getStatus()) && order.getAvailableSeats() != null) {
+                    String mappedSeat = mapSeatIndexToLabel(seat);
+                    if (!order.getAvailableSeats().contains(mappedSeat)) {
+                        order.getAvailableSeats().add(mappedSeat);
+                    }
+                }
+                
+                if (booking.getSelectedSeats().isEmpty()) {
+                    order.getBookings().remove(booking);
+                    rideBookingRepository.delete(booking);
+                } else {
+                    rideBookingRepository.save(booking);
                 }
             }
+        } else {
+            // If the booking was previously ACCEPTED, we must free the seats
+            if ("ACCEPTED".equals(booking.getStatus()) && order.getAvailableSeats() != null) {
+                for (String s : booking.getSelectedSeats()) {
+                    String mappedSeat = mapSeatIndexToLabel(s);
+                    if (!order.getAvailableSeats().contains(mappedSeat)) {
+                        order.getAvailableSeats().add(mappedSeat);
+                    }
+                }
+            }
+            order.getBookings().remove(booking);
+            rideBookingRepository.delete(booking);
         }
-
-        order.getBookings().remove(booking);
-        rideBookingRepository.delete(booking);
 
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
     }
 
     private String mapSeatIndexToLabel(String index) {

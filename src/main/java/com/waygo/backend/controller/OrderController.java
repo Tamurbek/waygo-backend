@@ -109,15 +109,19 @@ public class OrderController {
 
     @PostMapping("/bookings/{bookingId}/reject")
     @Operation(summary = "Driver rejects a passenger seat booking")
-    public ResponseEntity<ApiResponse<Order>> rejectBooking(@PathVariable("bookingId") Long bookingId) {
-        Order order = orderService.rejectBooking(bookingId);
+    public ResponseEntity<ApiResponse<Order>> rejectBooking(
+            @PathVariable("bookingId") Long bookingId,
+            @RequestParam(value = "seat", required = false) String seat) {
+        Order order = orderService.rejectBooking(bookingId, seat);
         return ResponseEntity.ok(ApiResponse.success(order, "Booking rejected successfully"));
     }
 
     @DeleteMapping("/bookings/{bookingId}")
     @Operation(summary = "Passenger cancels their seat booking")
-    public ResponseEntity<ApiResponse<Void>> cancelBooking(@PathVariable("bookingId") Long bookingId) {
-        orderService.cancelBooking(bookingId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Booking cancelled successfully"));
+    public ResponseEntity<ApiResponse<Order>> cancelBooking(
+            @PathVariable("bookingId") Long bookingId,
+            @RequestParam(value = "seat", required = false) String seat) {
+        Order order = orderService.cancelBooking(bookingId, seat);
+        return ResponseEntity.ok(ApiResponse.success(order, "Booking cancelled successfully"));
     }
 }
