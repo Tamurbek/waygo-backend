@@ -313,12 +313,22 @@ public class OrderService {
             throw new IllegalStateException("Siz allaqachon ushbu buyurtmaga so'rov yuborgansiz. Avvalgi so'rovingiz ko'rib chiqilguncha kuting.");
         }
 
+        String pickup = "";
+        List<String> seatsToBook = new java.util.ArrayList<>();
+        for (String seat : selectedSeats) {
+            if (seat != null && seat.startsWith("PICKUP:")) {
+                pickup = seat.substring(7);
+            } else {
+                seatsToBook.add(seat);
+            }
+        }
+
         // Validate: all requested seats must be in the order's available seats list
         List<String> availableSeats = order.getAvailableSeats();
         if (availableSeats == null) {
             throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
         }
-        for (String seat : selectedSeats) {
+        for (String seat : seatsToBook) {
             String mappedSeat = mapSeatIndexToLabel(seat);
             if (!availableSeats.contains(mappedSeat)) {
                 throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
@@ -329,7 +339,8 @@ public class OrderService {
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
                 .passenger(passenger)
-                .selectedSeats(selectedSeats)
+                .selectedSeats(seatsToBook)
+                .pickupAddress(pickup)
                 .status("PENDING")
                 .build();
 

@@ -35,6 +35,8 @@ public class RideBooking {
 
     private String status; // "PENDING", "ACCEPTED", "REJECTED"
 
+    private String pickupAddress;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }
