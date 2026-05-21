@@ -306,13 +306,6 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        // Check if passenger already has a PENDING booking on this order — block duplicates
-        java.util.Optional<com.waygo.backend.entity.RideBooking> pendingBooking =
-                rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "PENDING");
-        if (pendingBooking.isPresent()) {
-            throw new IllegalStateException("Siz allaqachon ushbu buyurtmaga so'rov yuborgansiz. Avvalgi so'rovingiz ko'rib chiqilguncha kuting.");
-        }
-
         String pickup = "";
         List<String> seatsToBook = new java.util.ArrayList<>();
         for (String seat : selectedSeats) {
@@ -321,6 +314,53 @@ public class OrderService {
             } else {
                 seatsToBook.add(seat);
             }
+        }
+
+        // Check if passenger already has active/pending bookings on this order
+        List<com.waygo.backend.entity.RideBooking> existingBookings = rideBookingRepository.findByOrderIdAndPassengerId(orderId, passenger.getId());
+        if (!existingBookings.isEmpty()) {
+            boolean hasNewSeats = false;
+            java.util.Set<String> currentlyBookedSeats = new java.util.HashSet<>();
+            for (com.waygo.backend.entity.RideBooking b : existingBookings) {
+                if (!"REJECTED".equals(b.getStatus())) {
+                    currentlyBookedSeats.addAll(b.getSelectedSeats());
+                }
+            }
+
+            for (String seat : seatsToBook) {
+                if (!currentlyBookedSeats.contains(seat)) {
+                    hasNewSeats = true;
+                    break;
+                }
+            }
+
+            // If no new seats are requested and we have a pickup address, update existing non-rejected bookings
+            if (!hasNewSeats && !pickup.isEmpty()) {
+                for (com.waygo.backend.entity.RideBooking b : existingBookings) {
+                    if (!"REJECTED".equals(b.getStatus())) {
+                        b.setPickupAddress(pickup);
+                        rideBookingRepository.save(b);
+                    }
+                }
+                Order savedOrder = orderRepository.save(order);
+                notificationService.notifyOrderStatusUpdate(savedOrder);
+                return savedOrder;
+            }
+        }
+
+        // Check if passenger already has a PENDING booking on this order — block duplicates unless we're just updating pickupAddress
+        java.util.Optional<com.waygo.backend.entity.RideBooking> pendingBooking =
+                rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "PENDING");
+        if (pendingBooking.isPresent()) {
+            if (!pickup.isEmpty()) {
+                com.waygo.backend.entity.RideBooking b = pendingBooking.get();
+                b.setPickupAddress(pickup);
+                rideBookingRepository.save(b);
+                Order savedOrder = orderRepository.save(order);
+                notificationService.notifyOrderStatusUpdate(savedOrder);
+                return savedOrder;
+            }
+            throw new IllegalStateException("Siz allaqachon ushbu buyurtmaga so'rov yuborgansiz. Avvalgi so'rovingiz ko'rib chiqilguncha kuting.");
         }
 
         // Validate: all requested seats must be in the order's available seats list
