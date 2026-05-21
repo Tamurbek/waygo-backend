@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    @Query("SELECT o FROM Order o WHERE o.passenger.id = :passengerId OR o.id IN (SELECT b.order.id FROM RideBooking b WHERE b.passenger.id = :passengerId) ORDER BY o.createdAt DESC")
+    @Query("SELECT o FROM Order o WHERE o.passenger.id = :passengerId OR o.id IN (SELECT b.order.id FROM RideBooking b WHERE b.passenger.id = :passengerId AND b.status != 'REJECTED') ORDER BY o.createdAt DESC")
     List<Order> findByPassengerIdOrderByCreatedAtDesc(@Param("passengerId") Long passengerId);
 
     List<Order> findByDriverIdOrderByCreatedAtDesc(Long driverId);

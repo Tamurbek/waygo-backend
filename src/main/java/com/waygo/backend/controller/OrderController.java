@@ -43,6 +43,29 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Order accepted by driver"));
     }
 
+    @PostMapping("/{orderId}/confirm-driver")
+    @Operation(summary = "Passenger confirms the driver who accepted")
+    public ResponseEntity<ApiResponse<Order>> confirmDriver(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.confirmDriver(orderId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Driver confirmed successfully"));
+    }
+
+    @PostMapping("/{orderId}/reject-driver")
+    @Operation(summary = "Passenger rejects the driver who accepted")
+    public ResponseEntity<ApiResponse<Order>> rejectDriver(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.rejectDriver(orderId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Driver rejected successfully"));
+    }
+
+    @PostMapping("/{orderId}/assign-seats")
+    @Operation(summary = "Driver assigns passenger seats in the vehicle saloon")
+    public ResponseEntity<ApiResponse<Order>> assignSeats(
+            @PathVariable("orderId") Long orderId,
+            @RequestBody java.util.List<String> selectedSeats) {
+        Order order = orderService.assignSeats(orderId, selectedSeats);
+        return ResponseEntity.ok(ApiResponse.success(order, "Seats assigned successfully"));
+    }
+
     @PostMapping("/{orderId}/join")
     @Operation(summary = "Passenger joins a ride offer")
     public ResponseEntity<ApiResponse<Order>> join(@PathVariable("orderId") Long orderId) {

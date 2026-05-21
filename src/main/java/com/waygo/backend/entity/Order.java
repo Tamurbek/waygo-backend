@@ -63,6 +63,9 @@ public class Order {
     private Boolean hasTrailer;
 
     @Builder.Default
+    private Boolean passengerConfirmed = false;
+
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum OrderStatus {

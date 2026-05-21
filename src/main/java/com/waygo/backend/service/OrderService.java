@@ -82,7 +82,124 @@ public class OrderService {
 
         order.setDriver(driver);
         order.setStatus(Order.OrderStatus.ACCEPTED);
+        order.setPassengerConfirmed(false);
+        order.setAvailableSeats(new java.util.ArrayList<>(java.util.Arrays.asList("FRONT", "BACK_LEFT", "BACK_CENTER", "BACK_RIGHT")));
         
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order confirmDriver(Long orderId) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+            throw new UnauthorizedAccessException("Only passengers can confirm driver offers");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getPassenger() == null || !order.getPassenger().getId().equals(passenger.getId())) {
+            throw new UnauthorizedAccessException("You can only confirm driver offers for your own requests");
+        }
+
+        if (order.getStatus() != Order.OrderStatus.ACCEPTED || order.getDriver() == null) {
+            throw new IllegalStateException("Order is not in a state to be confirmed");
+        }
+
+        order.setPassengerConfirmed(true);
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order rejectDriver(Long orderId) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+            throw new UnauthorizedAccessException("Only passengers can reject driver offers");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getPassenger() == null || !order.getPassenger().getId().equals(passenger.getId())) {
+            throw new UnauthorizedAccessException("You can only reject driver offers for your own requests");
+        }
+
+        if (order.getStatus() != Order.OrderStatus.ACCEPTED || order.getDriver() == null) {
+            throw new IllegalStateException("Order is not in a state to be rejected");
+        }
+
+        order.setDriver(null);
+        order.setStatus(Order.OrderStatus.PENDING);
+        order.setPassengerConfirmed(false);
+        if (order.getAvailableSeats() != null) {
+            order.getAvailableSeats().clear();
+        }
+
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        notificationService.notifyNewOrder(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order assignSeats(Long orderId, List<String> selectedSeats) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can assign seats");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new UnauthorizedAccessException("You are not the driver of this order");
+        }
+
+        if (!Boolean.TRUE.equals(order.getPassengerConfirmed())) {
+            throw new IllegalStateException("Passenger has not confirmed the driver yet");
+        }
+
+        if (selectedSeats == null || selectedSeats.isEmpty()) {
+            throw new IllegalArgumentException("Seats must be selected");
+        }
+
+        if (selectedSeats.size() != order.getPassengerCount()) {
+            throw new IllegalArgumentException("Selected seats count must match passenger count: " + order.getPassengerCount());
+        }
+
+        List<String> available = order.getAvailableSeats();
+        if (available == null) {
+            throw new IllegalStateException("No available seats in this order");
+        }
+
+        List<String> mappedSeats = new java.util.ArrayList<>();
+        for (String seat : selectedSeats) {
+            String mapped = mapSeatIndexToLabel(seat);
+            if (!available.contains(mapped)) {
+                throw new IllegalStateException("Seat is not available: " + mapped);
+            }
+            mappedSeats.add(mapped);
+        }
+
+        com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
+                .order(order)
+                .passenger(order.getPassenger())
+                .selectedSeats(selectedSeats)
+                .status("ACCEPTED")
+                .pickupAddress(order.getFromAddress())
+                .build();
+
+        rideBookingRepository.save(booking);
+        order.getBookings().add(booking);
+
+        for (String mapped : mappedSeats) {
+            available.remove(mapped);
+        }
+
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
