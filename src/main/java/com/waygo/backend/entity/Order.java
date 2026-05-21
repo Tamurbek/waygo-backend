@@ -65,6 +65,9 @@ public class Order {
     @Builder.Default
     private Boolean passengerConfirmed = false;
 
+    private Long lockedByDriverId;
+    private LocalDateTime lockExpirationTime;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 

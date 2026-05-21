@@ -36,6 +36,20 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Order updated successfully"));
     }
 
+    @PostMapping("/{orderId}/lock")
+    @Operation(summary = "Driver locks a passenger's order for exclusive viewing")
+    public ResponseEntity<ApiResponse<Order>> lock(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.lockOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Order locked successfully"));
+    }
+
+    @PostMapping("/{orderId}/unlock")
+    @Operation(summary = "Driver unlocks a passenger's order")
+    public ResponseEntity<ApiResponse<Order>> unlock(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.unlockOrder(orderId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Order unlocked successfully"));
+    }
+
     @PostMapping("/{orderId}/accept")
     @Operation(summary = "Driver accepts an order")
     public ResponseEntity<ApiResponse<Order>> accept(@PathVariable("orderId") Long orderId) {

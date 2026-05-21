@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -65,6 +66,56 @@ public class OrderService {
     }
 
     @Transactional
+    public Order lockOrder(Long orderId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can lock orders");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new IllegalStateException("Faqat pending holatidagi buyurtmalarni band qilish mumkin");
+        }
+
+        if (order.getLockedByDriverId() != null && !order.getLockedByDriverId().equals(driver.getId())) {
+            if (order.getLockExpirationTime() != null && order.getLockExpirationTime().isAfter(LocalDateTime.now())) {
+                throw new IllegalStateException("Buyurtma ayni paytda boshqa haydovchi tomonidan ko'rib chiqilmoqda");
+            }
+        }
+
+        order.setLockedByDriverId(driver.getId());
+        order.setLockExpirationTime(LocalDateTime.now().plusSeconds(30));
+
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order unlockOrder(Long orderId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can unlock orders");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getLockedByDriverId() != null && order.getLockedByDriverId().equals(driver.getId())) {
+            order.setLockedByDriverId(null);
+            order.setLockExpirationTime(null);
+            Order savedOrder = orderRepository.save(order);
+            notificationService.notifyOrderStatusUpdate(savedOrder);
+            notificationService.notifyNewOrder(savedOrder); // Notify as new so it reappears immediately
+            return savedOrder;
+        }
+
+        return order;
+    }
+
+    @Transactional
     public Order acceptOrder(Long orderId) {
         User driver = securityUtils.getCurrentUser();
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
@@ -83,6 +134,8 @@ public class OrderService {
         order.setDriver(driver);
         order.setStatus(Order.OrderStatus.ACCEPTED);
         order.setPassengerConfirmed(false);
+        order.setLockedByDriverId(null);
+        order.setLockExpirationTime(null);
         order.setAvailableSeats(new java.util.ArrayList<>(java.util.Arrays.asList("FRONT", "BACK_LEFT", "BACK_CENTER", "BACK_RIGHT")));
         
         Order savedOrder = orderRepository.save(order);
@@ -387,7 +440,16 @@ public class OrderService {
         
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
             // Drivers see passenger requests
-            orders = orderRepository.findByStatusAndDriverIsNull(Order.OrderStatus.PENDING);
+            List<Order> rawOrders = orderRepository.findByStatusAndDriverIsNull(Order.OrderStatus.PENDING);
+            orders = new java.util.ArrayList<>();
+            for (Order o : rawOrders) {
+                if (o.getLockedByDriverId() != null && !o.getLockedByDriverId().equals(currentUser.getId())) {
+                    if (o.getLockExpirationTime() != null && o.getLockExpirationTime().isAfter(LocalDateTime.now())) {
+                        continue; // Locked by another driver! Skip.
+                    }
+                }
+                orders.add(o);
+            }
         } else {
             // Passengers see driver ride offers (and started ones where they are accepted)
             if (currentUser != null) {
