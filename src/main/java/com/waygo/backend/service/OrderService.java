@@ -435,6 +435,10 @@ public class OrderService {
     }
 
     public List<Order> getPendingOrders() {
+        return getPendingOrders(null);
+    }
+
+    public List<Order> getPendingOrders(String region) {
         User currentUser = securityUtils.getCurrentUser();
         List<Order> orders;
         
@@ -471,6 +475,18 @@ public class OrderService {
                 }
             }
         }
+
+        // Filter by region if provided
+        if (region != null && !region.trim().isEmpty() && !"Barchasi".equalsIgnoreCase(region.trim())) {
+            List<Order> filtered = new java.util.ArrayList<>();
+            for (Order order : orders) {
+                if (order.getFromAddress() != null && 
+                    order.getFromAddress().toLowerCase().contains(region.toLowerCase().trim())) {
+                    filtered.add(order);
+                }
+            }
+            return filtered;
+        }
         
         return orders;
     }
@@ -485,14 +501,20 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
+        String notes = "";
         String pickup = "";
         List<String> seatsToBook = new java.util.ArrayList<>();
         for (String seat : selectedSeats) {
             if (seat != null && seat.startsWith("PICKUP:")) {
                 pickup = seat.substring(7);
+            } else if (seat != null && seat.startsWith("NOTES:")) {
+                notes = seat.substring(6);
             } else {
                 seatsToBook.add(seat);
             }
+        }
+        if (pickup.isEmpty() && order.getFromAddress() != null) {
+            pickup = order.getFromAddress();
         }
 
         // Check if passenger already has active/pending bookings on this order
@@ -518,6 +540,9 @@ public class OrderService {
                 for (com.waygo.backend.entity.RideBooking b : existingBookings) {
                     if (!"REJECTED".equals(b.getStatus())) {
                         b.setPickupAddress(pickup);
+                        if (!notes.isEmpty()) {
+                            b.setNotes(notes);
+                        }
                         rideBookingRepository.save(b);
                     }
                 }
@@ -534,6 +559,9 @@ public class OrderService {
             if (!pickup.isEmpty()) {
                 com.waygo.backend.entity.RideBooking b = pendingBooking.get();
                 b.setPickupAddress(pickup);
+                if (!notes.isEmpty()) {
+                    b.setNotes(notes);
+                }
                 rideBookingRepository.save(b);
                 Order savedOrder = orderRepository.save(order);
                 notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -560,6 +588,7 @@ public class OrderService {
                 .passenger(passenger)
                 .selectedSeats(seatsToBook)
                 .pickupAddress(pickup)
+                .notes(notes)
                 .status("PENDING")
                 .build();
 

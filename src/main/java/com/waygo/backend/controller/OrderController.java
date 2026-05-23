@@ -106,8 +106,8 @@ public class OrderController {
 
     @GetMapping("/pending")
     @Operation(summary = "Get list of orders waiting for a driver")
-    public ResponseEntity<ApiResponse<List<Order>>> getPending() {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getPendingOrders(), "Pending orders retrieved"));
+    public ResponseEntity<ApiResponse<List<Order>>> getPending(@RequestParam(value = "region", required = false) String region) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getPendingOrders(region), "Pending orders retrieved"));
     }
 
     @GetMapping("/history/passenger/{userId}")

@@ -37,6 +37,9 @@ public class RideBooking {
 
     private String pickupAddress;
 
+    private String notes;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }
+
