@@ -190,7 +190,7 @@ class OrderServiceTest {
         when(orderRepository.findById(10L)).thenReturn(Optional.of(order));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Order accepted = orderService.acceptOrder(10L);
+        Order accepted = orderService.acceptOrder(10L, null);
 
         assertNotNull(accepted);
         assertEquals(driver, accepted.getDriver());

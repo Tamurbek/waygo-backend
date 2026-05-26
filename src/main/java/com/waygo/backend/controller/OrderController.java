@@ -51,9 +51,11 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/accept")
-    @Operation(summary = "Driver accepts an order")
-    public ResponseEntity<ApiResponse<Order>> accept(@PathVariable("orderId") Long orderId) {
-        Order order = orderService.acceptOrder(orderId);
+    @Operation(summary = "Driver accepts an order with offered available seats")
+    public ResponseEntity<ApiResponse<Order>> accept(
+            @PathVariable("orderId") Long orderId,
+            @RequestParam(required = false) List<String> availableSeats) {
+        Order order = orderService.acceptOrder(orderId, availableSeats);
         return ResponseEntity.ok(ApiResponse.success(order, "Order accepted by driver"));
     }
 

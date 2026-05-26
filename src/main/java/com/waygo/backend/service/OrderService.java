@@ -116,7 +116,7 @@ public class OrderService {
     }
 
     @Transactional
-    public Order acceptOrder(Long orderId) {
+    public Order acceptOrder(Long orderId, java.util.List<String> availableSeats) {
         User driver = securityUtils.getCurrentUser();
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can accept orders");
@@ -136,7 +136,14 @@ public class OrderService {
         order.setPassengerConfirmed(false);
         order.setLockedByDriverId(null);
         order.setLockExpirationTime(null);
-        order.setAvailableSeats(new java.util.ArrayList<>(java.util.Arrays.asList("FRONT", "BACK_LEFT", "BACK_CENTER", "BACK_RIGHT")));
+
+        // Haydovchi taklif qilgan bo'sh o'rindiqlar
+        if (availableSeats != null && !availableSeats.isEmpty()) {
+            order.setAvailableSeats(new java.util.ArrayList<>(availableSeats));
+        } else {
+            // Agar seats tanlanmagan bo'lsa, barcha 4 ta o'rindiqni ko'rsatamiz
+            order.setAvailableSeats(new java.util.ArrayList<>(java.util.Arrays.asList("FRONT", "BACK_LEFT", "BACK_CENTER", "BACK_RIGHT")));
+        }
         
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -443,6 +450,25 @@ public class OrderService {
         List<Order> orders;
         
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
+            // Find driver's active ride offers (announcements)
+            List<Order> driverOrders = orderRepository.findByDriverIdOrderByCreatedAtDesc(currentUser.getId());
+            Order activeOffer = null;
+            if (driverOrders != null) {
+                for (Order o : driverOrders) {
+                    if (o.getPassenger() == null && o.getDriver() != null && 
+                        (o.getStatus() == Order.OrderStatus.PENDING || o.getStatus() == Order.OrderStatus.ACCEPTED || o.getStatus() == Order.OrderStatus.STARTED)) {
+                        activeOffer = o;
+                        break;
+                    }
+                }
+            }
+
+            // Determine empty seats count
+            int emptySeats = 4;
+            if (activeOffer != null) {
+                emptySeats = activeOffer.getAvailableSeats() != null ? activeOffer.getAvailableSeats().size() : 0;
+            }
+
             // Drivers see passenger requests
             List<Order> rawOrders = orderRepository.findByStatusAndDriverIsNull(Order.OrderStatus.PENDING);
             orders = new java.util.ArrayList<>();
@@ -452,7 +478,11 @@ public class OrderService {
                         continue; // Locked by another driver! Skip.
                     }
                 }
-                orders.add(o);
+                
+                int requestedCount = o.getPassengerCount() != null ? o.getPassengerCount() : 1;
+                if (requestedCount <= emptySeats) {
+                    orders.add(o);
+                }
             }
         } else {
             // Passengers see driver ride offers (and started ones where they are accepted)
