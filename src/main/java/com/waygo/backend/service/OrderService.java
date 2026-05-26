@@ -3,6 +3,7 @@ package com.waygo.backend.service;
 import com.waygo.backend.dto.order.OrderCreateDTO;
 import com.waygo.backend.entity.Order;
 import com.waygo.backend.entity.User;
+import com.waygo.backend.entity.DriverOffer;
 import com.waygo.backend.exception.ResourceNotFoundException;
 import com.waygo.backend.exception.UnauthorizedAccessException;
 import com.waygo.backend.repository.DriverProfileRepository;
@@ -117,6 +118,11 @@ public class OrderService {
 
     @Transactional
     public Order acceptOrder(Long orderId, java.util.List<String> availableSeats) {
+        return acceptOrder(orderId, availableSeats, null);
+    }
+
+    @Transactional
+    public Order acceptOrder(Long orderId, java.util.List<String> availableSeats, java.math.BigDecimal pricePerPerson) {
         User driver = securityUtils.getCurrentUser();
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can accept orders");
@@ -125,26 +131,68 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        if (order.getStatus() != Order.OrderStatus.PENDING || order.getDriver() != null) {
-             if (order.getDriver() != null && order.getPassenger() != null) {
-                 throw new IllegalStateException("Order is no longer available for acceptance");
-             }
+        if (order.getPassenger() == null) {
+            throw new IllegalStateException("This is not a passenger request order");
         }
 
-        order.setDriver(driver);
-        order.setStatus(Order.OrderStatus.ACCEPTED);
-        order.setPassengerConfirmed(false);
-        order.setLockedByDriverId(null);
-        order.setLockExpirationTime(null);
-
-        // Haydovchi taklif qilgan bo'sh o'rindiqlar
-        if (availableSeats != null && !availableSeats.isEmpty()) {
-            order.setAvailableSeats(new java.util.ArrayList<>(availableSeats));
-        } else {
-            // Agar seats tanlanmagan bo'lsa, barcha 4 ta o'rindiqni ko'rsatamiz
-            order.setAvailableSeats(new java.util.ArrayList<>(java.util.Arrays.asList("FRONT", "BACK_LEFT", "BACK_CENTER", "BACK_RIGHT")));
+        if (order.getStatus() != Order.OrderStatus.PENDING) {
+            throw new IllegalStateException("Order is no longer pending");
         }
+
+        // Find if this driver already made an offer on this order
+        DriverOffer offer = order.getDriverOffers().stream()
+                .filter(o -> o.getDriver().getId().equals(driver.getId()))
+                .findFirst()
+                .orElse(null);
+
+        if (offer == null) {
+            offer = new DriverOffer();
+            offer.setOrder(order);
+            offer.setDriver(driver);
+            order.getDriverOffers().add(offer);
+        }
+
+        offer.setStatus("PENDING");
         
+        // Custom price offered by driver
+        if (pricePerPerson != null) {
+            offer.setPricePerPerson(pricePerPerson);
+        } else {
+            offer.setPricePerPerson(order.getPrice());
+        }
+
+        // Auto-calculate available seats based on driver's other active/accepted orders on the same route and departure date
+        java.util.List<String> calculatedAvailableSeats = new java.util.ArrayList<>(java.util.Arrays.asList("FRONT", "BACK_LEFT", "BACK_CENTER", "BACK_RIGHT"));
+        if (order.getDepartureDate() != null) {
+            java.util.List<Order> otherDriverOrders = orderRepository.findByDriverIdOrderByCreatedAtDesc(driver.getId());
+            for (Order otherOrder : otherDriverOrders) {
+                if (otherOrder.getStatus() != Order.OrderStatus.CANCELLED && 
+                    otherOrder.getStatus() != Order.OrderStatus.COMPLETED && 
+                    order.getDepartureDate().equals(otherOrder.getDepartureDate()) &&
+                    (order.getFromAddress() == null || otherOrder.getFromAddress() == null ||
+                     order.getFromAddress().substring(0, Math.min(order.getFromAddress().length(), 4))
+                     .equalsIgnoreCase(otherOrder.getFromAddress().substring(0, Math.min(otherOrder.getFromAddress().length(), 4))))) {
+                    
+                    // Exclude seats that are already booked in this overlapping trip
+                    for (com.waygo.backend.entity.RideBooking booking : otherOrder.getBookings()) {
+                        if ("ACCEPTED".equalsIgnoreCase(booking.getStatus())) {
+                            for (String seatNum : booking.getSelectedSeats()) {
+                                String seatLabel = seatNum.equals("1") ? "FRONT"
+                                        : seatNum.equals("2") ? "BACK_LEFT"
+                                        : seatNum.equals("3") ? "BACK_CENTER"
+                                        : seatNum.equals("4") ? "BACK_RIGHT"
+                                        : "";
+                                if (!seatLabel.isEmpty()) {
+                                    calculatedAvailableSeats.remove(seatLabel);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        offer.setAvailableSeats(calculatedAvailableSeats);
+
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
@@ -204,6 +252,199 @@ public class OrderService {
         notificationService.notifyNewOrder(savedOrder);
         return savedOrder;
     }
+
+    @Transactional
+    public Order confirmDriverOffer(Long orderId, Long offerId, List<String> selectedSeats) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+            throw new UnauthorizedAccessException("Only passengers can confirm driver offers");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getPassenger() == null || !order.getPassenger().getId().equals(passenger.getId())) {
+            throw new UnauthorizedAccessException("You can only confirm driver offers for your own requests");
+        }
+
+        DriverOffer chosenOffer = order.getDriverOffers().stream()
+                .filter(o -> o.getId().equals(offerId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Driver offer not found with id: " + offerId));
+
+        if (!chosenOffer.getStatus().equals("PENDING")) {
+            throw new IllegalStateException("Offer is not in a state to be confirmed");
+        }
+
+        // Establish contract
+        order.setDriver(chosenOffer.getDriver());
+        order.setPrice(chosenOffer.getPricePerPerson());
+        order.setAvailableSeats(new java.util.ArrayList<>(chosenOffer.getAvailableSeats()));
+        order.setStatus(Order.OrderStatus.ACCEPTED);
+        order.setPassengerConfirmed(true);
+
+        // Mark the chosen offer as ACCEPTED and others as REJECTED
+        for (DriverOffer offer : order.getDriverOffers()) {
+            if (offer.getId().equals(offerId)) {
+                offer.setStatus("ACCEPTED");
+            } else {
+                offer.setStatus("REJECTED");
+            }
+        }
+
+        // Create a RideBooking to reserve the seats for this passenger
+        if (selectedSeats == null || selectedSeats.isEmpty()) {
+            throw new IllegalArgumentException("You must select which seats to book");
+        }
+        
+        com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
+                .order(order)
+                .passenger(passenger)
+                .selectedSeats(new java.util.ArrayList<>(selectedSeats))
+                .status("ACCEPTED")
+                .createdAt(LocalDateTime.now())
+                .build();
+                
+        order.getBookings().add(booking);
+
+        // Update available seats: remove passenger selected seats from saloon
+        for (String seatNum : selectedSeats) {
+            String seatLabel = seatNum.equals("1") ? "FRONT"
+                    : seatNum.equals("2") ? "BACK_LEFT"
+                    : seatNum.equals("3") ? "BACK_CENTER"
+                    : seatNum.equals("4") ? "BACK_RIGHT"
+                    : "";
+            if (!seatLabel.isEmpty()) {
+                order.getAvailableSeats().remove(seatLabel);
+            }
+        }
+
+        Order savedOrder = orderRepository.save(order);
+
+        // --- Auto-create or Update driver's ride announcement ---
+        try {
+            User driver = chosenOffer.getDriver();
+            Order activeAnnouncement = findActiveAnnouncementForRoute(
+                driver.getId(),
+                order.getDepartureDate(),
+                order.getFromAddress(),
+                order.getToAddress()
+            );
+
+            if (activeAnnouncement == null) {
+                // Auto-create driver announcement (e'lon)
+                Order.OrderBuilder builder = Order.builder()
+                    .driver(driver)
+                    .passenger(null) // driver announcement
+                    .fromAddress(order.getFromAddress())
+                    .toAddress(order.getToAddress())
+                    .fromLat(order.getFromLat())
+                    .fromLon(order.getFromLon())
+                    .toLat(order.getToLat())
+                    .toLon(order.getToLon())
+                    .departureDate(order.getDepartureDate())
+                    .departureTime(order.getDepartureTime())
+                    .price(chosenOffer.getPricePerPerson())
+                    .baggageDescription(order.getBaggageDescription())
+                    .hasAirConditioning(order.getHasAirConditioning())
+                    .hasBaggage(order.getHasBaggage())
+                    .hasChildSeat(order.getHasChildSeat())
+                    .hasTrailer(order.getHasTrailer())
+                    .notes("Yo'lovchi shartnomasi asosida avtomatik yaratildi")
+                    .status(Order.OrderStatus.PENDING);
+
+                // Initialize available seats to the driver's offered seats
+                builder.availableSeats(new java.util.ArrayList<>(chosenOffer.getAvailableSeats()));
+                activeAnnouncement = builder.build();
+                activeAnnouncement = orderRepository.save(activeAnnouncement);
+            }
+
+            // Create RideBooking in this active driver announcement
+            com.waygo.backend.entity.RideBooking autoBooking = com.waygo.backend.entity.RideBooking.builder()
+                    .order(activeAnnouncement)
+                    .passenger(passenger)
+                    .selectedSeats(new java.util.ArrayList<>(selectedSeats))
+                    .status("ACCEPTED")
+                    .pickupAddress(order.getFromAddress())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            rideBookingRepository.save(autoBooking);
+            activeAnnouncement.getBookings().add(autoBooking);
+
+            // Remove seats from announcement's availableSeats
+            if (activeAnnouncement.getAvailableSeats() != null) {
+                for (String seatNum : selectedSeats) {
+                    String seatLabel = seatNum.equals("1") ? "FRONT"
+                            : seatNum.equals("2") ? "BACK_LEFT"
+                            : seatNum.equals("3") ? "BACK_CENTER"
+                            : seatNum.equals("4") ? "BACK_RIGHT"
+                            : "";
+                    if (!seatLabel.isEmpty()) {
+                        activeAnnouncement.getAvailableSeats().remove(seatLabel);
+                    }
+                }
+            }
+
+            orderRepository.save(activeAnnouncement);
+            notificationService.notifyNewOrder(activeAnnouncement);
+            notificationService.notifyOrderStatusUpdate(activeAnnouncement);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order rejectDriverOffer(Long orderId, Long offerId) {
+        User passenger = securityUtils.getCurrentUser();
+        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+            throw new UnauthorizedAccessException("Only passengers can reject driver offers");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getPassenger() == null || !order.getPassenger().getId().equals(passenger.getId())) {
+            throw new UnauthorizedAccessException("You can only reject driver offers for your own requests");
+        }
+
+        DriverOffer chosenOffer = order.getDriverOffers().stream()
+                .filter(o -> o.getId().equals(offerId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Driver offer not found with id: " + offerId));
+
+        chosenOffer.setStatus("REJECTED");
+
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order cancelDriverOffer(Long orderId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can cancel their offers");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        DriverOffer offer = order.getDriverOffers().stream()
+                .filter(o -> o.getDriver().getId().equals(driver.getId()) && "PENDING".equalsIgnoreCase(o.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("No pending driver offer found for this driver"));
+
+        offer.setStatus("REJECTED");
+
+        Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
 
     @Transactional
     public Order assignSeats(Long orderId, List<String> selectedSeats) {
@@ -383,7 +624,22 @@ public class OrderService {
     }
 
     public List<Order> getDriverHistory(Long driverId) {
-        return orderRepository.findByDriverIdOrderByCreatedAtDesc(driverId);
+        // Get orders where this driver is assigned (both driver's own ride announcements
+        // AND passenger requests where driver's offer was accepted)
+        List<Order> byDriver = orderRepository.findByDriverIdOrderByCreatedAtDesc(driverId);
+        
+        // Also include passenger orders where this driver submitted an accepted offer
+        // (in case driver.id wasn't set correctly, fallback via driverOffers)
+        List<Order> byOffer = orderRepository.findByAcceptedOfferDriverId(driverId);
+        
+        // Merge and deduplicate by order ID
+        java.util.Map<Long, Order> merged = new java.util.LinkedHashMap<>();
+        for (Order o : byDriver) merged.put(o.getId(), o);
+        for (Order o : byOffer) merged.putIfAbsent(o.getId(), o);
+        
+        List<Order> result = new java.util.ArrayList<>(merged.values());
+        result.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        return result;
     }
 
     @Transactional
@@ -441,6 +697,43 @@ public class OrderService {
         return savedOrder;
     }
 
+    private Order findActiveAnnouncementForRoute(Long driverId, String departureDate, String fromAddress, String toAddress) {
+        if (departureDate == null || fromAddress == null || toAddress == null) {
+            return null;
+        }
+
+        List<Order> activeOrders = orderRepository.findByDriverIdOrderByCreatedAtDesc(driverId);
+        if (activeOrders == null) {
+            return null;
+        }
+        for (Order other : activeOrders) {
+            if (other.getPassenger() == null && // driver ride announcement
+                other.getStatus() != Order.OrderStatus.CANCELLED &&
+                other.getStatus() != Order.OrderStatus.COMPLETED &&
+                departureDate.equals(other.getDepartureDate())) {
+
+                // Compare routes
+                if (isRouteMatching(fromAddress, other.getFromAddress()) && 
+                    isRouteMatching(toAddress, other.getToAddress())) {
+                    return other;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean isRouteMatching(String addr1, String addr2) {
+        if (addr1 == null || addr2 == null) return false;
+        String clean1 = addr1.split(",")[0].trim().toLowerCase();
+        String clean2 = addr2.split(",")[0].trim().toLowerCase();
+        if (clean1.isEmpty() || clean2.isEmpty()) return false;
+        if (clean1.equals(clean2)) return true;
+
+        String prefix1 = clean1.substring(0, Math.min(clean1.length(), 4));
+        String prefix2 = clean2.substring(0, Math.min(clean2.length(), 4));
+        return prefix1.equalsIgnoreCase(prefix2);
+    }
+
     public List<Order> getPendingOrders() {
         return getPendingOrders(null);
     }
@@ -450,25 +743,6 @@ public class OrderService {
         List<Order> orders;
         
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
-            // Find driver's active ride offers (announcements)
-            List<Order> driverOrders = orderRepository.findByDriverIdOrderByCreatedAtDesc(currentUser.getId());
-            Order activeOffer = null;
-            if (driverOrders != null) {
-                for (Order o : driverOrders) {
-                    if (o.getPassenger() == null && o.getDriver() != null && 
-                        (o.getStatus() == Order.OrderStatus.PENDING || o.getStatus() == Order.OrderStatus.ACCEPTED || o.getStatus() == Order.OrderStatus.STARTED)) {
-                        activeOffer = o;
-                        break;
-                    }
-                }
-            }
-
-            // Determine empty seats count
-            int emptySeats = 4;
-            if (activeOffer != null) {
-                emptySeats = activeOffer.getAvailableSeats() != null ? activeOffer.getAvailableSeats().size() : 0;
-            }
-
             // Drivers see passenger requests
             List<Order> rawOrders = orderRepository.findByStatusAndDriverIsNull(Order.OrderStatus.PENDING);
             orders = new java.util.ArrayList<>();
@@ -477,6 +751,27 @@ public class OrderService {
                     if (o.getLockExpirationTime() != null && o.getLockExpirationTime().isAfter(LocalDateTime.now())) {
                         continue; // Locked by another driver! Skip.
                     }
+                }
+
+                // Filter out orders where the current driver has a non-PENDING offer (e.g. REJECTED)
+                boolean hasRejectedOffer = o.getDriverOffers().stream()
+                        .anyMatch(offer -> offer.getDriver().getId().equals(currentUser.getId()) && 
+                                           !"PENDING".equalsIgnoreCase(offer.getStatus()));
+                if (hasRejectedOffer) {
+                    continue; // Skip because driver's offer was rejected
+                }
+
+                // Find driver's active announcement on the same route and date
+                Order matchingAnnouncement = findActiveAnnouncementForRoute(
+                    currentUser.getId(),
+                    o.getDepartureDate(),
+                    o.getFromAddress(),
+                    o.getToAddress()
+                );
+
+                int emptySeats = 4;
+                if (matchingAnnouncement != null) {
+                    emptySeats = matchingAnnouncement.getAvailableSeats() != null ? matchingAnnouncement.getAvailableSeats().size() : 0;
                 }
                 
                 int requestedCount = o.getPassengerCount() != null ? o.getPassengerCount() : 1;

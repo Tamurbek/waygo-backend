@@ -51,27 +51,51 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/accept")
-    @Operation(summary = "Driver accepts an order with offered available seats")
+    @Operation(summary = "Driver accepts an order with offered available seats and custom price per person")
     public ResponseEntity<ApiResponse<Order>> accept(
             @PathVariable("orderId") Long orderId,
-            @RequestParam(required = false) List<String> availableSeats) {
-        Order order = orderService.acceptOrder(orderId, availableSeats);
-        return ResponseEntity.ok(ApiResponse.success(order, "Order accepted by driver"));
+            @RequestParam(required = false) List<String> availableSeats,
+            @RequestParam(required = false) java.math.BigDecimal pricePerPerson) {
+        Order order = orderService.acceptOrder(orderId, availableSeats, pricePerPerson);
+        return ResponseEntity.ok(ApiResponse.success(order, "Order accepted/bid placed by driver"));
     }
 
     @PostMapping("/{orderId}/confirm-driver")
-    @Operation(summary = "Passenger confirms the driver who accepted")
-    public ResponseEntity<ApiResponse<Order>> confirmDriver(@PathVariable("orderId") Long orderId) {
-        Order order = orderService.confirmDriver(orderId);
-        return ResponseEntity.ok(ApiResponse.success(order, "Driver confirmed successfully"));
+    @Operation(summary = "Passenger confirms a driver offer or default accepted driver")
+    public ResponseEntity<ApiResponse<Order>> confirmDriver(
+            @PathVariable("orderId") Long orderId,
+            @RequestParam(required = false) Long offerId,
+            @RequestBody(required = false) List<String> selectedSeats) {
+        if (offerId != null) {
+            Order order = orderService.confirmDriverOffer(orderId, offerId, selectedSeats);
+            return ResponseEntity.ok(ApiResponse.success(order, "Driver offer confirmed successfully"));
+        } else {
+            Order order = orderService.confirmDriver(orderId);
+            return ResponseEntity.ok(ApiResponse.success(order, "Driver confirmed successfully"));
+        }
     }
 
     @PostMapping("/{orderId}/reject-driver")
-    @Operation(summary = "Passenger rejects the driver who accepted")
-    public ResponseEntity<ApiResponse<Order>> rejectDriver(@PathVariable("orderId") Long orderId) {
-        Order order = orderService.rejectDriver(orderId);
-        return ResponseEntity.ok(ApiResponse.success(order, "Driver rejected successfully"));
+    @Operation(summary = "Passenger rejects a driver offer or default accepted driver")
+    public ResponseEntity<ApiResponse<Order>> rejectDriver(
+            @PathVariable("orderId") Long orderId,
+            @RequestParam(required = false) Long offerId) {
+        if (offerId != null) {
+            Order order = orderService.rejectDriverOffer(orderId, offerId);
+            return ResponseEntity.ok(ApiResponse.success(order, "Driver offer rejected successfully"));
+        } else {
+            Order order = orderService.rejectDriver(orderId);
+            return ResponseEntity.ok(ApiResponse.success(order, "Driver rejected successfully"));
+        }
     }
+
+    @PostMapping("/{orderId}/cancel-offer")
+    @Operation(summary = "Driver cancels/withdraws their pending offer")
+    public ResponseEntity<ApiResponse<Order>> cancelOffer(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.cancelDriverOffer(orderId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Driver offer cancelled successfully"));
+    }
+
 
     @PostMapping("/{orderId}/assign-seats")
     @Operation(summary = "Driver assigns passenger seats in the vehicle saloon")
@@ -121,7 +145,15 @@ public class OrderController {
     @GetMapping("/history/driver/{userId}")
     @Operation(summary = "Get trip history for a driver")
     public ResponseEntity<ApiResponse<List<Order>>> getDriverHistory(@PathVariable("userId") Long userId) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getDriverHistory(userId), "Driver history retrieved"));
+        List<Order> history = orderService.getDriverHistory(userId);
+        if (!history.isEmpty()) {
+            try {
+                System.out.println("DEBUG HISTORY ORDER JSON: " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(history.get(0)));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success(history, "Driver history retrieved"));
     }
 
     @GetMapping("/my-bookings")
