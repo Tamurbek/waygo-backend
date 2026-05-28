@@ -35,6 +35,9 @@ public class RideBooking {
 
     private String status; // "PENDING", "ACCEPTED", "REJECTED"
 
+    @Column(name = "passenger_order_id")
+    private Long passengerOrderId;
+
     private String pickupAddress;
 
     private String notes;

@@ -53,6 +53,25 @@ public class TransactionService {
         return transactionRepository.save(transaction);
     }
 
+    @Transactional
+    public User topUp(Long userId, BigDecimal amount) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        user.setBalance(user.getBalance().add(amount));
+        
+        Transaction transaction = Transaction.builder()
+                .sender(null)
+                .receiver(user)
+                .amount(amount)
+                .type(Transaction.TransactionType.TOP_UP)
+                .status(Transaction.TransactionStatus.SUCCESS)
+                .description("Balance top up")
+                .build();
+        transactionRepository.save(transaction);
+        
+        return userRepository.save(user);
+    }
+
     public List<Transaction> getUserTransactions(Long userId) {
         return transactionRepository.findBySenderIdOrReceiverIdOrderByCreatedAtDesc(userId, userId);
     }

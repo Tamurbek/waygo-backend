@@ -31,6 +31,15 @@ public class TransactionController {
         return ResponseEntity.ok(ApiResponse.success(transaction, "Payment successful"));
     }
 
+    @PostMapping("/top-up")
+    @Operation(summary = "Top up a user's balance")
+    public ResponseEntity<ApiResponse<com.waygo.backend.entity.User>> topUp(
+            @RequestParam Long userId,
+            @RequestParam BigDecimal amount) {
+        com.waygo.backend.entity.User user = transactionService.topUp(userId, amount);
+        return ResponseEntity.ok(ApiResponse.success(user, "Top up successful"));
+    }
+
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get transaction history for a specific user")
     public ResponseEntity<ApiResponse<List<Transaction>>> getUserHistory(@PathVariable Long userId) {

@@ -243,8 +243,39 @@ public class OrderService {
         order.setDriver(null);
         order.setStatus(Order.OrderStatus.PENDING);
         order.setPassengerConfirmed(false);
+        order.setLockedByDriverId(null);
+        order.setLockExpirationTime(null);
         if (order.getAvailableSeats() != null) {
             order.getAvailableSeats().clear();
+        }
+
+        // Clean up bookings using the passenger request order ID
+        try {
+            List<com.waygo.backend.entity.RideBooking> bookings = rideBookingRepository.findByPassengerOrderId(order.getId());
+            for (com.waygo.backend.entity.RideBooking booking : bookings) {
+                Order bookingOrder = booking.getOrder();
+                if (bookingOrder != null) {
+                    if (bookingOrder.getId().equals(order.getId())) {
+                        bookingOrder.getBookings().remove(booking);
+                        rideBookingRepository.delete(booking);
+                    } else if (bookingOrder.getPassenger() == null) { // Driver announcement
+                        if (bookingOrder.getAvailableSeats() != null) {
+                            for (String s : booking.getSelectedSeats()) {
+                                String mappedSeat = mapSeatIndexToLabel(s);
+                                if (!bookingOrder.getAvailableSeats().contains(mappedSeat)) {
+                                    bookingOrder.getAvailableSeats().add(mappedSeat);
+                                }
+                            }
+                        }
+                        bookingOrder.getBookings().remove(booking);
+                        rideBookingRepository.delete(booking);
+                        orderRepository.save(bookingOrder);
+                        notificationService.notifyOrderStatusUpdate(bookingOrder);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         Order savedOrder = orderRepository.save(order);
@@ -302,6 +333,7 @@ public class OrderService {
                 .passenger(passenger)
                 .selectedSeats(new java.util.ArrayList<>(selectedSeats))
                 .status("ACCEPTED")
+                .passengerOrderId(order.getId())
                 .createdAt(LocalDateTime.now())
                 .build();
                 
@@ -365,6 +397,7 @@ public class OrderService {
                     .passenger(passenger)
                     .selectedSeats(new java.util.ArrayList<>(selectedSeats))
                     .status("ACCEPTED")
+                    .passengerOrderId(order.getId())
                     .pickupAddress(order.getFromAddress())
                     .createdAt(LocalDateTime.now())
                     .build();
@@ -544,6 +577,44 @@ public class OrderService {
         // Process final payment automatically if passenger exists
         if (order.getPassenger() != null) {
             transactionService.processPayment(order.getPassenger().getId(), order.getDriver().getId(), order.getPrice());
+        } else if (order.getBookings() != null) {
+            // Also process payments for all accepted bookings on this driver announcement
+            for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
+                if ("ACCEPTED".equalsIgnoreCase(booking.getStatus())) {
+                    // Process payment for this booking
+                    int seatsCount = booking.getSelectedSeats().size();
+                    java.math.BigDecimal totalBookingPrice = order.getPrice().multiply(java.math.BigDecimal.valueOf(seatsCount));
+                    transactionService.processPayment(booking.getPassenger().getId(), order.getDriver().getId(), totalBookingPrice);
+
+                    // Try to find the corresponding passenger request order and mark it as COMPLETED too
+                    try {
+                        if (booking.getPassengerOrderId() != null) {
+                            orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
+                                if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                                    pOrder.setStatus(Order.OrderStatus.COMPLETED);
+                                    orderRepository.save(pOrder);
+                                    notificationService.notifyOrderStatusUpdate(pOrder);
+                                }
+                            });
+                        } else {
+                            List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
+                            for (Order pOrder : passengerOrders) {
+                                if (pOrder.getPassenger() != null && 
+                                    pOrder.getDriver() != null && 
+                                    pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
+                                    pOrder.getStatus() != Order.OrderStatus.COMPLETED && 
+                                    pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                                    pOrder.setStatus(Order.OrderStatus.COMPLETED);
+                                    orderRepository.save(pOrder);
+                                    notificationService.notifyOrderStatusUpdate(pOrder);
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
         }
 
         order.setStatus(Order.OrderStatus.COMPLETED);
@@ -571,6 +642,8 @@ public class OrderService {
                 // We release it back to PENDING so another driver can accept it.
                 order.setStatus(Order.OrderStatus.PENDING);
                 order.setDriver(null);
+                order.setLockedByDriverId(null);
+                order.setLockExpirationTime(null);
                 
                 Order savedOrder = orderRepository.save(order);
                 notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -580,6 +653,55 @@ public class OrderService {
                 // Driver is cancelling their own ride offer (e'lon).
                 // We simply set it to CANCELLED and notify the passengers who booked it.
                 order.setStatus(Order.OrderStatus.CANCELLED);
+                
+                // Release any merged passenger requests back to PENDING!
+                if (order.getBookings() != null) {
+                    for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
+                        booking.setStatus("REJECTED"); // Cancel booking
+                        try {
+                            if (booking.getPassengerOrderId() != null) {
+                                orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
+                                    if (pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
+                                        pOrder.setStatus(Order.OrderStatus.PENDING);
+                                        pOrder.setDriver(null);
+                                        pOrder.setPassengerConfirmed(false);
+                                        pOrder.setLockedByDriverId(null);
+                                        pOrder.setLockExpirationTime(null);
+                                        if (pOrder.getAvailableSeats() != null) {
+                                            pOrder.getAvailableSeats().clear();
+                                        }
+                                        orderRepository.save(pOrder);
+                                        notificationService.notifyOrderStatusUpdate(pOrder);
+                                        notificationService.notifyNewOrder(pOrder);
+                                    }
+                                });
+                            } else {
+                                List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
+                                for (Order pOrder : passengerOrders) {
+                                    if (pOrder.getPassenger() != null && 
+                                        pOrder.getDriver() != null && 
+                                        pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
+                                        pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
+                                        pOrder.setStatus(Order.OrderStatus.PENDING);
+                                        pOrder.setDriver(null);
+                                        pOrder.setPassengerConfirmed(false);
+                                        pOrder.setLockedByDriverId(null);
+                                        pOrder.setLockExpirationTime(null);
+                                        if (pOrder.getAvailableSeats() != null) {
+                                            pOrder.getAvailableSeats().clear();
+                                        }
+                                        orderRepository.save(pOrder);
+                                        notificationService.notifyOrderStatusUpdate(pOrder);
+                                        notificationService.notifyNewOrder(pOrder);
+                                    }
+                                }
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+                
                 Order savedOrder = orderRepository.save(order);
                 notificationService.notifyOrderStatusUpdate(savedOrder);
                 return savedOrder;
@@ -605,6 +727,42 @@ public class OrderService {
             order.setAvailableSeats(allSeats);
         }
 
+        // Synchronize passenger request orders status if this is a driver announcement
+        if (order.getPassenger() == null && (status == Order.OrderStatus.ARRIVED || status == Order.OrderStatus.STARTED)) {
+            if (order.getBookings() != null) {
+                for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
+                    if ("ACCEPTED".equalsIgnoreCase(booking.getStatus())) {
+                        try {
+                            if (booking.getPassengerOrderId() != null) {
+                                orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
+                                    if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                                        pOrder.setStatus(status);
+                                        orderRepository.save(pOrder);
+                                        notificationService.notifyOrderStatusUpdate(pOrder);
+                                    }
+                                });
+                            } else {
+                                List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
+                                for (Order pOrder : passengerOrders) {
+                                    if (pOrder.getPassenger() != null && 
+                                        pOrder.getDriver() != null && 
+                                        pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
+                                        pOrder.getStatus() != Order.OrderStatus.COMPLETED && 
+                                        pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                                        pOrder.setStatus(status);
+                                        orderRepository.save(pOrder);
+                                        notificationService.notifyOrderStatusUpdate(pOrder);
+                                    }
+                                }
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+
         order.setStatus(status);
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -612,7 +770,39 @@ public class OrderService {
     }
 
     public List<Order> getPassengerHistory(Long passengerId) {
-        return orderRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
+        List<Order> rawOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
+        
+        // Find all passenger request order IDs owned by this passenger
+        java.util.Set<Long> passengerOrderIds = new java.util.HashSet<>();
+        for (Order o : rawOrders) {
+            if (o.getPassenger() != null && o.getPassenger().getId().equals(passengerId)) {
+                passengerOrderIds.add(o.getId());
+            }
+        }
+        
+        // Filter out driver announcements that are associated with these passenger request orders
+        List<Order> filtered = new java.util.ArrayList<>();
+        for (Order o : rawOrders) {
+            if (o.getPassenger() == null) { // Driver announcement
+                boolean isDuplicate = false;
+                if (o.getBookings() != null) {
+                    for (com.waygo.backend.entity.RideBooking booking : o.getBookings()) {
+                        if (booking.getPassenger().getId().equals(passengerId) && 
+                            booking.getPassengerOrderId() != null && 
+                            passengerOrderIds.contains(booking.getPassengerOrderId())) {
+                            isDuplicate = true;
+                            break;
+                        }
+                    }
+                }
+                if (isDuplicate) {
+                    continue; // Skip this driver announcement to avoid duplicate cards
+                }
+            }
+            filtered.add(o);
+        }
+        
+        return filtered;
     }
 
     public List<com.waygo.backend.entity.RideBooking> getMyBookings() {
@@ -638,8 +828,27 @@ public class OrderService {
         for (Order o : byOffer) merged.putIfAbsent(o.getId(), o);
         
         List<Order> result = new java.util.ArrayList<>(merged.values());
-        result.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
-        return result;
+        
+        // Filter out passenger requests that have been merged/converted into the driver's own active announcement
+        List<Order> filteredResult = new java.util.ArrayList<>();
+        for (Order o : result) {
+            if (o.getPassenger() != null) {
+                // Check if there is an active announcement for this driver on the same route and date
+                Order announcement = findActiveAnnouncementForRoute(
+                    driverId,
+                    o.getDepartureDate(),
+                    o.getFromAddress(),
+                    o.getToAddress()
+                );
+                if (announcement != null) {
+                    continue; // Skip this passenger request to avoid duplicate cards!
+                }
+            }
+            filteredResult.add(o);
+        }
+        
+        filteredResult.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        return filteredResult;
     }
 
     @Transactional
@@ -722,6 +931,30 @@ public class OrderService {
         return null;
     }
 
+    private Order findPendingPassengerRequestForRoute(Long passengerId, String departureDate, String fromAddress, String toAddress) {
+        if (departureDate == null || fromAddress == null || toAddress == null) {
+            return null;
+        }
+
+        List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
+        if (passengerOrders == null) {
+            return null;
+        }
+        for (Order other : passengerOrders) {
+            if (other.getPassenger() != null && // passenger request order
+                other.getStatus() == Order.OrderStatus.PENDING &&
+                departureDate.equals(other.getDepartureDate())) {
+
+                // Compare routes
+                if (isRouteMatching(fromAddress, other.getFromAddress()) && 
+                    isRouteMatching(toAddress, other.getToAddress())) {
+                    return other;
+                }
+            }
+        }
+        return null;
+    }
+
     private boolean isRouteMatching(String addr1, String addr2) {
         if (addr1 == null || addr2 == null) return false;
         String clean1 = addr1.split(",")[0].trim().toLowerCase();
@@ -753,13 +986,7 @@ public class OrderService {
                     }
                 }
 
-                // Filter out orders where the current driver has a non-PENDING offer (e.g. REJECTED)
-                boolean hasRejectedOffer = o.getDriverOffers().stream()
-                        .anyMatch(offer -> offer.getDriver().getId().equals(currentUser.getId()) && 
-                                           !"PENDING".equalsIgnoreCase(offer.getStatus()));
-                if (hasRejectedOffer) {
-                    continue; // Skip because driver's offer was rejected
-                }
+                // Removed rejected offer filtering so orders can reappear for all drivers after cancellations
 
                 // Find driver's active announcement on the same route and date
                 Order matchingAnnouncement = findActiveAnnouncementForRoute(
@@ -907,6 +1134,22 @@ public class OrderService {
             }
         }
 
+        // Find if passenger has a matching pending request order
+        Long passengerOrderId = null;
+        try {
+            Order matchingRequest = findPendingPassengerRequestForRoute(
+                passenger.getId(),
+                order.getDepartureDate(),
+                order.getFromAddress(),
+                order.getToAddress()
+            );
+            if (matchingRequest != null) {
+                passengerOrderId = matchingRequest.getId();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         // Create a new RideBooking (works for both first-time and additional seat requests)
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
@@ -915,6 +1158,7 @@ public class OrderService {
                 .pickupAddress(pickup)
                 .notes(notes)
                 .status("PENDING")
+                .passengerOrderId(passengerOrderId)
                 .build();
 
         rideBookingRepository.save(booking);
@@ -950,6 +1194,42 @@ public class OrderService {
             for (String seat : booking.getSelectedSeats()) {
                 String mappedSeat = mapSeatIndexToLabel(seat);
                 order.getAvailableSeats().remove(mappedSeat);
+            }
+        }
+
+        // Link and update the passenger request order if passengerOrderId is set!
+        if (booking.getPassengerOrderId() != null) {
+            try {
+                orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
+                    if (pOrder.getStatus() == Order.OrderStatus.PENDING) {
+                        pOrder.setDriver(driver);
+                        pOrder.setStatus(Order.OrderStatus.ACCEPTED);
+                        pOrder.setPassengerConfirmed(true);
+                        pOrder.setPrice(order.getPrice());
+                        if (pOrder.getAvailableSeats() != null) {
+                            pOrder.getAvailableSeats().clear();
+                        }
+
+                        // Create a corresponding accepted RideBooking on the passenger request order itself!
+                        com.waygo.backend.entity.RideBooking pBooking = com.waygo.backend.entity.RideBooking.builder()
+                                .order(pOrder)
+                                .passenger(booking.getPassenger())
+                                .selectedSeats(new java.util.ArrayList<>(booking.getSelectedSeats()))
+                                .status("ACCEPTED")
+                                .passengerOrderId(pOrder.getId())
+                                .pickupAddress(booking.getPickupAddress())
+                                .createdAt(java.time.LocalDateTime.now())
+                                .build();
+                        
+                        rideBookingRepository.save(pBooking);
+                        pOrder.getBookings().add(pBooking);
+                        
+                        orderRepository.save(pOrder);
+                        notificationService.notifyOrderStatusUpdate(pOrder);
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
@@ -1006,6 +1286,87 @@ public class OrderService {
             }
             booking.setStatus("REJECTED");
             rideBookingRepository.save(booking);
+
+            // Revert the passenger's original request order back to PENDING!
+            try {
+                if (booking.getPassengerOrderId() != null) {
+                    orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
+                        if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                            pOrder.setDriver(null);
+                            pOrder.setStatus(Order.OrderStatus.PENDING);
+                            pOrder.setPassengerConfirmed(false);
+                            pOrder.setLockedByDriverId(null);
+                            pOrder.setLockExpirationTime(null);
+                            pOrder.getAvailableSeats().clear();
+                            
+                            if (pOrder.getDriverOffers() != null) {
+                                for (DriverOffer offer : pOrder.getDriverOffers()) {
+                                    if (offer.getDriver() != null && offer.getDriver().getId().equals(driver.getId())) {
+                                        offer.setStatus("REJECTED");
+                                    } else {
+                                        offer.setStatus("PENDING");
+                                    }
+                                }
+                            }
+                            
+                            if (pOrder.getBookings() != null) {
+                                for (com.waygo.backend.entity.RideBooking pBooking : pOrder.getBookings()) {
+                                    pBooking.setStatus("REJECTED");
+                                }
+                            }
+                            orderRepository.save(pOrder);
+                            notificationService.notifyOrderStatusUpdate(pOrder);
+                            notificationService.notifyNewOrder(pOrder);
+                        }
+                    });
+                } else {
+                    // Fallback to route matching for legacy bookings
+                    User passenger = booking.getPassenger();
+                    if (passenger != null) {
+                        java.util.List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(passenger.getId());
+                        for (Order pOrder : passengerOrders) {
+                            if (pOrder.getStatus() != Order.OrderStatus.COMPLETED 
+                                    && pOrder.getStatus() != Order.OrderStatus.CANCELLED 
+                                    && pOrder.getDriver() != null 
+                                    && pOrder.getDriver().getId().equals(driver.getId())
+                                    && pOrder.getDepartureDate().equals(order.getDepartureDate())
+                                    && isRouteMatching(pOrder.getFromAddress(), order.getFromAddress())
+                                    && isRouteMatching(pOrder.getToAddress(), order.getToAddress())) {
+                                
+                                pOrder.setDriver(null);
+                                pOrder.setStatus(Order.OrderStatus.PENDING);
+                                pOrder.setPassengerConfirmed(false);
+                                pOrder.setLockedByDriverId(null);
+                                pOrder.setLockExpirationTime(null);
+                                pOrder.getAvailableSeats().clear();
+                                
+                                if (pOrder.getDriverOffers() != null) {
+                                    for (DriverOffer offer : pOrder.getDriverOffers()) {
+                                        if (offer.getDriver() != null && offer.getDriver().getId().equals(driver.getId())) {
+                                            offer.setStatus("REJECTED");
+                                        } else {
+                                            offer.setStatus("PENDING");
+                                        }
+                                    }
+                                }
+                                
+                                if (pOrder.getBookings() != null) {
+                                    for (com.waygo.backend.entity.RideBooking pBooking : pOrder.getBookings()) {
+                                        pBooking.setStatus("REJECTED");
+                                    }
+                                }
+                                
+                                orderRepository.save(pOrder);
+                                notificationService.notifyOrderStatusUpdate(pOrder);
+                                notificationService.notifyNewOrder(pOrder);
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         Order savedOrder = orderRepository.save(order);
@@ -1029,6 +1390,7 @@ public class OrderService {
 
         Order order = booking.getOrder();
 
+        boolean isDeleted = false;
         if (seat != null && !seat.isEmpty()) {
             if (booking.getSelectedSeats().contains(seat)) {
                 booking.getSelectedSeats().remove(seat);
@@ -1043,6 +1405,7 @@ public class OrderService {
                 if (booking.getSelectedSeats().isEmpty()) {
                     order.getBookings().remove(booking);
                     rideBookingRepository.delete(booking);
+                    isDeleted = true;
                 } else {
                     rideBookingRepository.save(booking);
                 }
@@ -1059,6 +1422,68 @@ public class OrderService {
             }
             order.getBookings().remove(booking);
             rideBookingRepository.delete(booking);
+            isDeleted = true;
+        }
+
+        if (isDeleted) {
+            Long pOrderId = booking.getPassengerOrderId();
+            try {
+                if (pOrderId != null) {
+                    orderRepository.findById(pOrderId).ifPresent(pOrder -> {
+                        if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                            pOrder.setDriver(null);
+                            pOrder.setStatus(Order.OrderStatus.PENDING);
+                            pOrder.setPassengerConfirmed(false);
+                            pOrder.setLockedByDriverId(null);
+                            pOrder.setLockExpirationTime(null);
+                            if (pOrder.getAvailableSeats() != null) {
+                                pOrder.getAvailableSeats().clear();
+                            }
+                            if (pOrder.getDriverOffers() != null) {
+                                for (DriverOffer offer : pOrder.getDriverOffers()) {
+                                    offer.setStatus("PENDING");
+                                }
+                            }
+                            orderRepository.save(pOrder);
+                            notificationService.notifyOrderStatusUpdate(pOrder);
+                            notificationService.notifyNewOrder(pOrder);
+                        }
+                    });
+
+                    // Find other bookings with same passengerOrderId and delete them
+                    List<com.waygo.backend.entity.RideBooking> relatedBookings = rideBookingRepository.findByPassengerOrderId(pOrderId);
+                    for (com.waygo.backend.entity.RideBooking rb : relatedBookings) {
+                        if (!rb.getId().equals(booking.getId())) {
+                            Order rbOrder = rb.getOrder();
+                            if (rbOrder != null) {
+                                if (rbOrder.getPassenger() == null) { // Driver announcement
+                                    // Free the seats
+                                    if (rbOrder.getAvailableSeats() != null) {
+                                        for (String s : rb.getSelectedSeats()) {
+                                            String mappedSeat = mapSeatIndexToLabel(s);
+                                            if (!rbOrder.getAvailableSeats().contains(mappedSeat)) {
+                                                rbOrder.getAvailableSeats().add(mappedSeat);
+                                            }
+                                        }
+                                    }
+                                    rbOrder.getBookings().remove(rb);
+                                    rideBookingRepository.delete(rb);
+                                    orderRepository.save(rbOrder);
+                                    notificationService.notifyOrderStatusUpdate(rbOrder);
+                                } else {
+                                    // Passenger request order booking
+                                    rbOrder.getBookings().remove(rb);
+                                    rideBookingRepository.delete(rb);
+                                    orderRepository.save(rbOrder);
+                                    notificationService.notifyOrderStatusUpdate(rbOrder);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         Order savedOrder = orderRepository.save(order);
