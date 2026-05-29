@@ -54,7 +54,7 @@
                 <tbody>
                     <tr th:each="order : ${latestOrders}">
                         <td th:text="'#' + ${order.id}">#1024</td>
-                        <td th:text="${order.passenger != null ? (order.passenger.fullName != null ? order.passenger.fullName : order.passenger.phone) : 'Yo\'lovchi yo\'q'}">Aziz Rahimov</td>
+                        <td th:text="${order.passenger != null ? (order.passenger.fullName != null ? order.passenger.fullName : order.passenger.phone) : (order.driver != null ? order.driver.fullName : 'Noma''lum')}">Aziz Rahimov</td>
                         <td>
                             <span th:text="${order.fromAddress}">Chilonzor</span>
                             <span style="color: var(--text-dim); margin: 0 0.5rem;">→</span>

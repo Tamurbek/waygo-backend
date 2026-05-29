@@ -1321,83 +1321,8 @@ public class OrderService {
             try {
                 orderRepository.findById(finalBooking.getPassengerOrderId()).ifPresent(pOrder -> {
                     if (pOrder.getStatus() == Order.OrderStatus.PENDING) {
-                        pOrder.setDriver(driver);
-                        pOrder.setStatus(Order.OrderStatus.ACCEPTED);
-                        pOrder.setPassengerConfirmed(true);
-                        pOrder.setPrice(order.getPrice());
-                        if (pOrder.getAvailableSeats() != null) {
-                            pOrder.getAvailableSeats().clear();
-                        }
-
-                        // Create a corresponding accepted RideBooking on the passenger request order itself!
-                        com.waygo.backend.entity.RideBooking pBooking = com.waygo.backend.entity.RideBooking.builder()
-                                .order(pOrder)
-                                .passenger(finalBooking.getPassenger())
-                                .selectedSeats(new java.util.ArrayList<>(finalBooking.getSelectedSeats()))
-                                .status("ACCEPTED")
-                                .passengerOrderId(pOrder.getId())
-                                .pickupAddress(finalBooking.getPickupAddress())
-                                .createdAt(java.time.LocalDateTime.now())
-                                .build();
-                        
-                        rideBookingRepository.save(pBooking);
-                        pOrder.getBookings().add(pBooking);
-                        
-                        orderRepository.save(pOrder);
-                        notificationService.notifyOrderStatusUpdate(pOrder);
-                    } else if (pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
-                        // The contract was already accepted. The user is booking additional seats.
-                        // Find the matching PENDING booking on pOrder for this passenger and these seats,
-                        // and mark it as ACCEPTED.
-                        if (pOrder.getBookings() != null) {
-                            pOrder.getBookings().stream()
-                                    .filter(pb -> "PENDING".equals(pb.getStatus())
-                                            && pb.getPassenger().getId().equals(finalBooking.getPassenger().getId())
-                                            && pb.getSelectedSeats().equals(finalBooking.getSelectedSeats()))
-                                    .findFirst()
-                                    .ifPresent(pb -> {
-                                        pb.setStatus("ACCEPTED");
-                                        rideBookingRepository.save(pb);
-                                    });
-                        }
-
-                        // Merge ACCEPTED bookings on pOrder for this passenger
-                        java.util.List<com.waygo.backend.entity.RideBooking> existingPAccepted = 
-                                rideBookingRepository.findByOrderIdAndPassengerId(pOrder.getId(), finalBooking.getPassenger().getId());
-                        
-                        com.waygo.backend.entity.RideBooking targetPAccepted = null;
-                        com.waygo.backend.entity.RideBooking secondPAccepted = null;
-                        for (com.waygo.backend.entity.RideBooking pb : existingPAccepted) {
-                            if ("ACCEPTED".equals(pb.getStatus())) {
-                                if (targetPAccepted == null) {
-                                    targetPAccepted = pb;
-                                } else {
-                                    secondPAccepted = pb;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (targetPAccepted != null && secondPAccepted != null) {
-                            // Merge second into target
-                            for (String seat : secondPAccepted.getSelectedSeats()) {
-                                if (!targetPAccepted.getSelectedSeats().contains(seat)) {
-                                    targetPAccepted.getSelectedSeats().add(seat);
-                                }
-                            }
-                            pOrder.getBookings().remove(secondPAccepted);
-                            rideBookingRepository.delete(secondPAccepted);
-                            rideBookingRepository.save(targetPAccepted);
-                        }
-
-                        // Also remove the selected seats from pOrder's availableSeats list
-                        if (pOrder.getAvailableSeats() != null) {
-                            for (String seat : finalBooking.getSelectedSeats()) {
-                                String mappedSeat = mapSeatIndexToLabel(seat);
-                                pOrder.getAvailableSeats().remove(mappedSeat);
-                            }
-                        }
-
+                        // Cancel the passenger's own pending request order because they successfully joined a driver announcement!
+                        pOrder.setStatus(Order.OrderStatus.CANCELLED);
                         orderRepository.save(pOrder);
                         notificationService.notifyOrderStatusUpdate(pOrder);
                     }

@@ -54,6 +54,13 @@ public class NotificationService {
                                 "/queue/order-status",
                                 order
                         );
+                        // Send SMS to REJECTED drivers specifically
+                        if ("REJECTED".equalsIgnoreCase(offer.getStatus())) {
+                            smsService.sendSms(
+                                offer.getDriver().getPhone(),
+                                "WayGO: Afsuski, yo'lovchi boshqa haydovchini tanladi. Taklifingiz rad etildi."
+                            );
+                        }
                     }
                 }
             }

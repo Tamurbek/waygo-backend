@@ -151,4 +151,15 @@ public class AdminController {
         }
         return "redirect:/admin/settings";
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/orders/clear")
+    @org.springframework.transaction.annotation.Transactional
+    public String clearOrders() {
+        try {
+            orderRepository.deleteAll();
+            return "redirect:/admin/settings?clearSuccess";
+        } catch (Exception e) {
+            return "redirect:/admin/settings?clearError=" + e.getMessage();
+        }
+    }
 }

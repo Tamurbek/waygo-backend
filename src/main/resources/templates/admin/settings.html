@@ -15,6 +15,14 @@
             ✖ Xatolik yuz berdi: <span th:text="${param.importError}"></span>
         </div>
 
+        <div th:if="${param.clearSuccess}" class="status-badge status-active" style="width: 100%; padding: 1rem; margin-bottom: 2rem; border-radius: 0.5rem; text-align: center; background: rgba(0, 255, 128, 0.2);">
+            ✓ Barcha buyurtmalar muvaffaqiyatli o'chirildi va tozalandi!
+        </div>
+
+        <div th:if="${param.clearError}" class="status-badge status-error" style="width: 100%; padding: 1rem; margin-bottom: 2rem; border-radius: 0.5rem; text-align: center; background: rgba(255, 77, 77, 0.2);">
+            ✖ Xatolik yuz berdi: <span th:text="${param.clearError}"></span>
+        </div>
+
         <div class="card" style="max-width: 800px;">
             <form th:action="@{/admin/settings}" th:object="${settings}" method="post">
                 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
@@ -110,6 +118,19 @@
                 <input type="file" name="file" accept=".json" required style="flex: 1;">
                 <button type="submit" class="btn btn-outline" onclick="return confirm('Haqiqatdan ham tizimni ushbu zahira nusxasidan qayta tiklamoqchimisiz? Barcha joriy ma\'lumotlar o\'chib ketadi!')">
                     📤 Tiklash (Restore)
+                </button>
+            </form>
+        </div>
+
+        <div class="card" style="max-width: 800px; margin-top: 2rem; border-color: rgba(255, 77, 77, 0.2);">
+            <h3 style="color: var(--error); margin-bottom: 1rem;">Xavfli hudud (Danger Zone)</h3>
+            <p style="color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                Tizimdagi barcha buyurtmalar tarixini butunlay o'chirib tashlash. <br>
+                <span style="color: var(--error);">Diqqat: Ushbu amalni ortga qaytarib bo'lmaydi! Barcha buyurtma ma'lumotlari (shu jumladan takliflar va band qilingan joylar) o'chib ketadi.</span>
+            </p>
+            <form th:action="@{/admin/orders/clear}" method="post" style="display: inline-block;">
+                <button type="submit" class="btn" style="background: rgba(255, 77, 77, 0.1); color: var(--error); border: 1px solid rgba(255, 77, 77, 0.3);" onclick="return confirm('Haqiqatdan ham barcha buyurtmalarni butunlay o\'chirib tashlamoqchimisiz? Ushbu amalni ortga qaytarib bo\'lmaydi!')">
+                    🗑 Barcha buyurtmalarni tozalash
                 </button>
             </form>
         </div>

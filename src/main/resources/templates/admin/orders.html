@@ -24,7 +24,7 @@
                     <tr th:each="order : ${orders}">
                         <td th:text="'#' + ${order.id}">#101</td>
                         <td>
-                            <div style="font-weight: 500;" th:text="${order.passenger != null ? (order.passenger.fullName != null ? order.passenger.fullName : 'No Name') : 'Yo\'lovchi yo\'q'}">Mijoz</div>
+                            <div style="font-weight: 500;" th:text="${order.passenger != null ? (order.passenger.fullName != null ? order.passenger.fullName : 'No Name') : 'Yo''lovchi yo''q'}">Mijoz</div>
                             <div style="font-size: 0.75rem; color: var(--text-dim);" th:text="${order.passenger != null ? order.passenger.phone : '-'}">+998...</div>
                         </td>
                         <td>
