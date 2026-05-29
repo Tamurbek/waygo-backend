@@ -1104,22 +1104,63 @@ public class OrderService {
             }
         }
 
-        // Check if passenger already has a PENDING booking on this order — block duplicates unless we're just updating pickupAddress
+        // Check if passenger already has a PENDING booking on this order — merge the requested seats to it!
         java.util.Optional<com.waygo.backend.entity.RideBooking> pendingBooking =
                 rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "PENDING");
         if (pendingBooking.isPresent()) {
-            if (!pickup.isEmpty()) {
-                com.waygo.backend.entity.RideBooking b = pendingBooking.get();
-                b.setPickupAddress(pickup);
-                if (!notes.isEmpty()) {
-                    b.setNotes(notes);
+            com.waygo.backend.entity.RideBooking b = pendingBooking.get();
+            // Merge seats
+            for (String seat : seatsToBook) {
+                if (!b.getSelectedSeats().contains(seat)) {
+                    b.getSelectedSeats().add(seat);
                 }
-                rideBookingRepository.save(b);
-                Order savedOrder = orderRepository.save(order);
-                notificationService.notifyOrderStatusUpdate(savedOrder);
-                return savedOrder;
             }
-            throw new IllegalStateException("Siz allaqachon ushbu buyurtmaga so'rov yuborgansiz. Avvalgi so'rovingiz ko'rib chiqilguncha kuting.");
+            if (!pickup.isEmpty()) {
+                b.setPickupAddress(pickup);
+            }
+            if (!notes.isEmpty()) {
+                b.setNotes(notes);
+            }
+            rideBookingRepository.save(b);
+            
+            // Sync with driver's active announcement if present
+            if (order.getPassenger() != null && order.getDriver() != null) {
+                try {
+                    User driver = order.getDriver();
+                    Order activeAnnouncement = findActiveAnnouncementForRoute(
+                        driver.getId(),
+                        order.getDepartureDate(),
+                        order.getFromAddress(),
+                        order.getToAddress()
+                    );
+                    if (activeAnnouncement != null) {
+                        java.util.Optional<com.waygo.backend.entity.RideBooking> driverPending =
+                            rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(activeAnnouncement.getId(), passenger.getId(), "PENDING");
+                        if (driverPending.isPresent()) {
+                            com.waygo.backend.entity.RideBooking db = driverPending.get();
+                            for (String seat : seatsToBook) {
+                                if (!db.getSelectedSeats().contains(seat)) {
+                                    db.getSelectedSeats().add(seat);
+                                }
+                            }
+                            if (!pickup.isEmpty()) {
+                                db.setPickupAddress(pickup);
+                            }
+                            if (!notes.isEmpty()) {
+                                db.setNotes(notes);
+                            }
+                            rideBookingRepository.save(db);
+                            notificationService.notifyOrderStatusUpdate(activeAnnouncement);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            Order savedOrder = orderRepository.save(order);
+            notificationService.notifyOrderStatusUpdate(savedOrder);
+            return savedOrder;
         }
 
         // Validate: all requested seats must be in the order's available seats list
