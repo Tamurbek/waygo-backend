@@ -1370,6 +1370,10 @@ public class OrderService {
                     booking.setStatus("REJECTED");
                 }
                 rideBookingRepository.save(booking);
+
+                // Notify the passenger about the cancelled seat index
+                String seatName = mapSeatIndexToUzName(seat);
+                notificationService.notifySeatCancelled(booking.getPassenger(), seatName);
             }
         } else {
             // If the booking was previously ACCEPTED, we must free the seats!
@@ -1617,6 +1621,17 @@ public class OrderService {
             case "3": return "BACK_CENTER";
             case "4": return "BACK_RIGHT";
             default: return index;
+        }
+    }
+
+    private String mapSeatIndexToUzName(String index) {
+        if (index == null) return "";
+        switch (index) {
+            case "1": return "Old o'ng";
+            case "2": return "Orqa chap";
+            case "3": return "Orqa o'rta";
+            case "4": return "Orqa o'ng";
+            default: return "O'rindiq " + index;
         }
     }
 }

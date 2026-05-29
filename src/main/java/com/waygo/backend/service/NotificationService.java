@@ -2,6 +2,7 @@ package com.waygo.backend.service;
 
 import com.waygo.backend.entity.DriverOffer;
 import com.waygo.backend.entity.Order;
+import com.waygo.backend.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -68,5 +69,12 @@ public class NotificationService {
 
         // Broadcast updated order globally so both user and driver apps receive it in real-time
         messagingTemplate.convertAndSend("/topic/orders/update", order);
+    }
+
+    public void notifySeatCancelled(User passenger, String seatName) {
+        if (passenger != null && passenger.getPhone() != null) {
+            String msg = "WayGO: Haydovchi sizning \"" + seatName + "\" o'rindig'ingizni bekor qildi.";
+            smsService.sendSms(passenger.getPhone(), msg);
+        }
     }
 }
