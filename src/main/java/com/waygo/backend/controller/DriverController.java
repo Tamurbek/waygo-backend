@@ -32,6 +32,11 @@ public class DriverController {
             return ResponseEntity.status(401).body(ApiResponse.error("Siz tizimga kirmagansiz"));
         }
 
+        java.util.Optional<User> existingUserWithPlate = userRepository.findByCarNumber(carNumber);
+        if (existingUserWithPlate.isPresent() && !existingUserWithPlate.get().getId().equals(user.getId())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Bu avtomobil raqami tizimda allaqachon ro'yxatdan o'tgan"));
+        }
+
         DriverProfile profile = driverProfileRepository.findByUser(user)
                 .orElse(DriverProfile.builder().user(user).build());
 

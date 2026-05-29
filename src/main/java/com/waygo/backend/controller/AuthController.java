@@ -150,7 +150,13 @@ public class AuthController {
             User user = userRepository.findByPhone(phone).orElseThrow();
             
             if (fullName != null) user.setFullName(fullName);
-            if (carNumber != null) user.setCarNumber(carNumber);
+            if (carNumber != null) {
+                java.util.Optional<User> existingUserWithPlate = userRepository.findByCarNumber(carNumber);
+                if (existingUserWithPlate.isPresent() && !existingUserWithPlate.get().getId().equals(user.getId())) {
+                    return ResponseEntity.badRequest().body(ApiResponse.error("Bu avtomobil raqami tizimda allaqachon ro'yxatdan o'tgan"));
+                }
+                user.setCarNumber(carNumber);
+            }
             if (carModel != null) user.setCarModel(carModel);
             
             if (image != null && !image.isEmpty()) {
