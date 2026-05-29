@@ -71,10 +71,17 @@ public class NotificationService {
         messagingTemplate.convertAndSend("/topic/orders/update", order);
     }
 
-    public void notifySeatCancelled(User passenger, String seatName) {
+    public void notifySeatCancelled(User passenger, String seatName, Order order) {
         if (passenger != null && passenger.getPhone() != null) {
             String msg = "WayGO: Haydovchi sizning \"" + seatName + "\" o'rindig'ingizni bekor qildi.";
             smsService.sendSms(passenger.getPhone(), msg);
+
+            // Send private WebSocket update to passenger so they immediately receive it
+            messagingTemplate.convertAndSendToUser(
+                    passenger.getPhone(),
+                    "/queue/order-status",
+                    order
+            );
         }
     }
 }
