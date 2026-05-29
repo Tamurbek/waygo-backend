@@ -1167,6 +1167,45 @@ public class OrderService {
         order.getBookings().add(booking);
 
         Order savedOrder = orderRepository.save(order);
+
+        // Sync with driver's active announcement if present
+        if (order.getPassenger() != null && order.getDriver() != null) {
+            try {
+                User driver = order.getDriver();
+                Order activeAnnouncement = findActiveAnnouncementForRoute(
+                    driver.getId(),
+                    order.getDepartureDate(),
+                    order.getFromAddress(),
+                    order.getToAddress()
+                );
+                if (activeAnnouncement != null) {
+                    boolean alreadyBooked = activeAnnouncement.getBookings().stream()
+                        .anyMatch(b -> b.getPassenger().getId().equals(passenger.getId()) 
+                                    && !"REJECTED".equals(b.getStatus())
+                                    && b.getSelectedSeats().equals(seatsToBook));
+                    if (!alreadyBooked) {
+                        com.waygo.backend.entity.RideBooking autoBooking = com.waygo.backend.entity.RideBooking.builder()
+                                .order(activeAnnouncement)
+                                .passenger(passenger)
+                                .selectedSeats(new java.util.ArrayList<>(seatsToBook))
+                                .status("PENDING")
+                                .passengerOrderId(order.getId())
+                                .pickupAddress(pickup)
+                                .notes(notes)
+                                .createdAt(java.time.LocalDateTime.now())
+                                .build();
+
+                        rideBookingRepository.save(autoBooking);
+                        activeAnnouncement.getBookings().add(autoBooking);
+                        orderRepository.save(activeAnnouncement);
+                        notificationService.notifyOrderStatusUpdate(activeAnnouncement);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
     }
@@ -1226,6 +1265,32 @@ public class OrderService {
                         
                         orderRepository.save(pOrder);
                         notificationService.notifyOrderStatusUpdate(pOrder);
+                    } else if (pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
+                        // The contract was already accepted. The user is booking additional seats.
+                        // Find the matching PENDING booking on pOrder for this passenger and these seats,
+                        // and mark it as ACCEPTED.
+                        if (pOrder.getBookings() != null) {
+                            pOrder.getBookings().stream()
+                                    .filter(pb -> "PENDING".equals(pb.getStatus())
+                                            && pb.getPassenger().getId().equals(booking.getPassenger().getId())
+                                            && pb.getSelectedSeats().equals(booking.getSelectedSeats()))
+                                    .findFirst()
+                                    .ifPresent(pb -> {
+                                        pb.setStatus("ACCEPTED");
+                                        rideBookingRepository.save(pb);
+                                    });
+                        }
+
+                        // Also remove the selected seats from pOrder's availableSeats list
+                        if (pOrder.getAvailableSeats() != null) {
+                            for (String seat : booking.getSelectedSeats()) {
+                                String mappedSeat = mapSeatIndexToLabel(seat);
+                                pOrder.getAvailableSeats().remove(mappedSeat);
+                            }
+                        }
+
+                        orderRepository.save(pOrder);
+                        notificationService.notifyOrderStatusUpdate(pOrder);
                     }
                 });
             } catch (Exception e) {
@@ -1274,7 +1339,8 @@ public class OrderService {
             }
         } else {
             // If the booking was previously ACCEPTED, we must free the seats!
-            if ("ACCEPTED".equals(booking.getStatus())) {
+            boolean wasAccepted = "ACCEPTED".equals(booking.getStatus());
+            if (wasAccepted) {
                 if (order.getAvailableSeats() != null) {
                     for (String s : booking.getSelectedSeats()) {
                         String mappedSeat = mapSeatIndexToLabel(s);
@@ -1287,36 +1353,54 @@ public class OrderService {
             booking.setStatus("REJECTED");
             rideBookingRepository.save(booking);
 
-            // Revert the passenger's original request order back to PENDING!
+            // Revert the passenger's original request order back to PENDING if the booking was already accepted!
             try {
                 if (booking.getPassengerOrderId() != null) {
                     orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
                         if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
-                            pOrder.setDriver(null);
-                            pOrder.setStatus(Order.OrderStatus.PENDING);
-                            pOrder.setPassengerConfirmed(false);
-                            pOrder.setLockedByDriverId(null);
-                            pOrder.setLockExpirationTime(null);
-                            pOrder.getAvailableSeats().clear();
-                            
-                            if (pOrder.getDriverOffers() != null) {
-                                for (DriverOffer offer : pOrder.getDriverOffers()) {
-                                    if (offer.getDriver() != null && offer.getDriver().getId().equals(driver.getId())) {
-                                        offer.setStatus("REJECTED");
-                                    } else {
-                                        offer.setStatus("PENDING");
+                            if (wasAccepted) {
+                                pOrder.setDriver(null);
+                                pOrder.setStatus(Order.OrderStatus.PENDING);
+                                pOrder.setPassengerConfirmed(false);
+                                pOrder.setLockedByDriverId(null);
+                                pOrder.setLockExpirationTime(null);
+                                pOrder.getAvailableSeats().clear();
+                                
+                                if (pOrder.getDriverOffers() != null) {
+                                    for (DriverOffer offer : pOrder.getDriverOffers()) {
+                                        if (offer.getDriver() != null && offer.getDriver().getId().equals(driver.getId())) {
+                                            offer.setStatus("REJECTED");
+                                        } else {
+                                            offer.setStatus("PENDING");
+                                        }
                                     }
                                 }
-                            }
-                            
-                            if (pOrder.getBookings() != null) {
-                                for (com.waygo.backend.entity.RideBooking pBooking : pOrder.getBookings()) {
-                                    pBooking.setStatus("REJECTED");
+                                
+                                if (pOrder.getBookings() != null) {
+                                    for (com.waygo.backend.entity.RideBooking pBooking : pOrder.getBookings()) {
+                                        pBooking.setStatus("REJECTED");
+                                    }
                                 }
+                                orderRepository.save(pOrder);
+                                notificationService.notifyOrderStatusUpdate(pOrder);
+                                notificationService.notifyNewOrder(pOrder);
+                            } else {
+                                // If the rejected booking was PENDING (additional seats request),
+                                // find the matching PENDING booking on pOrder and reject it.
+                                if (pOrder.getBookings() != null) {
+                                    pOrder.getBookings().stream()
+                                            .filter(pb -> "PENDING".equals(pb.getStatus())
+                                                    && pb.getPassenger().getId().equals(booking.getPassenger().getId())
+                                                    && pb.getSelectedSeats().equals(booking.getSelectedSeats()))
+                                            .findFirst()
+                                            .ifPresent(pb -> {
+                                                pb.setStatus("REJECTED");
+                                                rideBookingRepository.save(pb);
+                                            });
+                                }
+                                orderRepository.save(pOrder);
+                                notificationService.notifyOrderStatusUpdate(pOrder);
                             }
-                            orderRepository.save(pOrder);
-                            notificationService.notifyOrderStatusUpdate(pOrder);
-                            notificationService.notifyNewOrder(pOrder);
                         }
                     });
                 } else {
