@@ -74,5 +74,15 @@ public class DataInitializer implements CommandLineRunner {
 
             System.out.println("✅ Test ma'lumotlari (Yo'lovchi va Haydovchilar) yaratildi!");
         }
+
+        // Generate driverId for existing drivers if they don't have one
+        java.util.List<User> allDrivers = userRepository.findByRoleOrderByCreatedAtDesc(User.Role.DRIVER);
+        for (User driver : allDrivers) {
+            if (driver.getDriverId() == null || driver.getDriverId().isEmpty()) {
+                driver.setDriverId("WG" + (1000000 + new java.util.Random().nextInt(9000000)));
+                userRepository.save(driver);
+                System.out.println("✅ Generated driver_id " + driver.getDriverId() + " for existing driver: " + driver.getFullName());
+            }
+        }
     }
 }

@@ -134,6 +134,10 @@ public class AuthController {
     public ResponseEntity<ApiResponse<User>> getCurrentUser(@RequestHeader("Authorization") String token) {
         String phone = jwtService.extractUsername(token.substring(7));
         User user = userRepository.findByPhone(phone).orElseThrow();
+        if (user.getRole() == User.Role.DRIVER && (user.getDriverId() == null || user.getDriverId().isEmpty())) {
+            user.setDriverId("WG" + (1000000 + new java.util.Random().nextInt(9000000)));
+            user = userRepository.save(user);
+        }
         return ResponseEntity.ok(ApiResponse.success(user, "Profile retrieved"));
     }
 

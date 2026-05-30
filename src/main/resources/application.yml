@@ -65,3 +65,6 @@ waygo:
     baseUrl: https://notify.eskiz.uz/api/
   mail:
     provider: ${MAIL_PROVIDER:console} # SMTPlar tayyor bo'lgach 'smtp' ga o'zgartiramiz
+  payme:
+    merchant-key: ${PAYME_MERCHANT_KEY:test_merchant_key}
+    login: ${PAYME_LOGIN:Paycom}

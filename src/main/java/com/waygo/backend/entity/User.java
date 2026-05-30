@@ -44,6 +44,9 @@ public class User implements UserDetails {
     private String carNumber;
     private String carModel;
 
+    @Column(name = "driver_id", unique = true)
+    private String driverId;
+
     @Builder.Default
     @Column(precision = 19, scale = 4)
     private BigDecimal balance = BigDecimal.ZERO;
@@ -83,5 +86,13 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void generateDriverId() {
+        if (this.role == Role.DRIVER && (this.driverId == null || this.driverId.isEmpty())) {
+            this.driverId = "WG" + (1000000 + new java.util.Random().nextInt(9000000));
+        }
     }
 }
