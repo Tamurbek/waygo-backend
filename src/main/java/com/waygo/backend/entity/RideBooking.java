@@ -3,6 +3,8 @@ package com.waygo.backend.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class RideBooking {
 
     @Id
@@ -31,6 +34,7 @@ public class RideBooking {
     @CollectionTable(name = "booking_seats", joinColumns = @JoinColumn(name = "booking_id"))
     @Column(name = "seat_label")
     @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
     private java.util.List<String> selectedSeats = new java.util.ArrayList<>();
 
     private String status; // "PENDING", "ACCEPTED", "REJECTED"

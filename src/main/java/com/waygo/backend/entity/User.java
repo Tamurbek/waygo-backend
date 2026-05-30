@@ -52,6 +52,12 @@ public class User implements UserDetails {
     private BigDecimal balance = BigDecimal.ZERO;
 
     @Builder.Default
+    private Double rating = 5.0;
+
+    @Builder.Default
+    private Integer tripsCount = 0;
+
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public enum Role {

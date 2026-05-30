@@ -9,6 +9,7 @@ import com.waygo.backend.exception.ResourceNotFoundException;
 import com.waygo.backend.repository.DriverProfileRepository;
 import com.waygo.backend.repository.OrderRepository;
 import com.waygo.backend.repository.RideBookingRepository;
+import com.waygo.backend.repository.UserRepository;
 import com.waygo.backend.security.SecurityUtils;
 import com.waygo.backend.service.NotificationService;
 import com.waygo.backend.service.OrderService;
@@ -51,6 +52,9 @@ class OrderServiceTest {
 
     @Mock
     private RideBookingRepository rideBookingRepository;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private OrderService orderService;
@@ -434,7 +438,7 @@ class OrderServiceTest {
                 .status(Order.OrderStatus.ACCEPTED)
                 .passengerConfirmed(true)
                 .bookings(new ArrayList<>(Arrays.asList(
-                    RideBooking.builder().status("ACCEPTED").build()
+                    RideBooking.builder().status("ACCEPTED").passenger(passenger).build()
                 )))
                 .availableSeats(new ArrayList<>())
                 .build();
@@ -488,7 +492,7 @@ class OrderServiceTest {
                 .status(Order.OrderStatus.ACCEPTED)
                 .passengerConfirmed(true)
                 .bookings(new ArrayList<>(Arrays.asList(
-                    RideBooking.builder().status("ACCEPTED").build()
+                    RideBooking.builder().status("ACCEPTED").passenger(passenger).build()
                 )))
                 .availableSeats(new ArrayList<>())
                 .build();

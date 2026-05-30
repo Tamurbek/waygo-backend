@@ -130,6 +130,16 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Trip completed and payment processed"));
     }
 
+    @PostMapping("/{orderId}/rate")
+    @Operation(summary = "Passenger rates the driver and provides feedback/comment")
+    public ResponseEntity<ApiResponse<Order>> rate(
+            @PathVariable("orderId") Long orderId,
+            @RequestParam Double rating,
+            @RequestParam(value = "comment", required = false) String comment) {
+        Order order = orderService.rateDriver(orderId, rating, comment);
+        return ResponseEntity.ok(ApiResponse.success(order, "Driver rated successfully"));
+    }
+
     @GetMapping("/pending")
     @Operation(summary = "Get list of orders waiting for a driver")
     public ResponseEntity<ApiResponse<List<Order>>> getPending(@RequestParam(value = "region", required = false) String region) {

@@ -2,6 +2,8 @@ services:
   db:
     image: postgres:15-alpine
     container_name: waygo_db_container
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: waygo_db
       POSTGRES_USER: postgres
@@ -12,6 +14,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: waygo_redis
+    ports:
+      - "6379:6379"
 
   app:
     build: .

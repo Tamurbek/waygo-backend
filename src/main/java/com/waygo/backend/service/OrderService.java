@@ -26,6 +26,7 @@ public class OrderService {
     private final NotificationService notificationService;
     private final DriverProfileRepository driverProfileRepository;
     private final com.waygo.backend.repository.RideBookingRepository rideBookingRepository;
+    private final com.waygo.backend.repository.UserRepository userRepository;
 
     @Transactional
     public Order createOrder(OrderCreateDTO dto) {
@@ -617,8 +618,45 @@ public class OrderService {
             }
         }
 
+        // Increment driver tripsCount on completion
+        User driver = order.getDriver();
+        if (driver != null) {
+            int currentTrips = driver.getTripsCount() != null ? driver.getTripsCount() : 0;
+            driver.setTripsCount(currentTrips + 1);
+            userRepository.save(driver);
+        }
+
         order.setStatus(Order.OrderStatus.COMPLETED);
         Order savedOrder = orderRepository.save(order);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order rateDriver(Long orderId, Double rating, String comment) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        User driver = order.getDriver();
+        if (driver == null) {
+            throw new IllegalStateException("No driver is assigned to this order");
+        }
+
+        double currentRating = driver.getRating() != null ? driver.getRating() : 5.0;
+        int currentTrips = driver.getTripsCount() != null ? driver.getTripsCount() : 0;
+        if (currentTrips == 0) {
+            currentTrips = 1;
+        }
+
+        double updatedRating = ((currentRating * (currentTrips - 1)) + rating) / currentTrips;
+        updatedRating = Math.max(1.0, Math.min(5.0, updatedRating));
+
+        driver.setRating(updatedRating);
+        userRepository.save(driver);
+
+        order.setRating(rating);
+        order.setComment(comment);
+        Order savedOrder = orderRepository.save(order);
+
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
     }
@@ -1334,6 +1372,7 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
+        notificationService.notifyBookingConfirmed(finalBooking);
         return savedOrder;
     }
 
@@ -1419,7 +1458,7 @@ public class OrderService {
                 // Find and update passenger's booking on pOrder
                 if (pOrder.getBookings() != null) {
                     for (com.waygo.backend.entity.RideBooking pBooking : pOrder.getBookings()) {
-                        if (pBooking.getPassenger().getId().equals(booking.getPassenger().getId())) {
+                        if (pBooking.getPassenger() != null && pBooking.getPassenger().getId().equals(booking.getPassenger().getId())) {
                             if (seat != null && !seat.isEmpty()) {
                                 if (pBooking.getSelectedSeats().contains(seat)) {
                                     pBooking.getSelectedSeats().remove(seat);
@@ -1507,6 +1546,8 @@ public class OrderService {
         if (seat != null && !seat.isEmpty()) {
             String seatName = mapSeatIndexToUzName(seat);
             notificationService.notifySeatCancelled(booking.getPassenger(), seatName, savedOrder);
+        } else if ("REJECTED".equals(booking.getStatus())) {
+            notificationService.notifyBookingRejected(booking);
         }
 
         notificationService.notifyOrderStatusUpdate(savedOrder);
@@ -1530,6 +1571,7 @@ public class OrderService {
         Order order = booking.getOrder();
         boolean wasAccepted = "ACCEPTED".equals(booking.getStatus());
 
+        java.util.Set<Long> deletedBookingIds = new java.util.HashSet<>();
         boolean isDeleted = false;
         if (seat != null && !seat.isEmpty()) {
             if (booking.getSelectedSeats().contains(seat)) {
@@ -1545,6 +1587,7 @@ public class OrderService {
                 if (booking.getSelectedSeats().isEmpty()) {
                     order.getBookings().remove(booking);
                     rideBookingRepository.delete(booking);
+                    deletedBookingIds.add(booking.getId());
                     isDeleted = true;
                 } else {
                     rideBookingRepository.save(booking);
@@ -1562,6 +1605,7 @@ public class OrderService {
             }
             order.getBookings().remove(booking);
             rideBookingRepository.delete(booking);
+            deletedBookingIds.add(booking.getId());
             isDeleted = true;
         }
 
@@ -1580,7 +1624,7 @@ public class OrderService {
                 if (pOrder.getBookings() != null) {
                     java.util.List<com.waygo.backend.entity.RideBooking> toRemove = new java.util.ArrayList<>();
                     for (com.waygo.backend.entity.RideBooking pBooking : pOrder.getBookings()) {
-                        if (pBooking.getPassenger().getId().equals(passenger.getId())) {
+                        if (pBooking.getPassenger() != null && pBooking.getPassenger().getId().equals(passenger.getId())) {
                             if (seat != null && !seat.isEmpty()) {
                                 if (pBooking.getSelectedSeats().contains(seat)) {
                                     pBooking.getSelectedSeats().remove(seat);
@@ -1593,6 +1637,7 @@ public class OrderService {
                                     if (pBooking.getSelectedSeats().isEmpty()) {
                                         toRemove.add(pBooking);
                                         rideBookingRepository.delete(pBooking);
+                                        deletedBookingIds.add(pBooking.getId());
                                         passengerBookingDeleted = true;
                                     } else {
                                         rideBookingRepository.save(pBooking);
@@ -1609,6 +1654,7 @@ public class OrderService {
                                 }
                                 toRemove.add(pBooking);
                                 rideBookingRepository.delete(pBooking);
+                                deletedBookingIds.add(pBooking.getId());
                                 passengerBookingDeleted = true;
                             }
                         }
@@ -1651,7 +1697,7 @@ public class OrderService {
                             // Find other bookings with same passengerOrderId and delete them
                             List<com.waygo.backend.entity.RideBooking> relatedBookings = rideBookingRepository.findByPassengerOrderId(pOrderId);
                             for (com.waygo.backend.entity.RideBooking rb : relatedBookings) {
-                                if (!rb.getId().equals(booking.getId())) {
+                                if (!deletedBookingIds.contains(rb.getId())) {
                                     Order rbOrder = rb.getOrder();
                                     if (rbOrder != null) {
                                         if (rbOrder.getPassenger() == null) { // Driver announcement
@@ -1665,12 +1711,14 @@ public class OrderService {
                                             }
                                             rbOrder.getBookings().remove(rb);
                                             rideBookingRepository.delete(rb);
+                                            deletedBookingIds.add(rb.getId());
                                             orderRepository.save(rbOrder);
                                             notificationService.notifyOrderStatusUpdate(rbOrder);
                                         } else {
                                             // Passenger request order booking
                                             rbOrder.getBookings().remove(rb);
                                             rideBookingRepository.delete(rb);
+                                            deletedBookingIds.add(rb.getId());
                                             orderRepository.save(rbOrder);
                                             notificationService.notifyOrderStatusUpdate(rbOrder);
                                         }

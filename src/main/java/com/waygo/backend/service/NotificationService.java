@@ -2,6 +2,7 @@ package com.waygo.backend.service;
 
 import com.waygo.backend.entity.DriverOffer;
 import com.waygo.backend.entity.Order;
+import com.waygo.backend.entity.RideBooking;
 import com.waygo.backend.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -79,6 +80,58 @@ public class NotificationService {
             // Send private WebSocket update to passenger so they immediately receive it
             messagingTemplate.convertAndSendToUser(
                     passenger.getPhone(),
+                    "/queue/order-status",
+                    order
+            );
+        }
+    }
+
+    public void notifyBookingConfirmed(RideBooking booking) {
+        if (booking == null || booking.getPassenger() == null) {
+            return;
+        }
+
+        String phone = booking.getPassenger().getPhone();
+        if (phone == null || phone.isEmpty()) {
+            return;
+        }
+
+        Order order = booking.getOrder();
+        String fromLoc = order != null ? order.getFromAddress() : "";
+        String toLoc = order != null ? order.getToAddress() : "";
+
+        String msg = "WayGO: Haydovchi sizning so'rovingizni tasdiqladi! Qatnov: " + fromLoc + " -> " + toLoc;
+        smsService.sendSms(phone, msg);
+
+        if (order != null) {
+            messagingTemplate.convertAndSendToUser(
+                    phone,
+                    "/queue/order-status",
+                    order
+            );
+        }
+    }
+
+    public void notifyBookingRejected(RideBooking booking) {
+        if (booking == null || booking.getPassenger() == null) {
+            return;
+        }
+
+        String phone = booking.getPassenger().getPhone();
+        if (phone == null || phone.isEmpty()) {
+            return;
+        }
+
+        Order order = booking.getOrder();
+        String fromLoc = order != null ? order.getFromAddress() : "";
+        String toLoc = order != null ? order.getToAddress() : "";
+
+        String msg = "WayGO: Afsuski, haydovchi sizning so'rovingizni rad etdi. Qatnov: " + fromLoc + " -> " + toLoc;
+        smsService.sendSms(phone, msg);
+
+        if (order != null) {
+            messagingTemplate.convertAndSendToUser(
+                    phone,
                     "/queue/order-status",
                     order
             );

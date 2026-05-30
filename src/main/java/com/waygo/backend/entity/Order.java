@@ -1,7 +1,10 @@
 package com.waygo.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -12,6 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Order {
 
     @Id
@@ -49,16 +53,19 @@ public class Order {
     @CollectionTable(name = "order_seats", joinColumns = @JoinColumn(name = "order_id"))
     @Column(name = "seat_label")
     @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
     private java.util.List<String> availableSeats = new java.util.ArrayList<>();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties("order")
+    @Fetch(FetchMode.SUBSELECT)
     private java.util.List<RideBooking> bookings = new java.util.ArrayList<>();
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties("order")
+    @Fetch(FetchMode.SUBSELECT)
     private java.util.List<DriverOffer> driverOffers = new java.util.ArrayList<>();
 
     private String baggageDescription;
@@ -69,6 +76,9 @@ public class Order {
 
     @Builder.Default
     private Boolean passengerConfirmed = false;
+
+    private Double rating;
+    private String comment;
 
     private Long lockedByDriverId;
     private LocalDateTime lockExpirationTime;
