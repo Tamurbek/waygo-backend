@@ -1471,6 +1471,52 @@ public class OrderService {
         // Sync changes to the passenger request order (pOrder)
         try {
             Long pOrderId = booking.getPassengerOrderId();
+            
+            // Sync with other bookings sharing the same passengerOrderId (e.g. driver auto-created announcements)
+            if (pOrderId != null) {
+                java.util.List<com.waygo.backend.entity.RideBooking> relatedBookings = rideBookingRepository.findByPassengerOrderId(pOrderId);
+                for (com.waygo.backend.entity.RideBooking rb : relatedBookings) {
+                    if (!rb.getId().equals(booking.getId()) && !"REJECTED".equals(rb.getStatus())) {
+                        if (seat != null && !seat.isEmpty()) {
+                            if (rb.getSelectedSeats().contains(seat)) {
+                                rb.getSelectedSeats().remove(seat);
+                                if (wasAccepted) {
+                                    String mappedSeat = mapSeatIndexToLabel(seat);
+                                    Order rbOrder = rb.getOrder();
+                                    if (rbOrder != null && rbOrder.getAvailableSeats() != null) {
+                                        if (!rbOrder.getAvailableSeats().contains(mappedSeat)) {
+                                            rbOrder.getAvailableSeats().add(mappedSeat);
+                                            orderRepository.save(rbOrder);
+                                            notificationService.notifyOrderStatusUpdate(rbOrder);
+                                        }
+                                    }
+                                }
+                                if (rb.getSelectedSeats().isEmpty()) {
+                                    rb.setStatus("REJECTED");
+                                }
+                                rideBookingRepository.save(rb);
+                            }
+                        } else {
+                            if (wasAccepted) {
+                                Order rbOrder = rb.getOrder();
+                                if (rbOrder != null && rbOrder.getAvailableSeats() != null) {
+                                    for (String s : rb.getSelectedSeats()) {
+                                        String mappedSeat = mapSeatIndexToLabel(s);
+                                        if (!rbOrder.getAvailableSeats().contains(mappedSeat)) {
+                                            rbOrder.getAvailableSeats().add(mappedSeat);
+                                        }
+                                    }
+                                    orderRepository.save(rbOrder);
+                                    notificationService.notifyOrderStatusUpdate(rbOrder);
+                                }
+                            }
+                            rb.setStatus("REJECTED");
+                            rideBookingRepository.save(rb);
+                        }
+                    }
+                }
+            }
+
             Order pOrder = null;
             if (pOrderId != null) {
                 pOrder = orderRepository.findById(pOrderId).orElse(null);
