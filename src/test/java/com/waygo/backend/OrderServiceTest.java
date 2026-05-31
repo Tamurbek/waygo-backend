@@ -727,8 +727,8 @@ class OrderServiceTest {
         assertNotNull(cancelled);
         assertEquals(Order.OrderStatus.CANCELLED, cancelled.getStatus());
         assertEquals("REJECTED", booking.getStatus());
-        // Passenger request order should be released to PENDING and driver set to null
-        assertEquals(Order.OrderStatus.PENDING, passengerRequest.getStatus());
+        // Passenger request order should be cancelled and driver set to null
+        assertEquals(Order.OrderStatus.CANCELLED, passengerRequest.getStatus());
         assertNull(passengerRequest.getDriver());
         assertFalse(passengerRequest.getPassengerConfirmed());
     }

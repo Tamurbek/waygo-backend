@@ -692,15 +692,16 @@ public class OrderService {
                 // We simply set it to CANCELLED and notify the passengers who booked it.
                 order.setStatus(Order.OrderStatus.CANCELLED);
                 
-                // Release any merged passenger requests back to PENDING!
+                // Release/Cancel passenger bookings and orders!
                 if (order.getBookings() != null) {
                     for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
+                        boolean isConfirmed = "ACCEPTED".equals(booking.getStatus());
                         booking.setStatus("REJECTED"); // Cancel booking
                         try {
                             if (booking.getPassengerOrderId() != null) {
                                 orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
                                     if (pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
-                                        pOrder.setStatus(Order.OrderStatus.PENDING);
+                                        pOrder.setStatus(Order.OrderStatus.CANCELLED);
                                         pOrder.setDriver(null);
                                         pOrder.setPassengerConfirmed(false);
                                         pOrder.setLockedByDriverId(null);
@@ -709,8 +710,11 @@ public class OrderService {
                                             pOrder.getAvailableSeats().clear();
                                         }
                                         orderRepository.save(pOrder);
-                                        notificationService.notifyOrderStatusUpdate(pOrder);
-                                        notificationService.notifyNewOrder(pOrder);
+                                        if (isConfirmed) {
+                                            notificationService.notifyPassengerOrderCancelledByDriver(pOrder, order);
+                                        } else {
+                                            notificationService.notifyOrderStatusUpdate(pOrder);
+                                        }
                                     }
                                 });
                             } else {
@@ -720,7 +724,7 @@ public class OrderService {
                                         pOrder.getDriver() != null && 
                                         pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
                                         pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
-                                        pOrder.setStatus(Order.OrderStatus.PENDING);
+                                        pOrder.setStatus(Order.OrderStatus.CANCELLED);
                                         pOrder.setDriver(null);
                                         pOrder.setPassengerConfirmed(false);
                                         pOrder.setLockedByDriverId(null);
@@ -729,9 +733,15 @@ public class OrderService {
                                             pOrder.getAvailableSeats().clear();
                                         }
                                         orderRepository.save(pOrder);
-                                        notificationService.notifyOrderStatusUpdate(pOrder);
-                                        notificationService.notifyNewOrder(pOrder);
+                                        if (isConfirmed) {
+                                            notificationService.notifyPassengerOrderCancelledByDriver(pOrder, order);
+                                        } else {
+                                            notificationService.notifyOrderStatusUpdate(pOrder);
+                                        }
                                     }
+                                }
+                                if (isConfirmed) {
+                                    notificationService.notifyBookingCancelledByDriver(booking, order);
                                 }
                             }
                         } catch (Exception ex) {

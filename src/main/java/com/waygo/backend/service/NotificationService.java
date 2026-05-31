@@ -137,4 +137,45 @@ public class NotificationService {
             );
         }
     }
+
+    public void notifyPassengerOrderCancelledByDriver(Order passengerOrder, Order driverOrder) {
+        if (passengerOrder == null || passengerOrder.getPassenger() == null) {
+            return;
+        }
+        String phone = passengerOrder.getPassenger().getPhone();
+        if (phone == null || phone.isEmpty()) {
+            return;
+        }
+
+        String msg = "WayGO: Afsuski, haydovchi o'z qatnovini bekor qildi. Shu sababli sizning buyurtmangiz bekor qilindi.";
+        smsService.sendSms(phone, msg);
+
+        messagingTemplate.convertAndSendToUser(
+                phone,
+                "/queue/order-status",
+                passengerOrder
+        );
+        messagingTemplate.convertAndSend("/topic/orders/update", passengerOrder);
+    }
+
+    public void notifyBookingCancelledByDriver(RideBooking booking, Order driverOrder) {
+        if (booking == null || booking.getPassenger() == null) {
+            return;
+        }
+        String phone = booking.getPassenger().getPhone();
+        if (phone == null || phone.isEmpty()) {
+            return;
+        }
+
+        String msg = "WayGO: Afsuski, haydovchi o'z qatnovini bekor qildi. Shu sababli sizning band qilgan o'rindig'ingiz bekor qilindi.";
+        smsService.sendSms(phone, msg);
+
+        if (driverOrder != null) {
+            messagingTemplate.convertAndSendToUser(
+                    phone,
+                    "/queue/order-status",
+                    driverOrder
+            );
+        }
+    }
 }
