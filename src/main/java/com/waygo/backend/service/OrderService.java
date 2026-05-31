@@ -972,6 +972,7 @@ public class OrderService {
         }
 
         Order savedOrder = orderRepository.save(order);
+        synchronizeAnnouncementToPassengerOrders(savedOrder);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         
         // Re-announce driver offers so passengers receive the "Yangi haydovchi e'loni!" push notification
@@ -1410,6 +1411,7 @@ public class OrderService {
         }
 
         Order savedOrder = orderRepository.save(order);
+        synchronizeAnnouncementToPassengerOrders(savedOrder);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         notificationService.notifyBookingConfirmed(finalBooking);
         return savedOrder;
@@ -1627,6 +1629,7 @@ public class OrderService {
         }
 
         Order savedOrder = orderRepository.save(order);
+        synchronizeAnnouncementToPassengerOrders(savedOrder);
 
         // Notify passenger about specific seat cancellation if seat parameter was provided
         if (seat != null && !seat.isEmpty()) {
@@ -1828,6 +1831,50 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         return savedOrder;
+    }
+    private void synchronizeAnnouncementToPassengerOrders(Order announcement) {
+        if (announcement == null || announcement.getDriver() == null || announcement.getPassenger() != null) {
+            return;
+        }
+        if (announcement.getBookings() == null) {
+            return;
+        }
+        for (com.waygo.backend.entity.RideBooking booking : announcement.getBookings()) {
+            if (booking.getPassengerOrderId() != null) {
+                try {
+                    orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
+                        // Keep availableSeats in sync
+                        if (pOrder.getAvailableSeats() == null) {
+                            pOrder.setAvailableSeats(new java.util.ArrayList<>());
+                        }
+                        pOrder.getAvailableSeats().clear();
+                        if (announcement.getAvailableSeats() != null) {
+                            pOrder.getAvailableSeats().addAll(announcement.getAvailableSeats());
+                        }
+                        
+                        // Keep bookings in sync
+                        if (pOrder.getBookings() != null) {
+                            for (com.waygo.backend.entity.RideBooking pb : pOrder.getBookings()) {
+                                if (pb.getPassenger() != null && pb.getPassenger().getId().equals(booking.getPassenger().getId())) {
+                                    pb.setStatus(booking.getStatus());
+                                    if (booking.getSelectedSeats() != null) {
+                                        pb.setSelectedSeats(new java.util.ArrayList<>(booking.getSelectedSeats()));
+                                    } else {
+                                        pb.setSelectedSeats(new java.util.ArrayList<>());
+                                    }
+                                    rideBookingRepository.save(pb);
+                                }
+                            }
+                        }
+                        
+                        orderRepository.save(pOrder);
+                        notificationService.notifyOrderStatusUpdate(pOrder);
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private String mapSeatIndexToLabel(String index) {
