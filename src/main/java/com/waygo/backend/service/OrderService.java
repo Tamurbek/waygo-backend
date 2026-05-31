@@ -721,6 +721,14 @@ public class OrderService {
                                         if (pOrder.getAvailableSeats() != null) {
                                             pOrder.getAvailableSeats().clear();
                                         }
+                                        if (pOrder.getBookings() != null) {
+                                            for (com.waygo.backend.entity.RideBooking pb : pOrder.getBookings()) {
+                                                if (pb.getPassenger().getId().equals(booking.getPassenger().getId())) {
+                                                    pb.setStatus("REJECTED");
+                                                    rideBookingRepository.save(pb);
+                                                }
+                                            }
+                                        }
                                         orderRepository.save(pOrder);
                                         if (isConfirmed) {
                                             notificationService.notifyPassengerOrderCancelledByDriver(pOrder, order);
@@ -743,6 +751,14 @@ public class OrderService {
                                         pOrder.setLockExpirationTime(null);
                                         if (pOrder.getAvailableSeats() != null) {
                                             pOrder.getAvailableSeats().clear();
+                                        }
+                                        if (pOrder.getBookings() != null) {
+                                            for (com.waygo.backend.entity.RideBooking pb : pOrder.getBookings()) {
+                                                if (pb.getPassenger().getId().equals(booking.getPassenger().getId())) {
+                                                    pb.setStatus("REJECTED");
+                                                    rideBookingRepository.save(pb);
+                                                }
+                                            }
                                         }
                                         orderRepository.save(pOrder);
                                         if (isConfirmed) {
