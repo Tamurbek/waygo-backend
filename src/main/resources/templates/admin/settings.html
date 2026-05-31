@@ -53,6 +53,15 @@
                         <input type="text" th:field="*{eskizFrom}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
                     </div>
 
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">To'lov tizimi (Billing)</h3>
+                    
+                    <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                        <input type="checkbox" th:field="*{billingEnabled}" id="billingEnabledCheckbox" style="width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: var(--primary);">
+                        <label for="billingEnabledCheckbox" style="color: var(--text-dim); font-size: 0.9rem; cursor: pointer; user-select: none;">
+                            Global to'lov tizimini yoqish (ON) - Barcha haydovchilarni bloklash
+                        </label>
+                    </div>
+
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">Xabarlar</h3>
                     
                     <div class="form-group">

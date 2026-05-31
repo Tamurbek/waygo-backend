@@ -56,6 +56,7 @@ public class OrderService {
                 .status(Order.OrderStatus.PENDING);
 
         if (currentUser.getRole() == User.Role.DRIVER) {
+            checkDriverBilling(currentUser);
             orderBuilder.driver(currentUser);
         } else {
             orderBuilder.passenger(currentUser);
@@ -73,6 +74,7 @@ public class OrderService {
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can lock orders");
         }
+        checkDriverBilling(driver);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
@@ -101,6 +103,7 @@ public class OrderService {
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can unlock orders");
         }
+        checkDriverBilling(driver);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
@@ -128,6 +131,7 @@ public class OrderService {
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can accept orders");
         }
+        checkDriverBilling(driver);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
@@ -463,6 +467,7 @@ public class OrderService {
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can cancel their offers");
         }
+        checkDriverBilling(driver);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
@@ -486,6 +491,7 @@ public class OrderService {
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can assign seats");
         }
+        checkDriverBilling(driver);
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
@@ -569,6 +575,9 @@ public class OrderService {
         User currentUser = securityUtils.getCurrentUser();
         if (currentUser == null || (!currentUser.getId().equals(order.getDriver().getId()) && currentUser.getRole() != User.Role.ADMIN)) {
             throw new UnauthorizedAccessException("Only the assigned driver or admin can complete the trip");
+        }
+        if (currentUser.getRole() == User.Role.DRIVER) {
+            checkDriverBilling(currentUser);
         }
 
         if (order.getStatus() != Order.OrderStatus.STARTED && order.getStatus() != Order.OrderStatus.ACCEPTED) {
@@ -667,6 +676,9 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         
         User currentUser = securityUtils.getCurrentUser();
+        if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
+            checkDriverBilling(currentUser);
+        }
         boolean isPassenger = currentUser != null && order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId());
         boolean isDriver = currentUser != null && order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId());
         
@@ -1021,6 +1033,9 @@ public class OrderService {
 
     public List<Order> getPendingOrders(String region) {
         User currentUser = securityUtils.getCurrentUser();
+        if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
+            checkDriverBilling(currentUser);
+        }
         List<Order> orders;
         
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
@@ -1305,6 +1320,7 @@ public class OrderService {
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can confirm bookings");
         }
+        checkDriverBilling(driver);
 
         com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
@@ -1392,6 +1408,7 @@ public class OrderService {
         if (driver == null || driver.getRole() != User.Role.DRIVER) {
             throw new UnauthorizedAccessException("Only drivers can reject bookings");
         }
+        checkDriverBilling(driver);
 
         com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
@@ -1773,6 +1790,12 @@ public class OrderService {
             case "3": return "Orqa o'rta";
             case "4": return "Orqa o'ng";
             default: return "O'rindiq " + index;
+        }
+    }
+
+    private void checkDriverBilling(User driver) {
+        if (driver != null && driver.getRole() == User.Role.DRIVER && driver.isBillingEnabled()) {
+            throw new IllegalStateException("To'lov tizimi faolligi sababli amallar taqiqlangan. Iltimos, to'lovni amalga oshiring.");
         }
     }
 }

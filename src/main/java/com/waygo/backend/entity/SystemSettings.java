@@ -24,4 +24,11 @@ public class SystemSettings {
     
     @Builder.Default
     private String otpMessageTemplate = "WayGO tasdiqlash kodi: %s";
+
+    @Builder.Default
+    private Boolean billingEnabled = false;
+
+    public boolean isBillingEnabled() {
+        return Boolean.TRUE.equals(this.billingEnabled);
+    }
 }

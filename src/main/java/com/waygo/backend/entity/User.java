@@ -60,6 +60,18 @@ public class User implements UserDetails {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Builder.Default
+    private Boolean driverBillingEnabled = false;
+
+    @Transient
+    public boolean isBillingEnabled() {
+        return com.waygo.backend.service.SystemSettingsService.isGlobalBillingEnabled() || Boolean.TRUE.equals(this.driverBillingEnabled);
+    }
+
+    public boolean isDriverBillingEnabled() {
+        return Boolean.TRUE.equals(this.driverBillingEnabled);
+    }
+
     public enum Role {
         PASSENGER, DRIVER, ADMIN
     }

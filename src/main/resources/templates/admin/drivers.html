@@ -6,6 +6,9 @@
 
     <div class="main-content">
         <h1 th:text="${title}">Haydovchilar</h1>
+        <div th:if="${param.success}" style="padding: 0.75rem; margin-top: 1rem; border-radius: 0.5rem; background: rgba(0, 255, 128, 0.15); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); font-size: 0.9rem;">
+            ✓ Haydovchi sozlamalari muvaffaqiyatli yangilandi!
+        </div>
         
         <div class="card" style="margin-top: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -35,9 +38,15 @@
                         </td>
                         <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
                         <td>
-                            <div style="display: flex; gap: 0.5rem;">
-                                <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Profil</a>
-                                <a href="#" class="btn" style="background: rgba(255, 77, 77, 0.1); color: var(--error); padding: 0.4rem 0.8rem; font-size: 0.75rem;">Bloklash</a>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem;">Profil</a>
+                                <form th:action="@{'/admin/drivers/' + ${driver.id} + '/toggle-billing'}" method="post" style="display: inline;">
+                                    <button type="submit" class="btn" 
+                                            th:style="${driver.driverBillingEnabled} ? 'background: rgba(255, 77, 77, 0.15); color: var(--error); padding: 0.4rem 0.8rem; font-size: 0.75rem; border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 0.25rem; cursor: pointer;' : 'background: rgba(0, 255, 128, 0.1); color: var(--success); padding: 0.4rem 0.8rem; font-size: 0.75rem; border: 1px solid rgba(0, 255, 128, 0.3); border-radius: 0.25rem; cursor: pointer;'"
+                                            th:text="${driver.driverBillingEnabled} ? 'To\'lov: Yoqilgan (Blokda)' : 'To\'lov: O\'chirilgan'">
+                                        To'lov
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

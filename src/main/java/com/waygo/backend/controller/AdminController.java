@@ -162,4 +162,17 @@ public class AdminController {
             return "redirect:/admin/settings?clearError=" + e.getMessage();
         }
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/toggle-billing")
+    @org.springframework.transaction.annotation.Transactional
+    public String toggleDriverBilling(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        try {
+            User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+            driver.setDriverBillingEnabled(!driver.isDriverBillingEnabled());
+            userRepository.save(driver);
+            return "redirect:/admin/drivers?success";
+        } catch (Exception e) {
+            return "redirect:/admin/drivers?error=" + e.getMessage();
+        }
+    }
 }
