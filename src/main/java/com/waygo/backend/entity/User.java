@@ -65,7 +65,12 @@ public class User implements UserDetails {
 
     @Transient
     public boolean isBillingEnabled() {
-        return com.waygo.backend.service.SystemSettingsService.isGlobalBillingEnabled() || Boolean.TRUE.equals(this.driverBillingEnabled);
+        boolean billingActive = com.waygo.backend.service.SystemSettingsService.isGlobalBillingEnabled() 
+                || Boolean.TRUE.equals(this.driverBillingEnabled);
+        if (billingActive) {
+            return this.balance == null || this.balance.compareTo(java.math.BigDecimal.ZERO) <= 0;
+        }
+        return false;
     }
 
     public boolean isDriverBillingEnabled() {
