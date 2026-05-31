@@ -175,4 +175,47 @@ public class AdminController {
             return "redirect:/admin/drivers?error=" + e.getMessage();
         }
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/bulk-action")
+    @org.springframework.transaction.annotation.Transactional
+    public String bulkActionDrivers(
+            @org.springframework.web.bind.annotation.RequestParam(value = "driverIds", required = false) List<Long> driverIds,
+            @org.springframework.web.bind.annotation.RequestParam("action") String action) {
+        if (driverIds != null && !driverIds.isEmpty()) {
+            try {
+                boolean enable = "enable-billing".equals(action);
+                List<User> drivers = userRepository.findAllById(driverIds);
+                for (User driver : drivers) {
+                    if (driver.getRole() == User.Role.DRIVER) {
+                        driver.setDriverBillingEnabled(enable);
+                        userRepository.save(driver);
+                    }
+                }
+                return "redirect:/admin/drivers?success";
+            } catch (Exception e) {
+                return "redirect:/admin/drivers?error=" + e.getMessage();
+            }
+        }
+        return "redirect:/admin/drivers";
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/add-balance")
+    @org.springframework.transaction.annotation.Transactional
+    public String addDriverBalance(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam("amount") java.math.BigDecimal amount) {
+        try {
+            User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+            if (driver.getRole() != User.Role.DRIVER) {
+                throw new IllegalArgumentException("User is not a driver");
+            }
+            java.math.BigDecimal currentBalance = driver.getBalance() != null ? driver.getBalance() : java.math.BigDecimal.ZERO;
+            driver.setBalance(currentBalance.add(amount));
+            userRepository.save(driver);
+            return "redirect:/admin/drivers?success";
+        } catch (Exception e) {
+            return "redirect:/admin/drivers?error=" + e.getMessage();
+        }
+    }
 }
+

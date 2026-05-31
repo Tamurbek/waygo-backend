@@ -11,51 +11,102 @@
         </div>
         
         <div class="card" style="margin-top: 2rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <h2 style="font-size: 1.125rem;">Barcha haydovchilar</h2>
-                <div style="font-size: 0.875rem; color: var(--text-dim);" th:text="${#lists.size(drivers)} + ' ta ro''yxatga olingan'">0 ta</div>
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Avatar</th>
-                        <th>F.I.SH</th>
-                        <th>Telefon</th>
-                        <th>Balans</th>
-                        <th>Sana</th>
-                        <th>Amallar</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="driver : ${drivers}">
-                        <td>
-                            <img th:src="${driver.imageUrl != null ? driver.imageUrl : 'https://ui-avatars.com/api/?background=FFD700&color=000&name=' + (driver.fullName != null ? driver.fullName : driver.phone)}" class="avatar">
-                        </td>
-                        <td style="font-weight: 500;" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</td>
-                        <td th:text="${driver.phone}">+998...</td>
-                        <td>
-                            <span style="font-weight: 600; color: var(--success);" th:text="${#numbers.formatDecimal(driver.balance, 0, 'COMMA', 0, 'POINT')} + ' UZS'">0 UZS</span>
-                        </td>
-                        <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
-                        <td>
-                            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem;">Profil</a>
-                                <form th:action="@{'/admin/drivers/' + ${driver.id} + '/toggle-billing'}" method="post" style="display: inline;">
-                                    <button type="submit" class="btn" 
+            <form th:action="@{/admin/drivers/bulk-action}" method="post" id="bulkForm">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <h2 style="font-size: 1.125rem;">Barcha haydovchilar</h2>
+                    <div style="font-size: 0.875rem; color: var(--text-dim);" th:text="|${#lists.size(drivers)} ta ro'yxatga olingan|">0 ta</div>
+                </div>
+
+                <!-- Bulk Action Bar -->
+                <div id="bulkActionBar" style="display: flex; gap: 0.5rem; align-items: center; margin-top: 1rem; margin-bottom: 1rem; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.05);">
+                    <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-dim);">Tanlanganlar uchun:</span>
+                    <button type="submit" name="action" value="enable-billing" class="btn" style="background: rgba(255, 77, 77, 0.15); color: var(--error); border: 1px solid rgba(255, 77, 77, 0.3); padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem; cursor: pointer;">
+                        To'lovni yoqish (Blokda)
+                    </button>
+                    <button type="submit" name="action" value="disable-billing" class="btn" style="background: rgba(0, 255, 128, 0.15); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem; cursor: pointer;">
+                        To'lovni o'chirish (Ochish)
+                    </button>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox" id="selectAll" style="cursor: pointer;"></th>
+                            <th>Avatar</th>
+                            <th>F.I.SH</th>
+                            <th>Telefon</th>
+                            <th>Balans</th>
+                            <th>Sana</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="driver : ${drivers}">
+                            <td>
+                                <input type="checkbox" name="driverIds" th:value="${driver.id}" style="cursor: pointer;">
+                            </td>
+                            <td>
+                                <img th:src="${driver.imageUrl != null ? driver.imageUrl : 'https://ui-avatars.com/api/?background=FFD700&color=000&name=' + (driver.fullName != null ? driver.fullName : driver.phone)}" class="avatar">
+                            </td>
+                            <td style="font-weight: 500;" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</td>
+                            <td th:text="${driver.phone}">+998...</td>
+                            <td>
+                                <span style="font-weight: 600; color: var(--success);" th:text="${#numbers.formatDecimal(driver.balance, 0, 'COMMA', 0, 'POINT')} + ' UZS'">0 UZS</span>
+                            </td>
+                            <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
+                            <td>
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem;">Profil</a>
+                                    <button type="button" class="btn" 
                                             th:style="${driver.driverBillingEnabled} ? 'background: rgba(255, 77, 77, 0.15); color: var(--error); padding: 0.4rem 0.8rem; font-size: 0.75rem; border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 0.25rem; cursor: pointer;' : 'background: rgba(0, 255, 128, 0.1); color: var(--success); padding: 0.4rem 0.8rem; font-size: 0.75rem; border: 1px solid rgba(0, 255, 128, 0.3); border-radius: 0.25rem; cursor: pointer;'"
+                                            th:onclick="'document.getElementById(\'toggleForm-\' + ' + ${driver.id} + ').submit();'"
                                             th:text="${driver.driverBillingEnabled} ? 'To\'lov: Yoqilgan (Blokda)' : 'To\'lov: O\'chirilgan'">
                                         To'lov
                                     </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr th:if="${#lists.isEmpty(drivers)}">
-                        <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 4rem;">Hozircha haydovchilar ro'yxatga olinmagan</td>
-                    </tr>
-                </tbody>
-            </table>
+                                    
+                                    <!-- Add Balance Form Trigger -->
+                                    <div style="display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.2rem 0.4rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.05);">
+                                        <input type="number" th:id="'balanceInput-' + ${driver.id}" placeholder="+ UZS" style="width: 80px; padding: 0.35rem; font-size: 0.75rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text);">
+                                        <button type="button" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; border-radius: 0.25rem; background: rgba(13, 110, 253, 0.1); border-color: rgba(13, 110, 253, 0.3);"
+                                                th:onclick="'submitAddBalance(' + ${driver.id} + ')'">
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(drivers)}">
+                            <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 4rem;">Hozircha haydovchilar ro'yxatga olinmagan</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </form>
+            
+            <!-- Hidden Single Forms for Toggle Billing & Add Balance -->
+            <div th:each="driver : ${drivers}" style="display: none;">
+                <form th:id="'toggleForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/toggle-billing'}" method="post"></form>
+                <form th:id="'addBalanceForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/add-balance'}" method="post">
+                    <input type="hidden" name="amount" th:id="'amountInput-' + ${driver.id}">
+                </form>
+            </div>
         </div>
     </div>
+
+    <script>
+        document.getElementById('selectAll').addEventListener('change', function(e) {
+            const checkboxes = document.querySelectorAll('input[name="driverIds"]');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+        });
+
+        function submitAddBalance(driverId) {
+            const val = document.getElementById('balanceInput-' + driverId).value;
+            if (!val || isNaN(val) || parseFloat(val) <= 0) {
+                alert("Iltimos, to'g'ri summa kiriting!");
+                return;
+            }
+            document.getElementById('amountInput-' + driverId).value = val;
+            document.getElementById('addBalanceForm-' + driverId).submit();
+        }
+    </script>
 </body>
 </html>

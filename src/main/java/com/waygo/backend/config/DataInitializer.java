@@ -40,7 +40,7 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
         }
 
-        if (userRepository.count() <= 1) { // 1 marta admin qo'shilgan bo'lsa
+        if (false) { // Disable automatic test data recreation
             // Test Passengers
             userRepository.save(User.builder()
                     .phone("+998901234567")

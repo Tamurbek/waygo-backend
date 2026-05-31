@@ -1033,9 +1033,6 @@ public class OrderService {
 
     public List<Order> getPendingOrders(String region) {
         User currentUser = securityUtils.getCurrentUser();
-        if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
-            checkDriverBilling(currentUser);
-        }
         List<Order> orders;
         
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
