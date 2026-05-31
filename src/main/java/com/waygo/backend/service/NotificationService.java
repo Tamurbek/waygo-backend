@@ -178,4 +178,29 @@ public class NotificationService {
             );
         }
     }
+
+    public void notifyBalanceUpdate(User user, java.math.BigDecimal amount) {
+        if (user == null || user.getPhone() == null) {
+            return;
+        }
+        String formattedAmount = amount.setScale(0, java.math.RoundingMode.HALF_UP).toString();
+        String formattedBalance = user.getBalance() != null 
+                ? user.getBalance().setScale(0, java.math.RoundingMode.HALF_UP).toString() 
+                : "0";
+        String msg = "WayGO: Hisobingiz " + formattedAmount + " UZS ga to'ldirildi! Joriy balans: " + formattedBalance + " UZS";
+        smsService.sendSms(user.getPhone(), msg);
+
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", "BALANCE_UPDATE");
+        payload.put("amount", amount);
+        payload.put("balance", user.getBalance());
+        payload.put("message", msg);
+
+        messagingTemplate.convertAndSendToUser(
+                user.getPhone(),
+                "/queue/notifications",
+                payload
+        );
+    }
 }
+

@@ -26,6 +26,9 @@ public class AdminController {
     private final OrderRepository orderRepository;
     private final SystemSettingsService settingsService;
     private final BackupService backupService;
+    private final com.waygo.backend.service.TransactionService transactionService;
+    private final com.waygo.backend.service.NotificationService notificationService;
+
 
     @GetMapping("/login")
     public String login() {
@@ -205,13 +208,8 @@ public class AdminController {
             @org.springframework.web.bind.annotation.PathVariable Long id,
             @org.springframework.web.bind.annotation.RequestParam("amount") java.math.BigDecimal amount) {
         try {
-            User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Driver not found"));
-            if (driver.getRole() != User.Role.DRIVER) {
-                throw new IllegalArgumentException("User is not a driver");
-            }
-            java.math.BigDecimal currentBalance = driver.getBalance() != null ? driver.getBalance() : java.math.BigDecimal.ZERO;
-            driver.setBalance(currentBalance.add(amount));
-            userRepository.save(driver);
+            User driver = transactionService.topUp(id, amount);
+            notificationService.notifyBalanceUpdate(driver, amount);
             return "redirect:/admin/drivers?success";
         } catch (Exception e) {
             return "redirect:/admin/drivers?error=" + e.getMessage();
