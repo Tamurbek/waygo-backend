@@ -39,10 +39,12 @@ public class WebSocketSecurityConfig implements WebSocketMessageBrokerConfigurer
 
                 if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
                     String authHeader = accessor.getFirstNativeHeader("Authorization");
+                    System.out.println("STOMP CONNECT - Auth Header: " + authHeader);
                     if (authHeader != null && authHeader.startsWith("Bearer ")) {
                         String jwt = authHeader.substring(7);
                         try {
                             String username = jwtService.extractUsername(jwt);
+                            System.out.println("STOMP CONNECT - Extracted username: " + username);
                             if (username != null) {
                                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                                 if (jwtService.isTokenValid(jwt, userDetails)) {
@@ -53,11 +55,17 @@ public class WebSocketSecurityConfig implements WebSocketMessageBrokerConfigurer
                                                     userDetails.getAuthorities()
                                             );
                                     accessor.setUser(authentication);
+                                    System.out.println("STOMP CONNECT - Successfully authenticated user: " + username);
+                                } else {
+                                    System.out.println("STOMP CONNECT - Token invalid for user: " + username);
                                 }
                             }
                         } catch (Exception e) {
-                            // Token invalid or user not found — connection proceeds without auth principal
+                            System.out.println("STOMP CONNECT - Authentication exception: " + e.getMessage());
+                            e.printStackTrace();
                         }
+                    } else {
+                        System.out.println("STOMP CONNECT - No Bearer token found");
                     }
                 }
                 return message;

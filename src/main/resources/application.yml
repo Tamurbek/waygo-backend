@@ -1,6 +1,9 @@
 spring:
   application:
     name: waygo_backend
+  session:
+    store-type: redis
+    timeout: 30d
   
   servlet:
     multipart:
@@ -52,6 +55,8 @@ server:
   servlet:
     session:
       timeout: 30d
+      cookie:
+        max-age: 30d
 
 # JWT Configuration
 waygo:

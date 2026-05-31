@@ -196,9 +196,9 @@ public class NotificationService {
         payload.put("balance", user.getBalance());
         payload.put("message", msg);
 
-        messagingTemplate.convertAndSendToUser(
-                user.getPhone(),
-                "/queue/notifications",
+        // Send directly to the user's numeric ID specific topic to avoid special character (+) routing issues in STOMP
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + user.getId(),
                 payload
         );
     }
