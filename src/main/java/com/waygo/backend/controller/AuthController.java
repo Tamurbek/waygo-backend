@@ -27,9 +27,11 @@ public class AuthController {
     private final com.waygo.backend.service.FileService fileService;
 
     @PostMapping("/request-otp")
-    public ResponseEntity<ApiResponse<String>> requestOtp(@RequestBody OtpRequest request) {
+    public ResponseEntity<ApiResponse<java.util.Map<String, String>>> requestOtp(@RequestBody OtpRequest request) {
         String code = otpService.sendVerificationCode(request.getPhone());
-        return ResponseEntity.ok(ApiResponse.success(code, "Verification code sent to " + request.getPhone()));
+        return ResponseEntity.ok(ApiResponse.success(
+                java.util.Map.of("code", code), 
+                "Verification code sent to " + request.getPhone()));
     }
 
     @PostMapping("/verify-otp")
