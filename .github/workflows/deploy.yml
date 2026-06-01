@@ -59,19 +59,33 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           envs: GITHUB_REF_NAME
           script: |
-            # Use the tag name passed from GitHub Actions
+            set -e
             TAG_NAME=${GITHUB_REF_NAME}
             cd /var/www/waygo-backend
-            
-            # Save current commit for rollback
+
             OLD_COMMIT=$(git rev-parse HEAD)
-            
+            STASHED=0
+
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "Uncommitted local changes detected; stashing before checkout..."
+              git stash push -u -m "pre-deploy-${TAG_NAME}"
+              STASHED=1
+            fi
+
             echo "Starting deployment of version $TAG_NAME..."
-            if git fetch --tags && git checkout $TAG_NAME && docker compose up -d --build; then
+            if git fetch --tags && git checkout "$TAG_NAME" && docker compose up -d --build; then
+              if [ "$STASHED" = "1" ]; then
+                echo "Dropping pre-deploy stash (using $TAG_NAME from repository)."
+                git stash drop || true
+              fi
               echo "Deployment of $TAG_NAME successful!"
             else
               echo "Deployment failed! Rolling back to $OLD_COMMIT..."
-              git reset --hard $OLD_COMMIT
+              git reset --hard "$OLD_COMMIT"
+              if [ "$STASHED" = "1" ]; then
+                echo "Re-applying stashed local changes..."
+                git stash pop || echo "Warning: could not re-apply stash; check git stash list on the server."
+              fi
               docker compose up -d --build
               echo "Rollback completed."
               exit 1
