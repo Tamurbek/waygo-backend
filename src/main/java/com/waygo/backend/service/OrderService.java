@@ -158,7 +158,7 @@ public class OrderService {
         }
 
         offer.setStatus("PENDING");
-        
+
         // Custom price offered by driver
         if (pricePerPerson != null) {
             offer.setPricePerPerson(pricePerPerson);
@@ -171,13 +171,13 @@ public class OrderService {
         if (order.getDepartureDate() != null) {
             java.util.List<Order> otherDriverOrders = orderRepository.findByDriverIdOrderByCreatedAtDesc(driver.getId());
             for (Order otherOrder : otherDriverOrders) {
-                if (otherOrder.getStatus() != Order.OrderStatus.CANCELLED && 
-                    otherOrder.getStatus() != Order.OrderStatus.COMPLETED && 
+                if (otherOrder.getStatus() != Order.OrderStatus.CANCELLED &&
+                    otherOrder.getStatus() != Order.OrderStatus.COMPLETED &&
                     order.getDepartureDate().equals(otherOrder.getDepartureDate()) &&
                     (order.getFromAddress() == null || otherOrder.getFromAddress() == null ||
                      order.getFromAddress().substring(0, Math.min(order.getFromAddress().length(), 4))
                      .equalsIgnoreCase(otherOrder.getFromAddress().substring(0, Math.min(otherOrder.getFromAddress().length(), 4))))) {
-                    
+
                     // Exclude seats that are already booked in this overlapping trip
                     for (com.waygo.backend.entity.RideBooking booking : otherOrder.getBookings()) {
                         if ("ACCEPTED".equalsIgnoreCase(booking.getStatus())) {
@@ -332,7 +332,7 @@ public class OrderService {
         if (selectedSeats == null || selectedSeats.isEmpty()) {
             throw new IllegalArgumentException("You must select which seats to book");
         }
-        
+
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
                 .passenger(passenger)
@@ -341,7 +341,7 @@ public class OrderService {
                 .passengerOrderId(order.getId())
                 .createdAt(LocalDateTime.now())
                 .build();
-                
+
         order.getBookings().add(booking);
 
         // Update available seats: remove passenger selected seats from saloon
@@ -609,10 +609,10 @@ public class OrderService {
                         } else {
                             List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
                             for (Order pOrder : passengerOrders) {
-                                if (pOrder.getPassenger() != null && 
-                                    pOrder.getDriver() != null && 
+                                if (pOrder.getPassenger() != null &&
+                                    pOrder.getDriver() != null &&
                                     pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
-                                    pOrder.getStatus() != Order.OrderStatus.COMPLETED && 
+                                    pOrder.getStatus() != Order.OrderStatus.COMPLETED &&
                                     pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
                                     pOrder.setStatus(Order.OrderStatus.COMPLETED);
                                     orderRepository.save(pOrder);
@@ -674,16 +674,49 @@ public class OrderService {
     public Order updateStatus(Long orderId, Order.OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-        
+
         User currentUser = securityUtils.getCurrentUser();
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
             checkDriverBilling(currentUser);
         }
         boolean isPassenger = currentUser != null && order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId());
         boolean isDriver = currentUser != null && order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId());
-        
+
         if (!isPassenger && !isDriver) {
             throw new UnauthorizedAccessException("You are not part of this order");
+        }
+
+        if (status == Order.OrderStatus.CANCELLED && isPassenger) {
+            // Passenger is cancelling their request.
+            // 1. Find all bookings linked to this order and clean them up.
+            try {
+                List<com.waygo.backend.entity.RideBooking> linkedBookings = rideBookingRepository.findByPassengerOrderId(order.getId());
+                for (com.waygo.backend.entity.RideBooking booking : linkedBookings) {
+                    Order driverOrder = booking.getOrder();
+                    if (driverOrder != null) {
+                        // Free seats in driver's order if the booking was accepted
+                        if ("ACCEPTED".equals(booking.getStatus()) && driverOrder.getAvailableSeats() != null) {
+                            for (String seat : booking.getSelectedSeats()) {
+                                String mappedSeat = mapSeatIndexToLabel(seat);
+                                if (!driverOrder.getAvailableSeats().contains(mappedSeat)) {
+                                    driverOrder.getAvailableSeats().add(mappedSeat);
+                                }
+                            }
+                        }
+                        driverOrder.getBookings().remove(booking);
+                        orderRepository.save(driverOrder);
+                        notificationService.notifyOrderStatusUpdate(driverOrder);
+                    }
+                    rideBookingRepository.delete(booking);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
+            // 2. Notify the driver if they were already assigned
+            if (order.getDriver() != null) {
+                notificationService.notifyDriverOrderCancelledByPassenger(order);
+            }
         }
 
         if (status == Order.OrderStatus.CANCELLED && isDriver) {
@@ -694,7 +727,7 @@ public class OrderService {
                 order.setDriver(null);
                 order.setLockedByDriverId(null);
                 order.setLockExpirationTime(null);
-                
+
                 Order savedOrder = orderRepository.save(order);
                 notificationService.notifyOrderStatusUpdate(savedOrder);
                 notificationService.notifyNewOrder(savedOrder);
@@ -703,7 +736,7 @@ public class OrderService {
                 // Driver is cancelling their own ride offer (e'lon).
                 // We simply set it to CANCELLED and notify the passengers who booked it.
                 order.setStatus(Order.OrderStatus.CANCELLED);
-                
+
                 // Release/Cancel passenger bookings and orders!
                 if (order.getBookings() != null) {
                     for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
@@ -740,8 +773,8 @@ public class OrderService {
                             } else {
                                 List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
                                 for (Order pOrder : passengerOrders) {
-                                    if (pOrder.getPassenger() != null && 
-                                        pOrder.getDriver() != null && 
+                                    if (pOrder.getPassenger() != null &&
+                                        pOrder.getDriver() != null &&
                                         pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
                                         pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
                                         pOrder.setStatus(Order.OrderStatus.CANCELLED);
@@ -777,7 +810,7 @@ public class OrderService {
                         }
                     }
                 }
-                
+
                 Order savedOrder = orderRepository.save(order);
                 notificationService.notifyOrderStatusUpdate(savedOrder);
                 return savedOrder;
@@ -820,10 +853,10 @@ public class OrderService {
                             } else {
                                 List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
                                 for (Order pOrder : passengerOrders) {
-                                    if (pOrder.getPassenger() != null && 
-                                        pOrder.getDriver() != null && 
+                                    if (pOrder.getPassenger() != null &&
+                                        pOrder.getDriver() != null &&
                                         pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
-                                        pOrder.getStatus() != Order.OrderStatus.COMPLETED && 
+                                        pOrder.getStatus() != Order.OrderStatus.COMPLETED &&
                                         pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
                                         pOrder.setStatus(status);
                                         orderRepository.save(pOrder);
@@ -847,7 +880,7 @@ public class OrderService {
 
     public List<Order> getPassengerHistory(Long passengerId) {
         List<Order> rawOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
-        
+
         // Find all passenger request order IDs owned by this passenger
         java.util.Set<Long> passengerOrderIds = new java.util.HashSet<>();
         for (Order o : rawOrders) {
@@ -855,7 +888,7 @@ public class OrderService {
                 passengerOrderIds.add(o.getId());
             }
         }
-        
+
         // Filter out driver announcements that are associated with these passenger request orders
         List<Order> filtered = new java.util.ArrayList<>();
         for (Order o : rawOrders) {
@@ -863,8 +896,8 @@ public class OrderService {
                 boolean isDuplicate = false;
                 if (o.getBookings() != null) {
                     for (com.waygo.backend.entity.RideBooking booking : o.getBookings()) {
-                        if (booking.getPassenger().getId().equals(passengerId) && 
-                            booking.getPassengerOrderId() != null && 
+                        if (booking.getPassenger().getId().equals(passengerId) &&
+                            booking.getPassengerOrderId() != null &&
                             passengerOrderIds.contains(booking.getPassengerOrderId())) {
                             isDuplicate = true;
                             break;
@@ -877,7 +910,7 @@ public class OrderService {
             }
             filtered.add(o);
         }
-        
+
         return filtered;
     }
 
@@ -893,18 +926,18 @@ public class OrderService {
         // Get orders where this driver is assigned (both driver's own ride announcements
         // AND passenger requests where driver's offer was accepted)
         List<Order> byDriver = orderRepository.findByDriverIdOrderByCreatedAtDesc(driverId);
-        
+
         // Also include passenger orders where this driver submitted an accepted offer
         // (in case driver.id wasn't set correctly, fallback via driverOffers)
         List<Order> byOffer = orderRepository.findByAcceptedOfferDriverId(driverId);
-        
+
         // Merge and deduplicate by order ID
         java.util.Map<Long, Order> merged = new java.util.LinkedHashMap<>();
         for (Order o : byDriver) merged.put(o.getId(), o);
         for (Order o : byOffer) merged.putIfAbsent(o.getId(), o);
-        
+
         List<Order> result = new java.util.ArrayList<>(merged.values());
-        
+
         // Filter out passenger requests that have been merged/converted into the driver's own active announcement
         List<Order> filteredResult = new java.util.ArrayList<>();
         for (Order o : result) {
@@ -922,7 +955,7 @@ public class OrderService {
             }
             filteredResult.add(o);
         }
-        
+
         filteredResult.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
         return filteredResult;
     }
@@ -935,7 +968,7 @@ public class OrderService {
         User currentUser = securityUtils.getCurrentUser();
         boolean isOwner = (order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId())) ||
                          (order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId()));
-        
+
         if (currentUser == null || !isOwner) {
             throw new UnauthorizedAccessException("You can only edit your own orders");
         }
@@ -963,7 +996,7 @@ public class OrderService {
         if (dto.getNotes() != null) order.setNotes(dto.getNotes());
         if (dto.getPrice() != null) order.setPrice(dto.getPrice());
         if (dto.getBaggageDescription() != null) order.setBaggageDescription(dto.getBaggageDescription());
-        
+
         if (dto.getServices() != null) {
             if (dto.getServices().getKonditsioner() != null) order.setHasAirConditioning(dto.getServices().getKonditsioner());
             if (dto.getServices().getBagaj() != null) order.setHasBaggage(dto.getServices().getBagaj());
@@ -974,12 +1007,12 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         synchronizeAnnouncementToPassengerOrders(savedOrder);
         notificationService.notifyOrderStatusUpdate(savedOrder);
-        
+
         // Re-announce driver offers so passengers receive the "Yangi haydovchi e'loni!" push notification
         if (savedOrder.getDriver() != null && savedOrder.getPassenger() == null) {
             notificationService.notifyNewOrder(savedOrder);
         }
-        
+
         return savedOrder;
     }
 
@@ -999,7 +1032,7 @@ public class OrderService {
                 departureDate.equals(other.getDepartureDate())) {
 
                 // Compare routes
-                if (isRouteMatching(fromAddress, other.getFromAddress()) && 
+                if (isRouteMatching(fromAddress, other.getFromAddress()) &&
                     isRouteMatching(toAddress, other.getToAddress())) {
                     return other;
                 }
@@ -1023,7 +1056,7 @@ public class OrderService {
                 departureDate.equals(other.getDepartureDate())) {
 
                 // Compare routes
-                if (isRouteMatching(fromAddress, other.getFromAddress()) && 
+                if (isRouteMatching(fromAddress, other.getFromAddress()) &&
                     isRouteMatching(toAddress, other.getToAddress())) {
                     return other;
                 }
@@ -1051,7 +1084,7 @@ public class OrderService {
     public List<Order> getPendingOrders(String region) {
         User currentUser = securityUtils.getCurrentUser();
         List<Order> orders;
-        
+
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
             // Drivers see passenger requests
             List<Order> rawOrders = orderRepository.findByStatusAndDriverIsNull(Order.OrderStatus.PENDING);
@@ -1077,7 +1110,7 @@ public class OrderService {
                 if (matchingAnnouncement != null) {
                     emptySeats = matchingAnnouncement.getAvailableSeats() != null ? matchingAnnouncement.getAvailableSeats().size() : 0;
                 }
-                
+
                 int requestedCount = o.getPassengerCount() != null ? o.getPassengerCount() : 1;
                 if (requestedCount <= emptySeats) {
                     orders.add(o);
@@ -1109,14 +1142,14 @@ public class OrderService {
         if (region != null && !region.trim().isEmpty() && !"Barchasi".equalsIgnoreCase(region.trim())) {
             List<Order> filtered = new java.util.ArrayList<>();
             for (Order order : orders) {
-                if (order.getFromAddress() != null && 
+                if (order.getFromAddress() != null &&
                     order.getFromAddress().toLowerCase().contains(region.toLowerCase().trim())) {
                     filtered.add(order);
                 }
             }
             return filtered;
         }
-        
+
         return orders;
     }
 
@@ -1199,7 +1232,7 @@ public class OrderService {
                 b.setNotes(notes);
             }
             rideBookingRepository.save(b);
-            
+
             // Sync with driver's active announcement if present
             if (order.getPassenger() != null && order.getDriver() != null) {
                 try {
@@ -1298,7 +1331,7 @@ public class OrderService {
                 );
                 if (activeAnnouncement != null) {
                     boolean alreadyBooked = activeAnnouncement.getBookings().stream()
-                        .anyMatch(b -> b.getPassenger().getId().equals(passenger.getId()) 
+                        .anyMatch(b -> b.getPassenger().getId().equals(passenger.getId())
                                     && !"REJECTED".equals(b.getStatus())
                                     && b.getSelectedSeats().equals(seatsToBook));
                     if (!alreadyBooked) {
@@ -1356,9 +1389,9 @@ public class OrderService {
         }
 
         // Merge this booking with any other existing ACCEPTED booking for the same passenger under this order
-        java.util.List<com.waygo.backend.entity.RideBooking> existingAcceptedBookings = 
+        java.util.List<com.waygo.backend.entity.RideBooking> existingAcceptedBookings =
                 rideBookingRepository.findByOrderIdAndPassengerId(order.getId(), booking.getPassenger().getId());
-        
+
         com.waygo.backend.entity.RideBooking targetAcceptedBooking = null;
         for (com.waygo.backend.entity.RideBooking b : existingAcceptedBookings) {
             if ("ACCEPTED".equals(b.getStatus()) && !b.getId().equals(booking.getId())) {
@@ -1380,14 +1413,14 @@ public class OrderService {
             if (booking.getNotes() != null && !booking.getNotes().isEmpty()) {
                 targetAcceptedBooking.setNotes(booking.getNotes());
             }
-            
+
             // Remove the merged booking from order's list & database
             order.getBookings().remove(booking);
             rideBookingRepository.delete(booking);
-            
+
             // Save the merged target booking
             rideBookingRepository.save(targetAcceptedBooking);
-            
+
             // Use the targetAcceptedBooking for the rest of the passenger contract logic
             booking = targetAcceptedBooking;
         }
@@ -1438,7 +1471,7 @@ public class OrderService {
         if (seat != null && !seat.isEmpty()) {
             if (booking.getSelectedSeats().contains(seat)) {
                 booking.getSelectedSeats().remove(seat);
-                
+
                 // If the booking was previously ACCEPTED, we must free the seat
                 if (wasAccepted) {
                     if (order.getAvailableSeats() != null) {
@@ -1448,7 +1481,7 @@ public class OrderService {
                         }
                     }
                 }
-                
+
                 if (booking.getSelectedSeats().isEmpty()) {
                     booking.setStatus("REJECTED");
                 }
@@ -1473,7 +1506,7 @@ public class OrderService {
         // Sync changes to the passenger request order (pOrder)
         try {
             Long pOrderId = booking.getPassengerOrderId();
-            
+
             // Sync with other bookings sharing the same passengerOrderId (e.g. driver auto-created announcements)
             if (pOrderId != null) {
                 java.util.List<com.waygo.backend.entity.RideBooking> relatedBookings = rideBookingRepository.findByPassengerOrderId(pOrderId);
@@ -1528,9 +1561,9 @@ public class OrderService {
                 if (passenger != null) {
                     java.util.List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(passenger.getId());
                     for (Order candidate : passengerOrders) {
-                        if (candidate.getStatus() != Order.OrderStatus.COMPLETED 
-                                && candidate.getStatus() != Order.OrderStatus.CANCELLED 
-                                && candidate.getDriver() != null 
+                        if (candidate.getStatus() != Order.OrderStatus.COMPLETED
+                                && candidate.getStatus() != Order.OrderStatus.CANCELLED
+                                && candidate.getDriver() != null
                                 && candidate.getDriver().getId().equals(driver.getId())
                                 && candidate.getDepartureDate().equals(order.getDepartureDate())
                                 && isRouteMatching(candidate.getFromAddress(), order.getFromAddress())
@@ -1598,7 +1631,7 @@ public class OrderService {
                         if (pOrder.getAvailableSeats() != null) {
                             pOrder.getAvailableSeats().clear();
                         }
-                        
+
                         if (pOrder.getDriverOffers() != null) {
                             for (DriverOffer offer : pOrder.getDriverOffers()) {
                                 if (offer.getDriver() != null && offer.getDriver().getId().equals(driver.getId())) {
@@ -1608,7 +1641,7 @@ public class OrderService {
                                 }
                             }
                         }
-                        
+
                         if (pOrder.getBookings() != null) {
                             for (com.waygo.backend.entity.RideBooking pBooking : pOrder.getBookings()) {
                                 pBooking.setStatus("REJECTED");
@@ -1665,14 +1698,14 @@ public class OrderService {
         if (seat != null && !seat.isEmpty()) {
             if (booking.getSelectedSeats().contains(seat)) {
                 booking.getSelectedSeats().remove(seat);
-                
+
                 if (wasAccepted && order.getAvailableSeats() != null) {
                     String mappedSeat = mapSeatIndexToLabel(seat);
                     if (!order.getAvailableSeats().contains(mappedSeat)) {
                         order.getAvailableSeats().add(mappedSeat);
                     }
                 }
-                
+
                 if (booking.getSelectedSeats().isEmpty()) {
                     order.getBookings().remove(booking);
                     rideBookingRepository.delete(booking);
@@ -1708,7 +1741,7 @@ public class OrderService {
 
             if (pOrder != null) {
                 boolean passengerBookingDeleted = false;
-                
+
                 // Find and update passenger's booking on pOrder
                 if (pOrder.getBookings() != null) {
                     java.util.List<com.waygo.backend.entity.RideBooking> toRemove = new java.util.ArrayList<>();
@@ -1851,7 +1884,7 @@ public class OrderService {
                         if (announcement.getAvailableSeats() != null) {
                             pOrder.getAvailableSeats().addAll(announcement.getAvailableSeats());
                         }
-                        
+
                         // Keep bookings in sync
                         if (pOrder.getBookings() != null) {
                             for (com.waygo.backend.entity.RideBooking pb : pOrder.getBookings()) {
@@ -1866,7 +1899,7 @@ public class OrderService {
                                 }
                             }
                         }
-                        
+
                         orderRepository.save(pOrder);
                         notificationService.notifyOrderStatusUpdate(pOrder);
                     });

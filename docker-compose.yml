@@ -33,13 +33,6 @@ services:
     depends_on:
       - db
       - redis
-    networks:
-      - default
-      - caddy_net
-
-networks:
-  caddy_net:
-    external: true
 
 volumes:
   postgres_data:

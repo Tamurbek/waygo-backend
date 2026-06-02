@@ -158,6 +158,28 @@ public class NotificationService {
         messagingTemplate.convertAndSend("/topic/orders/update", passengerOrder);
     }
 
+    public void notifyDriverOrderCancelledByPassenger(Order passengerOrder) {
+        if (passengerOrder == null || passengerOrder.getDriver() == null) {
+            return;
+        }
+        String phone = passengerOrder.getDriver().getPhone();
+        if (phone == null || phone.isEmpty()) {
+            return;
+        }
+
+        String msg = "WayGO: Yo'lovchi o'z buyurtmasini bekor qildi. Qatnov: " +
+                (passengerOrder.getFromAddress() != null ? passengerOrder.getFromAddress() : "") + " -> " +
+                (passengerOrder.getToAddress() != null ? passengerOrder.getToAddress() : "");
+        smsService.sendSms(phone, msg);
+
+        messagingTemplate.convertAndSendToUser(
+                phone,
+                "/queue/order-status",
+                passengerOrder
+        );
+        messagingTemplate.convertAndSend("/topic/orders/update", passengerOrder);
+    }
+
     public void notifyBookingCancelledByDriver(RideBooking booking, Order driverOrder) {
         if (booking == null || booking.getPassenger() == null) {
             return;
@@ -184,8 +206,8 @@ public class NotificationService {
             return;
         }
         String formattedAmount = amount.setScale(0, java.math.RoundingMode.HALF_UP).toString();
-        String formattedBalance = user.getBalance() != null 
-                ? user.getBalance().setScale(0, java.math.RoundingMode.HALF_UP).toString() 
+        String formattedBalance = user.getBalance() != null
+                ? user.getBalance().setScale(0, java.math.RoundingMode.HALF_UP).toString()
                 : "0";
         String msg = "WayGO: Hisobingiz " + formattedAmount + " UZS ga to'ldirildi! Joriy balans: " + formattedBalance + " UZS";
         smsService.sendSms(user.getPhone(), msg);
@@ -203,4 +225,3 @@ public class NotificationService {
         );
     }
 }
-
