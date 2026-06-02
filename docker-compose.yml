@@ -2,28 +2,40 @@ services:
   db:
     image: postgres:15-alpine
     container_name: waygo_db_container
-    ports:
-      - "5432:5432"
+    restart: always
     environment:
       POSTGRES_DB: waygo_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - waygo-backend_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d waygo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - waygo_net
 
   redis:
     image: redis:7-alpine
     container_name: waygo_redis
-    ports:
-      - "6379:6379"
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - waygo_net
 
   app:
     build: .
     container_name: waygo_backend_app
+    restart: always
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      # Use "db" service name from docker-compose instead of "localhost"
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waygo_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
@@ -31,8 +43,20 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - waygo_net
+      - caddy_net
+
+networks:
+  waygo_net:
+    driver: bridge
+  caddy_net:
+    external: true
 
 volumes:
-  postgres_data:
+  waygo-backend_postgres_data:
+    external: true
