@@ -1,25 +1,25 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: waygo_db_local
+    container_name: waygo_db_container
     restart: always
     environment:
       POSTGRES_DB: waygo_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     volumes:
-      - waygo_local_postgres_data:/var/lib/postgresql/data
+      - waygo-backend_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d waygo_db"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - waygo_local_net
+      - waygo_net
 
   redis:
     image: redis:7-alpine
-    container_name: waygo_redis_local
+    container_name: waygo_redis
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -27,11 +27,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - waygo_local_net
+      - waygo_net
 
   app:
     build: .
-    container_name: waygo_backend_app_local
+    container_name: waygo_backend_app
     restart: always
     ports:
       - "127.0.0.1:8080:8080"
@@ -48,11 +48,15 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - waygo_local_net
+      - waygo_net
+      - caddy_net
 
 networks:
-  waygo_local_net:
+  waygo_net:
     driver: bridge
+  caddy_net:
+    external: true
 
 volumes:
-  waygo_local_postgres_data:
+  waygo-backend_postgres_data:
+    external: true

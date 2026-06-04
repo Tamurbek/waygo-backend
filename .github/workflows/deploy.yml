@@ -73,7 +73,7 @@ jobs:
             fi
 
             echo "Starting deployment of version $TAG_NAME..."
-            if git fetch --tags && git checkout "$TAG_NAME" && docker compose up -d --build; then
+            if git fetch --tags && git checkout "$TAG_NAME" && docker compose -f docker-compose.prod.yml up -d --build; then
               if [ "$STASHED" = "1" ]; then
                 echo "Dropping pre-deploy stash (using $TAG_NAME from repository)."
                 git stash drop || true
@@ -86,7 +86,7 @@ jobs:
                 echo "Re-applying stashed local changes..."
                 git stash pop || echo "Warning: could not re-apply stash; check git stash list on the server."
               fi
-              docker compose up -d --build
+              docker compose -f docker-compose.prod.yml up -d --build
               echo "Rollback completed."
               exit 1
             fi
