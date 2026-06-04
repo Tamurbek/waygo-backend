@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+
+    <div th:replace="~{admin/fragments :: sidebar('config_tariffs')}"></div>
+
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 th:text="${title}" style="margin: 0;">Tarif Rejalari</h1>
+            <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('active')">
+                <i class="ph ph-plus-circle"></i> Yangi Tarif Qo'shish
+            </button>
+        </div>
+        
+        <div th:if="${param.success}" class="card" style="background: rgba(25, 135, 84, 0.1); border-color: var(--success); margin-bottom: 2rem;">
+            <div style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Tarif muvaffaqiyatli saqlandi!</div>
+        </div>
+        
+        <div th:if="${param.updated}" class="card" style="background: rgba(13, 110, 253, 0.1); border-color: var(--primary); margin-bottom: 2rem;">
+            <div style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Tarif muvaffaqiyatli yangilandi!</div>
+        </div>
+
+        <div th:if="${param.deleted}" class="card" style="background: rgba(220, 53, 69, 0.1); border-color: var(--error); margin-bottom: 2rem;">
+            <div style="color: var(--error); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-trash" style="font-size: 1.25rem;"></i> Tarif o'chirildi!</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Mavjud Tariflar</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Muddati</th>
+                        <th>Narxi</th>
+                        <th>Aktivlik</th>
+                        <th style="text-align: right;">Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="t : ${tariffs}">
+                        <td>
+                            <strong th:text="${t.duration}"></strong><br>
+                            <span th:if="${t.isPopular}" class="status-badge status-pending" style="margin-top: 0.5rem;"><i class="ph ph-star-fill"></i> Ommabop</span>
+                        </td>
+                        <td>
+                            <span style="font-weight: 600;" th:text="${#numbers.formatDecimal(t.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'"></span><br>
+                            <del th:if="${t.oldPrice != null}" style="color: var(--text-dim); font-size: 0.8rem;" th:text="${#numbers.formatDecimal(t.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' UZS'"></del>
+                        </td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" th:checked="${t.isActive}" 
+                                       th:data-id="${t.id}" 
+                                       onchange="toggleActive(this.dataset.id)">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="actions" style="justify-content: flex-end;">
+                                <a th:href="@{/admin/config/tariffs(edit=${t.id})}" class="btn-icon btn-icon-edit" title="Tahrirlash">
+                                    <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
+                                </a>
+                                <form th:action="@{/admin/config/tariffs/delete/{id}(id=${t.id})}" method="post" onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?');" style="display: inline;">
+                                    <button type="submit" class="btn-icon btn-icon-delete" title="O'chirish">
+                                        <i class="ph ph-trash" style="font-size: 1.25rem;"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(tariffs)}">
+                        <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 3rem 1rem;">
+                            <i class="ph ph-tag" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><br>
+                            Tizimda tariflar mavjud emas
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Tarif Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="document.getElementById('addModal').classList.remove('active')"><i class="ph ph-x" style="font-size: 1.25rem;"></i></button>
+            </div>
+            <form th:action="@{/admin/config/tariffs/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Muddati (masalan, "1 kunlik")</label>
+                        <input type="text" name="duration" required class="form-control" placeholder="1 kunlik">
+                    </div>
+                    
+
+
+                    <div class="form-group">
+                        <label class="form-label">Narxi (UZS)</label>
+                        <input type="number" step="0.01" name="price" required class="form-control" placeholder="Masalan: 12000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Eski Narxi (Ixtiyoriy, UZS)</label>
+                        <input type="number" step="0.01" name="oldPrice" class="form-control" placeholder="Masalan: 15000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="isPopular" value="true" class="form-check-input">
+                            <span class="form-check-label">Ommabop (Popular) belgisi</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="active" value="true" checked class="form-check-input">
+                            <span class="form-check-label">Aktiv (Haydovchilarga ko'rinadi)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addModal').classList.remove('active')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal (Rendered only if editItem is present) -->
+    <div id="editModal" th:if="${editItem != null}" class="modal-overlay active">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Tarifni Tahrirlash</h3>
+                <a th:href="@{/admin/config/tariffs}" class="modal-close"><i class="ph ph-x" style="font-size: 1.25rem;"></i></a>
+            </div>
+            <form th:action="@{'/admin/config/tariffs/edit/' + ${editItem.id}}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Muddati (masalan, "1 kunlik")</label>
+                        <input type="text" name="duration" th:value="${editItem.duration}" required class="form-control" placeholder="1 kunlik">
+                    </div>
+                    
+
+
+                    <div class="form-group">
+                        <label class="form-label">Narxi (UZS)</label>
+                        <input type="number" step="0.01" name="price" th:value="${editItem.price}" required class="form-control" placeholder="Masalan: 12000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Eski Narxi (Ixtiyoriy, UZS)</label>
+                        <input type="number" step="0.01" name="oldPrice" th:value="${editItem.oldPrice}" class="form-control" placeholder="Masalan: 15000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="isPopular" value="true" th:checked="${editItem.popular}" class="form-check-input">
+                            <span class="form-check-label">Ommabop (Popular) belgisi</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="active" value="true" th:checked="${editItem.active}" class="form-check-input">
+                            <span class="form-check-label">Aktiv (Haydovchilarga ko'rinadi)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a th:href="@{/admin/config/tariffs}" class="btn btn-outline">Bekor qilish</a>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleActive(id) {
+            fetch('/admin/config/tariffs/toggle-active/' + id, { method: 'POST' })
+                .then(response => {
+                    if(!response.ok) alert('Xatolik yuz berdi');
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+
+    <div th:replace="~{admin/fragments :: sidebar('config_cars')}"></div>
+
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 th:text="${title}" style="margin: 0;">Mashina Turlari</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-outline" onclick="openModal('addColorModal')">
+                    <i class="ph ph-palette"></i> Rang Qo'shish
+                </button>
+                <button class="btn btn-outline" onclick="openModal('addModelModal')">
+                    <i class="ph ph-car"></i> Model Qo'shish
+                </button>
+                <button class="btn btn-primary" onclick="openModal('addBrandModal')">
+                    <i class="ph ph-plus-circle"></i> Brend Qo'shish
+                </button>
+            </div>
+        </div>
+
+        <div th:if="${param.success}" class="card" style="background: rgba(25, 135, 84, 0.1); border-color: var(--success); margin-bottom: 2rem;">
+            <div style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Muvaffaqiyatli saqlandi!</div>
+        </div>
+
+        <div th:if="${param.updated}" class="card" style="background: rgba(13, 110, 253, 0.1); border-color: var(--primary); margin-bottom: 2rem;">
+            <div style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Muvaffaqiyatli yangilandi!</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+            <!-- CHAP USTUN: Brendlar jadvali + Ranglar -->
+            <div>
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <h3 class="card-title">Brendlar</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Brend</th>
+                                <th>Modellari</th>
+                                <th style="text-align: right;">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="b : ${brands}">
+                                <td><strong th:text="${b.name}"></strong></td>
+                                <td>
+                                    <span class="status-badge" style="background: rgba(13, 110, 253, 0.1); color: var(--primary);">
+                                        <span th:text="${#lists.size(b.models)}"></span> ta
+                                    </span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <button type="button" class="btn-icon btn-icon-edit"
+                                        th:data-id="${b.id}"
+                                        th:data-name="${b.name}"
+                                        onclick="openEditBrandModal(this)">
+                                        <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(brands)}">
+                                <td colspan="3" style="text-align: center; color: var(--text-dim); padding: 2rem 1rem;">Hozircha brendlar yo'q</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Ranglar -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Ranglar</h3>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.25rem 0;">
+                        <span th:each="c : ${colors}"
+                              th:data-id="${c.id}"
+                              th:data-name="${c.name}"
+                              th:data-hex="${c.hexCode}"
+                              onclick="openEditColorModal(this)"
+                              style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: border-color 0.2s;"
+                              onmouseover="this.style.borderColor='#ffc107'"
+                              onmouseout="this.style.borderColor='var(--border)'">
+                            <span th:style="'width: 12px; height: 12px; border-radius: 50%; background-color: ' + ${c.hexCode} + '; border: 1px solid rgba(255,255,255,0.3);'" style="display: inline-block;"></span>
+                            <span th:text="${c.name}"></span>
+                            <i class="ph ph-pencil-simple" style="color: var(--text-dim); font-size: 0.8rem;"></i>
+                        </span>
+                        <span th:if="${#lists.isEmpty(colors)}" style="color: var(--text-dim); font-size: 0.9rem;">Hozircha ranglar yo'q</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- O'NG USTUN: Modellar ro'yxati brendlar bo'yicha -->
+            <div>
+                <div th:each="b : ${brands}" th:if="${not #lists.isEmpty(b.models)}" class="card" style="margin-bottom: 1.5rem;">
+                    <div style="padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border);">
+                        <h3 style="margin: 0; font-size: 1rem; color: var(--primary);" th:text="${b.name} + ' modellari'"></h3>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem 1.25rem;">
+                        <span th:each="m : ${b.models}"
+                              th:data-id="${m.id}"
+                              th:data-name="${m.name}"
+                              th:data-brand-id="${b.id}"
+                              onclick="openEditModelModal(this)"
+                              style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: border-color 0.2s;"
+                              onmouseover="this.style.borderColor='#ffc107'"
+                              onmouseout="this.style.borderColor='var(--border)'">
+                            <span th:text="${m.name}"></span>
+                            <i class="ph ph-pencil-simple" style="color: var(--text-dim); font-size: 0.8rem;"></i>
+                        </span>
+                    </div>
+                </div>
+                <div th:if="${#lists.isEmpty(brands)}" class="card" style="text-align: center; color: var(--text-dim); padding: 3rem;">
+                    <i class="ph ph-car" style="font-size: 3rem; opacity: 0.5;"></i><br>Avval brend qo'shing
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Brand Modal -->
+    <div id="addBrandModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Brend Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addBrandModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form th:action="@{/admin/config/cars/brands/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Brend Nomi</label>
+                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Chevrolet">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addBrandModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Brand Modal -->
+    <div id="editBrandModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Brendni Tahrirlash</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editBrandModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form id="editBrandForm" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Brend Nomi</label>
+                        <input type="text" id="editBrandName" name="name" required class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editBrandModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Model Modal -->
+    <div id="addModelModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Model Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addModelModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form th:action="@{/admin/config/cars/models/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Brendni tanlang</label>
+                        <select name="brandId" required class="form-control">
+                            <option value="" disabled selected>— Brendni tanlang —</option>
+                            <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model Nomi</label>
+                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Cobalt">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addModelModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Model Modal -->
+    <div id="editModelModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Modelni Tahrirlash</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editModelModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form id="editModelForm" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Brendni tanlang</label>
+                        <select id="editModelBrandId" name="brandId" required class="form-control">
+                            <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Model Nomi</label>
+                        <input type="text" id="editModelName" name="name" required class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editModelModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Color Modal -->
+    <div id="addColorModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Rang Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addColorModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form th:action="@{/admin/config/cars/colors/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Rang Nomi</label>
+                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Oq">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rang tanlang</label>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <input type="color" name="hexCode" value="#ffffff" required style="width: 50px; height: 44px; padding: 0; border: none; border-radius: 0.5rem; cursor: pointer; background: transparent;">
+                            <span style="color: var(--text-dim); font-size: 0.875rem;">HEX rang kodi</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addColorModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Color Modal -->
+    <div id="editColorModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Rangni Tahrirlash</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editColorModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form id="editColorForm" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Rang Nomi</label>
+                        <input type="text" id="editColorName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Rang tanlang</label>
+                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                            <input type="color" id="editColorHex" name="hexCode" required style="width: 50px; height: 44px; padding: 0; border: none; border-radius: 0.5rem; cursor: pointer; background: transparent;">
+                            <span style="color: var(--text-dim); font-size: 0.875rem;">HEX rang kodi</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editColorModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function openEditBrandModal(btn) {
+            document.getElementById('editBrandForm').action = '/admin/config/cars/brands/edit/' + btn.dataset.id;
+            document.getElementById('editBrandName').value = btn.dataset.name;
+            openModal('editBrandModal');
+        }
+
+        function openEditModelModal(el) {
+            document.getElementById('editModelForm').action = '/admin/config/cars/models/edit/' + el.dataset.id;
+            document.getElementById('editModelName').value = el.dataset.name;
+            document.getElementById('editModelBrandId').value = el.dataset.brandId;
+            openModal('editModelModal');
+        }
+
+        function openEditColorModal(el) {
+            document.getElementById('editColorForm').action = '/admin/config/cars/colors/edit/' + el.dataset.id;
+            document.getElementById('editColorName').value = el.dataset.name;
+            document.getElementById('editColorHex').value = el.dataset.hex;
+            openModal('editColorModal');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+
+    <div th:replace="~{admin/fragments :: sidebar('config_regions')}"></div>
+
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 th:text="${title}" style="margin: 0;">Viloyatlar va Tumanlar</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-outline" onclick="openModal('addDistrictModal')">
+                    <i class="ph ph-map-pin"></i> Tuman Qo'shish
+                </button>
+                <button class="btn btn-primary" onclick="openModal('addRegionModal')">
+                    <i class="ph ph-plus-circle"></i> Viloyat Qo'shish
+                </button>
+            </div>
+        </div>
+
+        <div th:if="${param.success}" class="card" style="background: rgba(25, 135, 84, 0.1); border-color: var(--success); margin-bottom: 2rem;">
+            <div style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Muvaffaqiyatli saqlandi!</div>
+        </div>
+
+        <div th:if="${param.updated}" class="card" style="background: rgba(13, 110, 253, 0.1); border-color: var(--primary); margin-bottom: 2rem;">
+            <div style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Muvaffaqiyatli yangilandi!</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+
+            <!-- Viloyatlar jadvali -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Mavjud Viloyatlar</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nomi</th>
+                            <th>Tumanlar Soni</th>
+                            <th style="text-align: right;">Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${regions}">
+                            <td><strong th:text="${r.name}"></strong></td>
+                            <td>
+                                <span class="status-badge" style="background: rgba(13, 110, 253, 0.1); color: var(--primary);">
+                                    <span th:text="${#lists.size(r.districts)}"></span> tuman
+                                </span>
+                            </td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn-icon btn-icon-edit"
+                                    th:data-id="${r.id}"
+                                    th:data-name="${r.name}"
+                                    onclick="openEditRegionModal(this)">
+                                    <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(regions)}">
+                            <td colspan="3" style="text-align: center; color: var(--text-dim); padding: 3rem 1rem;">
+                                <i class="ph ph-map-trifold" style="font-size: 3rem; opacity: 0.5;"></i><br>Hozircha viloyatlar yo'q
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tumanlar ro'yxati -->
+            <div>
+                <div th:each="r : ${regions}" th:if="${not #lists.isEmpty(r.districts)}" class="card" style="margin-bottom: 1.5rem;">
+                    <div style="padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; font-size: 1rem; color: var(--primary);" th:text="${r.name}"></h3>
+                        <span class="status-badge" style="background: rgba(13,110,253,0.1); color: var(--primary);">
+                            <span th:text="${#lists.size(r.districts)}"></span> ta
+                        </span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 1rem 1.25rem;">
+                        <span th:each="d : ${r.districts}"
+                              class="district-chip"
+                              th:data-id="${d.id}"
+                              th:data-name="${d.name}"
+                              th:data-region-id="${r.id}"
+                              style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: border-color 0.2s;"
+                              onclick="openEditDistrictModal(this)"
+                              onmouseover="this.style.borderColor='#ffc107'" 
+                              onmouseout="this.style.borderColor='var(--border)'">
+                            <span th:text="${d.name}"></span>
+                            <i class="ph ph-pencil-simple" style="color: var(--text-dim); font-size: 0.8rem;"></i>
+                        </span>
+                    </div>
+                </div>
+                <div th:if="${#lists.isEmpty(regions)}" class="card" style="text-align: center; color: var(--text-dim); padding: 3rem;">
+                    <i class="ph ph-map-pin" style="font-size: 3rem; opacity: 0.5;"></i><br>Avval viloyat qo'shing
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Region Modal -->
+    <div id="addRegionModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Viloyat Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addRegionModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form th:action="@{/admin/config/regions/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Viloyat Nomi</label>
+                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Toshkent">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addRegionModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Region Modal -->
+    <div id="editRegionModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Viloyatni Tahrirlash</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editRegionModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form id="editRegionForm" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Viloyat Nomi</label>
+                        <input type="text" id="editRegionName" name="name" required class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editRegionModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add District Modal -->
+    <div id="addDistrictModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Tuman Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addDistrictModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form th:action="@{/admin/config/districts/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Viloyatni tanlang</label>
+                        <select name="regionId" required class="form-control">
+                            <option value="" disabled selected>— Viloyatni tanlang —</option>
+                            <option th:each="r : ${regions}" th:value="${r.id}" th:text="${r.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tuman Nomi</label>
+                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Yunusobod">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addDistrictModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit District Modal -->
+    <div id="editDistrictModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Tumanni Tahrirlash</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editDistrictModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form id="editDistrictForm" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Viloyatni tanlang</label>
+                        <select id="editDistrictRegionId" name="regionId" required class="form-control">
+                            <option th:each="r : ${regions}" th:value="${r.id}" th:text="${r.name}"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tuman Nomi</label>
+                        <input type="text" id="editDistrictName" name="name" required class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editDistrictModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function openEditRegionModal(btn) {
+            document.getElementById('editRegionForm').action = '/admin/config/regions/edit/' + btn.dataset.id;
+            document.getElementById('editRegionName').value = btn.dataset.name;
+            openModal('editRegionModal');
+        }
+
+        function openEditDistrictModal(el) {
+            document.getElementById('editDistrictForm').action = '/admin/config/districts/edit/' + el.dataset.id;
+            document.getElementById('editDistrictName').value = el.dataset.name;
+            document.getElementById('editDistrictRegionId').value = el.dataset.regionId;
+            openModal('editDistrictModal');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>

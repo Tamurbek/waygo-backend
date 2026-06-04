@@ -54,10 +54,7 @@ class WaygoBackendApplicationTests {
                     .availableSeats(new ArrayList<>(Arrays.asList("FRONT", "BACK_LEFT")))
                     .status(Order.OrderStatus.PENDING)
                     .baggageDescription("Baggage " + i)
-                    .hasAirConditioning(true)
-                    .hasBaggage(true)
-                    .hasChildSeat(false)
-                    .hasTrailer(false)
+                    .selectedServices(new ArrayList<>(Arrays.asList("Konditsioner", "Bagaj")))
                     .build();
             orderRepository.save(order);
         }
@@ -87,5 +84,18 @@ class WaygoBackendApplicationTests {
         }
 
         System.out.println("=== END FETCH TEST ===");
+    }
+
+    @Autowired
+    com.waygo.backend.controller.config.ConfigController configController;
+
+    @Test
+    void testConfigTariffs() {
+        try {
+            System.out.println(configController.getTariffs().getBody());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

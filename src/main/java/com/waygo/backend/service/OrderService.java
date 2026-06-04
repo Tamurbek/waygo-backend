@@ -49,10 +49,7 @@ public class OrderService {
                 .notes(dto.getNotes())
                 .price(dto.getPrice())
                 .baggageDescription(dto.getBaggageDescription())
-                .hasAirConditioning(dto.getServices() != null ? dto.getServices().getKonditsioner() : false)
-                .hasBaggage(dto.getServices() != null ? dto.getServices().getBagaj() : false)
-                .hasChildSeat(dto.getServices() != null ? dto.getServices().getChildSeat() : false)
-                .hasTrailer(dto.getServices() != null ? dto.getServices().getTirkama() : false)
+                .selectedServices(dto.getSelectedServices() != null ? dto.getSelectedServices() : new java.util.ArrayList<>())
                 .status(Order.OrderStatus.PENDING);
 
         if (currentUser.getRole() == User.Role.DRIVER) {
@@ -383,10 +380,7 @@ public class OrderService {
                     .departureTime(order.getDepartureTime())
                     .price(chosenOffer.getPricePerPerson())
                     .baggageDescription(order.getBaggageDescription())
-                    .hasAirConditioning(order.getHasAirConditioning())
-                    .hasBaggage(order.getHasBaggage())
-                    .hasChildSeat(order.getHasChildSeat())
-                    .hasTrailer(order.getHasTrailer())
+                    .selectedServices(new java.util.ArrayList<>(order.getSelectedServices()))
                     .notes("Yo'lovchi shartnomasi asosida avtomatik yaratildi")
                     .status(Order.OrderStatus.PENDING);
 
@@ -997,11 +991,12 @@ public class OrderService {
         if (dto.getPrice() != null) order.setPrice(dto.getPrice());
         if (dto.getBaggageDescription() != null) order.setBaggageDescription(dto.getBaggageDescription());
 
-        if (dto.getServices() != null) {
-            if (dto.getServices().getKonditsioner() != null) order.setHasAirConditioning(dto.getServices().getKonditsioner());
-            if (dto.getServices().getBagaj() != null) order.setHasBaggage(dto.getServices().getBagaj());
-            if (dto.getServices().getChildSeat() != null) order.setHasChildSeat(dto.getServices().getChildSeat());
-            if (dto.getServices().getTirkama() != null) order.setHasTrailer(dto.getServices().getTirkama());
+        if (dto.getSelectedServices() != null) {
+            if (order.getSelectedServices() == null) {
+                order.setSelectedServices(new java.util.ArrayList<>());
+            }
+            order.getSelectedServices().clear();
+            order.getSelectedServices().addAll(dto.getSelectedServices());
         }
 
         Order savedOrder = orderRepository.save(order);

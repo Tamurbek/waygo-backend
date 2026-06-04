@@ -69,10 +69,13 @@ public class Order {
     private java.util.List<DriverOffer> driverOffers = new java.util.ArrayList<>();
 
     private String baggageDescription;
-    private Boolean hasAirConditioning;
-    private Boolean hasBaggage;
-    private Boolean hasChildSeat;
-    private Boolean hasTrailer;
+    
+    @ElementCollection
+    @CollectionTable(name = "order_services", joinColumns = @JoinColumn(name = "order_id"))
+    @Column(name = "service_name")
+    @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
+    private java.util.List<String> selectedServices = new java.util.ArrayList<>();
 
     @Builder.Default
     private Boolean passengerConfirmed = false;

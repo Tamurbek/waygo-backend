@@ -53,6 +53,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         ex.printStackTrace(); // For console logs
+        
+        try {
+            java.io.FileWriter fw = new java.io.FileWriter("/tmp/waygo_error.log", true);
+            java.io.PrintWriter pw = new java.io.PrintWriter(fw);
+            ex.printStackTrace(pw);
+            pw.close();
+            fw.close();
+        } catch (Exception e) {}
+
         String errorDetail = ex.getClass().getSimpleName() + ": " + ex.getMessage();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("An unexpected error occurred: " + errorDetail));

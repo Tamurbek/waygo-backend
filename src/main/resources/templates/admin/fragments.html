@@ -5,49 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${title}">WayGO Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         :root { 
             --primary: #0D6EFD; 
+            --primary-hover: #0b5ed7;
             --dark: #0B0E11; 
             --surface: #1B2026; 
+            --surface-hover: #222830;
             --text: #F8F9FA; 
             --text-dim: #94A3B8; 
             --success: #198754; 
             --pending: #FFC107; 
             --error: #DC3545; 
             --info: #0D6EFD;
+            --warning: #ffc107;
+            --border: rgba(255,255,255,0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--dark); color: var(--text); display: flex; min-height: 100vh; }
         
         /* Sidebar Styles */
-        .sidebar { width: 260px; background-color: var(--surface); border-right: 1px solid rgba(255,255,255,0.05); padding: 2rem 1rem; position: sticky; top: 0; height: 100vh; }
+        .sidebar { width: 260px; background-color: var(--surface); border-right: 1px solid var(--border); padding: 2rem 1rem; position: sticky; top: 0; height: 100vh; }
         .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 3rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
-        .nav-item { padding: 0.75rem 1rem; border-radius: 0.5rem; color: var(--text-dim); text-decoration: none; margin-bottom: 0.5rem; display: block; transition: all 0.2s; font-weight: 500; }
+        .nav-item { padding: 0.75rem 1rem; border-radius: 0.5rem; color: var(--text-dim); text-decoration: none; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s; font-weight: 500; }
+        .nav-item i { font-size: 1.25rem; }
         .nav-item:hover, .nav-item.active { background-color: rgba(13, 110, 253, 0.1); color: var(--primary); }
         
         /* Layout */
-        .main-content { flex: 1; padding: 2rem 3rem; }
-        .card { background: var(--surface); border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(255,255,255,0.05); }
+        .main-content { flex: 1; padding: 2rem 3rem; overflow-y: auto; }
+        .card { background: var(--surface); border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .card-title { font-size: 1.25rem; font-weight: 600; color: var(--text); }
         
         /* Tables */
-        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
-        th { text-align: left; padding: 1rem; color: var(--text-dim); border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        td { padding: 1.25rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.95rem; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 0.5rem; }
+        th { text-align: left; padding: 1rem; color: var(--text-dim); border-bottom: 1px solid var(--border); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        td { padding: 1.25rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.95rem; vertical-align: middle; transition: background 0.2s; }
+        tr:hover td { background: var(--surface-hover); }
+        tr:last-child td { border-bottom: none; }
         
         /* Badges */
-        .status-badge { padding: 0.35rem 0.85rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-block; }
-        .status-completed, .status-active { background: rgba(0, 255, 128, 0.1); color: var(--success); }
-        .status-pending { background: rgba(255, 193, 7, 0.1); color: var(--pending); }
-        .status-cancelled, .status-error { background: rgba(255, 77, 77, 0.1); color: var(--error); }
-        .status-started { background: rgba(0, 122, 255, 0.1); color: var(--info); }
+        .status-badge { padding: 0.35rem 0.85rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 0.35rem; }
+        .status-completed, .status-active { background: rgba(25, 135, 84, 0.15); color: #20c997; border: 1px solid rgba(32, 201, 151, 0.2); }
+        .status-pending { background: rgba(255, 193, 7, 0.15); color: var(--pending); border: 1px solid rgba(255, 193, 7, 0.2); }
+        .status-cancelled, .status-error, .status-inactive { background: rgba(220, 53, 69, 0.15); color: #ff6b6b; border: 1px solid rgba(255, 107, 107, 0.2); }
+        .status-started { background: rgba(13, 110, 253, 0.15); color: #6ea8fe; border: 1px solid rgba(110, 168, 254, 0.2); }
         
-        /* Components */
-        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #333; }
-        .btn { border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: 0.2s; text-decoration: none; display: inline-block; font-size: 0.875rem; }
-        .btn-primary { background: var(--primary); color: var(--dark); }
-        .btn-outline { background: rgba(13, 110, 253, 0.05); color: var(--primary); border: 1px solid rgba(13, 110, 253, 0.2); }
-        .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        /* Form Inputs */
+        .form-group { margin-bottom: 1.25rem; }
+        .form-label { display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.875rem; font-weight: 500; }
+        .form-control { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: rgba(0,0,0,0.2); color: white; transition: all 0.2s; font-size: 0.95rem; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); background: rgba(0,0,0,0.3); }
+        .form-check { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none; }
+        .form-check-input { width: 1.1rem; height: 1.1rem; accent-color: var(--primary); cursor: pointer; }
+        .form-check-label { color: var(--text); font-size: 0.95rem; cursor: pointer; }
+
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .3s; border-radius: 34px; border: 1px solid var(--border); }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: var(--text-dim); transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: rgba(13, 110, 253, 0.2); border-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); background-color: var(--primary); }
+
+        /* Buttons */
+        .btn { border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.875rem; line-height: 1.5; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,110,253,0.3); }
+        .btn-outline { background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid var(--border); }
+        .btn-outline:hover { background: rgba(255, 255, 255, 0.1); }
+        .btn-danger { background: rgba(220, 53, 69, 0.1); color: #ff6b6b; border: 1px solid rgba(220, 53, 69, 0.2); }
+        .btn-danger:hover { background: #dc3545; color: white; border-color: #dc3545; }
+        .btn-warning { background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2); }
+        .btn-warning:hover { background: #ffc107; color: #000; border-color: #ffc107; }
+        .btn-icon { padding: 0.5rem; border-radius: 0.375rem; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; border: none; background: transparent; cursor: pointer; }
+        .btn-icon-edit { color: #ffc107; }
+        .btn-icon-edit:hover { background: rgba(255, 193, 7, 0.15); }
+        .btn-icon-delete { color: #ff6b6b; }
+        .btn-icon-delete:hover { background: rgba(220, 53, 69, 0.15); }
+
+        /* Action Cell */
+        .actions { display: flex; gap: 0.5rem; align-items: center; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--surface); border-radius: 1rem; border: 1px solid var(--border); width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .modal-overlay.active .modal { transform: translateY(0); opacity: 1; }
+        .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 1.25rem; font-weight: 600; color: var(--text); margin: 0; }
+        .modal-close { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.5rem; border-radius: 0.5rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: rgba(255,255,255,0.05); color: white; }
+        .modal-body { padding: 1.5rem; max-height: 70vh; overflow-y: auto; }
+        .modal-footer { padding: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 1rem; background: rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -57,31 +108,47 @@
         
         <nav>
             <a th:href="@{/admin/dashboard}" class="nav-item" th:classappend="${activeItem == 'dashboard' ? 'active' : ''}">
-                Dashboard
+                <i class="ph ph-squares-four"></i> Dashboard
             </a>
             <a th:href="@{/admin/drivers}" class="nav-item" th:classappend="${activeItem == 'drivers' ? 'active' : ''}">
-                Haydovchilar
+                <i class="ph ph-steering-wheel"></i> Haydovchilar
             </a>
             <a th:href="@{/admin/passengers}" class="nav-item" th:classappend="${activeItem == 'passengers' ? 'active' : ''}">
-                Mijozlar
+                <i class="ph ph-users"></i> Mijozlar
             </a>
             <a th:href="@{/admin/orders}" class="nav-item" th:classappend="${activeItem == 'orders' ? 'active' : ''}">
-                Buyurtmalar
+                <i class="ph ph-receipt"></i> Buyurtmalar
             </a>
             <a th:href="@{/admin/settings}" class="nav-item" th:classappend="${activeItem == 'settings' ? 'active' : ''}">
-                Sozlamalar
+                <i class="ph ph-gear"></i> Sozlamalar
+            </a>
+
+            <div style="margin-top: 1.5rem; margin-bottom: 0.5rem; padding-left: 1rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.05em;">
+                Ma'lumotnomalar
+            </div>
+            <a th:href="@{/admin/config/tariffs}" class="nav-item" th:classappend="${activeItem == 'config_tariffs' ? 'active' : ''}">
+                <i class="ph ph-tag"></i> Tariflar
+            </a>
+            <a th:href="@{/admin/config/regions}" class="nav-item" th:classappend="${activeItem == 'config_regions' ? 'active' : ''}">
+                <i class="ph ph-map-pin"></i> Viloyatlar
+            </a>
+            <a th:href="@{/admin/config/cars}" class="nav-item" th:classappend="${activeItem == 'config_cars' ? 'active' : ''}">
+                <i class="ph ph-car"></i> Mashinalar
+            </a>
+            <a th:href="@{/admin/config/services}" class="nav-item" th:classappend="${activeItem == 'config_services' ? 'active' : ''}">
+                <i class="ph ph-sparkle"></i> Xizmatlar
             </a>
             
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05);">
-                <a th:href="@{/admin/logout}" class="nav-item" style="color: var(--error);">
-                    🚪 Chiqish
+            <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                <a th:href="@{/admin/logout}" class="nav-item" style="color: #ff6b6b;">
+                    <i class="ph ph-sign-out"></i> Chiqish
                 </a>
             </div>
         </nav>
         
-        <div style="margin-top: auto; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 0.5rem;">
+        <div style="margin-top: auto; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 0.5rem; border: 1px solid var(--border);">
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.25rem;">Tizim versiyasi</div>
-            <div style="font-size: 0.875rem; font-weight: 600;">v1.0.4-beta</div>
+            <div style="font-size: 0.875rem; font-weight: 600; color: var(--text);">v1.0.4-beta</div>
         </div>
     </div>
 

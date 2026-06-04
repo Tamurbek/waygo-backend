@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+
+    <div th:replace="~{admin/fragments :: sidebar('config_services')}"></div>
+
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 th:text="${title}" style="margin: 0;">Xizmatlar va Qulayliklar</h1>
+            <button class="btn btn-primary" onclick="openModal('addModal')">
+                <i class="ph ph-plus-circle"></i> Yangi Xizmat Qo'shish
+            </button>
+        </div>
+
+        <div th:if="${param.success}" class="card" style="background: rgba(25, 135, 84, 0.1); border-color: var(--success); margin-bottom: 2rem;">
+            <div style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Xizmat muvaffaqiyatli saqlandi!</div>
+        </div>
+
+        <div th:if="${param.updated}" class="card" style="background: rgba(13, 110, 253, 0.1); border-color: var(--primary); margin-bottom: 2rem;">
+            <div style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Xizmat muvaffaqiyatli yangilandi!</div>
+        </div>
+
+        <div th:if="${param.deleted}" class="card" style="background: rgba(220, 53, 69, 0.1); border-color: var(--error); margin-bottom: 2rem;">
+            <div style="color: var(--error); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-trash" style="font-size: 1.25rem;"></i> Xizmat o'chirildi!</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Mavjud Xizmatlar</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nomi</th>
+                        <th>Turi</th>
+                        <th>Aktivlik</th>
+                        <th style="text-align: right;">Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="s : ${services}">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.05); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: var(--primary);">
+                                    <i th:class="${'ph ' + s.iconKey}"></i>
+                                </div>
+                                <div>
+                                    <strong th:text="${s.name}"></strong><br>
+                                    <span style="color: var(--text-dim); font-size: 0.8rem; font-family: monospace;" th:text="${s.iconKey}"></span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge" style="background: rgba(255,255,255,0.1); color: var(--text-dim); border: 1px solid rgba(255,255,255,0.1);" th:text="${s.type}"></span>
+                        </td>
+                        <td>
+                            <label class="switch">
+                                <input type="checkbox" th:checked="${s.active}"
+                                       th:data-id="${s.id}"
+                                       onchange="toggleActive(this.dataset.id)">
+                                <span class="slider"></span>
+                            </label>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="actions" style="justify-content: flex-end;">
+                                <button type="button" class="btn-icon btn-icon-edit" title="Tahrirlash"
+                                    th:data-id="${s.id}"
+                                    th:data-name="${s.name}"
+                                    th:data-icon="${s.iconKey}"
+                                    th:data-type="${s.type}"
+                                    th:data-active="${s.active}"
+                                    onclick="openEditServiceModal(this)">
+                                    <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
+                                </button>
+                                <form th:action="@{/admin/config/services/delete/{id}(id=${s.id})}" method="post"
+                                      onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?');" style="display: inline;">
+                                    <button type="submit" class="btn-icon btn-icon-delete" title="O'chirish">
+                                        <i class="ph ph-trash" style="font-size: 1.25rem;"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(services)}">
+                        <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 3rem 1rem;">
+                            <i class="ph ph-sparkle" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><br>
+                            Tizimda xizmatlar mavjud emas
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Xizmat Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form th:action="@{/admin/config/services/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Xizmat Nomi</label>
+                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Konditsioner">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ikonka Kaliti (Phosphor Icons)</label>
+                        <input type="text" name="iconKey" required class="form-control" placeholder="ph-wind">
+                        <small style="color: var(--text-dim); display: block; margin-top: 0.5rem;">Ikonkalarni <a href="https://phosphoricons.com/" target="_blank" style="color: var(--primary);">phosphoricons.com</a> saytidan olasiz.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Xizmat Turi</label>
+                        <select name="type" required class="form-control">
+                            <option value="TOGGLE">Yoqib/O'chirish (Toggle)</option>
+                            <option value="INPUT">Matn kiritish (Input)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" name="active" value="true" checked class="form-check-input">
+                            <span class="form-check-label">Aktiv (Mijozlarga ko'rinadi)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Xizmatni Tahrirlash</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editModal')">
+                    <i class="ph ph-x" style="font-size: 1.25rem;"></i>
+                </button>
+            </div>
+            <form id="editServiceForm" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Xizmat Nomi</label>
+                        <input type="text" id="editName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ikonka Kaliti (Phosphor Icons)</label>
+                        <input type="text" id="editIconKey" name="iconKey" required class="form-control">
+                        <small style="color: var(--text-dim); display: block; margin-top: 0.5rem;">Ikonkalarni <a href="https://phosphoricons.com/" target="_blank" style="color: var(--primary);">phosphoricons.com</a> saytidan olasiz.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Xizmat Turi</label>
+                        <select id="editType" name="type" required class="form-control">
+                            <option value="TOGGLE">Yoqib/O'chirish (Toggle)</option>
+                            <option value="INPUT">Matn kiritish (Input)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" id="editActive" name="active" value="true" class="form-check-input">
+                            <span class="form-check-label">Aktiv (Mijozlarga ko'rinadi)</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function openEditServiceModal(btn) {
+            document.getElementById('editServiceForm').action = '/admin/config/services/edit/' + btn.dataset.id;
+            document.getElementById('editName').value = btn.dataset.name;
+            document.getElementById('editIconKey').value = btn.dataset.icon;
+            document.getElementById('editType').value = btn.dataset.type;
+            document.getElementById('editActive').checked = (btn.dataset.active === 'true');
+            openModal('editModal');
+        }
+
+        function toggleActive(id) {
+            fetch('/admin/config/services/toggle-active/' + id, { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) alert('Xatolik yuz berdi');
+                });
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function(e) {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+    </script>
+</body>
+</html>
