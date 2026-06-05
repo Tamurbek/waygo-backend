@@ -40,39 +40,47 @@ public class DataInitializer implements CommandLineRunner {
                     .build());
         }
 
-        if (false) { // Disable automatic test data recreation
+        if (true) { // Enable automatic test data recreation
             // Test Passengers
-            userRepository.save(User.builder()
-                    .phone("+998901234567")
-                    .fullName("Temur Yo'ldoshev")
-                    .password(defaultPassword)
-                    .role(User.Role.PASSENGER)
-                    .balance(BigDecimal.ZERO)
-                    .build());
+            if (userRepository.findByPhone("+998901234567").isEmpty()) {
+                userRepository.save(User.builder()
+                        .phone("+998901234567")
+                        .fullName("Temur Yo'ldoshev")
+                        .password(defaultPassword)
+                        .role(User.Role.PASSENGER)
+                        .balance(BigDecimal.ZERO)
+                        .build());
+            }
 
-            userRepository.save(User.builder()
-                    .phone("+998901112233")
-                    .fullName("Yo'lovchi Ali")
-                    .role(User.Role.PASSENGER)
-                    .balance(BigDecimal.ZERO)
-                    .build());
+            if (userRepository.findByPhone("+998901112233").isEmpty()) {
+                userRepository.save(User.builder()
+                        .phone("+998901112233")
+                        .fullName("Yo'lovchi Ali")
+                        .role(User.Role.PASSENGER)
+                        .balance(BigDecimal.ZERO)
+                        .build());
+            }
 
             // Test Drivers
-            userRepository.save(User.builder()
-                    .phone("+998991234567")
-                    .fullName("Haydovchi Valijon")
-                    .role(User.Role.DRIVER)
-                    .balance(new BigDecimal("0"))
-                    .build());
+            if (userRepository.findByPhone("+998991234567").isEmpty()) {
+                userRepository.save(User.builder()
+                        .phone("+998991234567")
+                        .fullName("Haydovchi Valijon")
+                        .role(User.Role.DRIVER)
+                        .balance(new BigDecimal("0"))
+                        .build());
+            }
             
-            userRepository.save(User.builder()
-                    .phone("+998997778899")
-                    .fullName("Haydovchi Sardor")
-                    .role(User.Role.DRIVER)
-                    .balance(new BigDecimal("0"))
-                    .build());
+            if (userRepository.findByPhone("+998997778899").isEmpty()) {
+                userRepository.save(User.builder()
+                        .phone("+998997778899")
+                        .fullName("Haydovchi Sardor")
+                        .role(User.Role.DRIVER)
+                        .balance(new BigDecimal("0"))
+                        .build());
+            }
 
-            System.out.println("✅ Test ma'lumotlari (Yo'lovchi va Haydovchilar) yaratildi!");
+            System.out.println("✅ Test ma'lumotlari (Yo'lovchi va Haydovchilar) tekshirildi va yaratildi!");
         }
 
         // Generate driverId for existing drivers if they don't have one

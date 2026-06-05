@@ -28,7 +28,7 @@ public class AdminController {
     private final BackupService backupService;
     private final com.waygo.backend.service.TransactionService transactionService;
     private final com.waygo.backend.service.NotificationService notificationService;
-
+    private final com.waygo.backend.repository.config.TariffPlanRepository tariffPlanRepository;
 
     @GetMapping("/login")
     public String login() {
@@ -116,6 +116,7 @@ public class AdminController {
     public String drivers(Model model) {
         model.addAttribute("title", "WayGO Haydovchilar");
         model.addAttribute("drivers", userRepository.findByRoleOrderByCreatedAtDesc(User.Role.DRIVER));
+        model.addAttribute("tariffs", tariffPlanRepository.findAll());
         model.addAttribute("activeItem", "drivers");
         return "admin/drivers";
     }
@@ -173,6 +174,26 @@ public class AdminController {
             User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Driver not found"));
             driver.setDriverBillingEnabled(!driver.isDriverBillingEnabled());
             userRepository.save(driver);
+            return "redirect:/admin/drivers?success";
+        } catch (Exception e) {
+            return "redirect:/admin/drivers?error=" + e.getMessage();
+        }
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/cancel-tariff")
+    public String cancelDriverTariff(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        try {
+            transactionService.cancelDriverTariff(id);
+            return "redirect:/admin/drivers?success";
+        } catch (Exception e) {
+            return "redirect:/admin/drivers?error=" + e.getMessage();
+        }
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/change-tariff")
+    public String changeDriverTariff(@org.springframework.web.bind.annotation.PathVariable Long id, @org.springframework.web.bind.annotation.RequestParam("tariffId") Long tariffId) {
+        try {
+            transactionService.changeDriverTariff(id, tariffId);
             return "redirect:/admin/drivers?success";
         } catch (Exception e) {
             return "redirect:/admin/drivers?error=" + e.getMessage();

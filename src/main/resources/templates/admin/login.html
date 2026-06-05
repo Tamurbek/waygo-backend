@@ -6,7 +6,8 @@
     <title>WayGO Admin - Kirish</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #0D6EFD; --dark: #0B0E11; --surface: #1B2026; --text: #F8F9FA; --text-dim: #94A3B8; --error: #DC3545; }
+        :root { --primary: #2563EB; --primary-hover: #1D4ED8; --dark: #0F172A; --surface: #1E293B; --text: #F8FAFC; --text-dim: #94A3B8; --error: #EF4444; --input-bg: rgba(0,0,0,0.2); --input-border: rgba(255,255,255,0.1); --btn-text: #fff; }
+        [data-theme="light"] { --primary: #2563EB; --primary-hover: #1D4ED8; --dark: #FFFFFF; --surface: #F8F9FA; --text: #111827; --text-dim: #6B7280; --input-bg: #F3F4F6; --input-border: #E5E7EB; --btn-text: #fff; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { 
             background-color: var(--dark); 
@@ -17,6 +18,7 @@
             min-height: 100vh;
             background: radial-gradient(circle at top right, rgba(13,110,253,0.05), transparent),
                         radial-gradient(circle at bottom left, rgba(13,110,253,0.05), transparent);
+            background-color: var(--dark);
         }
         .login-card {
             background: var(--surface);
@@ -24,8 +26,8 @@
             border-radius: 1.5rem;
             width: 100%;
             max-width: 400px;
-            border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--input-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
         }
         .logo { font-size: 2rem; font-weight: 800; color: var(--primary); text-align: center; margin-bottom: 2rem; }
         .form-group { margin-bottom: 1.5rem; }
@@ -33,10 +35,10 @@
         input {
             width: 100%;
             padding: 0.875rem 1rem;
-            background: #2A2A2A;
-            border: 1px solid rgba(255,255,255,0.1);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 0.75rem;
-            color: #fff;
+            color: var(--text);
             outline: none;
             transition: 0.2s;
         }
@@ -45,7 +47,7 @@
             width: 100%;
             padding: 1rem;
             background: var(--primary);
-            color: var(--dark);
+            color: var(--btn-text);
             border: none;
             border-radius: 0.75rem;
             font-weight: 700;
@@ -65,10 +67,18 @@
             border: 1px solid rgba(255, 77, 77, 0.2);
         }
     </style>
+    <script>
+        const savedTheme = localStorage.getItem('waygo-admin-theme') || 'dark';
+        if (savedTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    </script>
 </head>
 <body>
     <div class="login-card">
-        <div class="logo">🚖 WayGO</div>
+        <div class="logo">
+            <img th:src="@{/images/logo_icon.png}" alt="WayGo Logo" style="width: 250px; height: auto; margin: 0 auto; display: block;" />
+        </div>
         
         <div th:if="${param.error}" class="error-msg">
             Noma'lum telefon yoki parol kiritildi.
@@ -97,5 +107,6 @@
             <button type="submit" class="btn">Kirish</button>
         </form>
     </div>
+<script th:replace="~{admin/fragments :: scripts}"></script>
 </body>
 </html>

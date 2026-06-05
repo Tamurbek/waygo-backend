@@ -11,7 +11,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/config")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*") // Allow for admin panel
 public class ConfigController {
 
     private final ConfigService configService;

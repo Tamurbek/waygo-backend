@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.waygo.backend.entity.config.TariffPlan;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -62,6 +63,12 @@ public class User implements UserDetails {
 
     @Builder.Default
     private Boolean driverBillingEnabled = false;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "active_tariff_id")
+    private TariffPlan activeTariff;
+
+    private LocalDateTime tariffExpiryDate;
 
     @Transient
     public boolean isBillingEnabled() {

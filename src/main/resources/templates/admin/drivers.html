@@ -36,6 +36,7 @@
                             <th>F.I.SH</th>
                             <th>Telefon</th>
                             <th>Balans</th>
+                            <th>Joriy Tarif</th>
                             <th>Sana</th>
                             <th>Amallar</th>
                         </tr>
@@ -52,6 +53,24 @@
                             <td th:text="${driver.phone}">+998...</td>
                             <td>
                                 <span style="font-weight: 600; color: var(--success);" th:text="${#numbers.formatDecimal(driver.balance, 0, 'COMMA', 0, 'POINT')} + ' UZS'">0 UZS</span>
+                            </td>
+                            <td>
+                                <div th:if="${driver.activeTariff != null}" style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <span style="font-weight: 600; color: var(--primary);" th:text="${driver.activeTariff.duration}">15 kun</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-dim);" th:text="'Gacha: ' + ${#temporals.format(driver.tariffExpiryDate, 'dd.MM.yyyy HH:mm')}">Date</span>
+                                    
+                                    <div style="display: flex; gap: 0.25rem; margin-top: 0.25rem;">
+                                        <button type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 0.25rem; color: var(--error); border-color: rgba(255, 77, 77, 0.3);"
+                                                th:onclick="'document.getElementById(\'cancelTariffForm-\' + ' + ${driver.id} + ').submit();'">
+                                            Bekor qilish
+                                        </button>
+                                        <button type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 0.25rem;"
+                                                th:onclick="'showChangeTariffModal(' + ${driver.id} + ')'">
+                                            Almashtirish
+                                        </button>
+                                    </div>
+                                </div>
+                                <span th:if="${driver.activeTariff == null}" style="color: var(--text-dim); font-size: 0.85rem;">Tarif yo'q</span>
                             </td>
                             <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
                             <td>
@@ -88,6 +107,28 @@
                 <form th:id="'addBalanceForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/add-balance'}" method="post">
                     <input type="hidden" name="amount" th:id="'amountInput-' + ${driver.id}">
                 </form>
+                <form th:id="'cancelTariffForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/cancel-tariff'}" method="post"></form>
+                <form th:id="'changeTariffForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/change-tariff'}" method="post">
+                    <input type="hidden" name="tariffId" th:id="'newTariffInput-' + ${driver.id}">
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Changing Tariff -->
+    <div id="changeTariffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: var(--surface); padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05); min-width: 300px;">
+            <h3 style="margin-bottom: 1rem;">Tarifni almashtirish</h3>
+            <input type="hidden" id="modalDriverId">
+            <div style="margin-bottom: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.875rem;">Yangi tarifni tanlang</label>
+                <select id="modalTariffSelect" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text);">
+                    <option th:each="tariff : ${tariffs}" th:value="${tariff.id}" th:text="${tariff.duration} + ' - ' + ${#numbers.formatDecimal(tariff.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'"></option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="closeChangeTariffModal()">Yopish</button>
+                <button type="button" class="btn btn-primary" onclick="submitChangeTariff()">Saqlash</button>
             </div>
         </div>
     </div>
@@ -107,6 +148,25 @@
             document.getElementById('amountInput-' + driverId).value = val;
             document.getElementById('addBalanceForm-' + driverId).submit();
         }
+
+        function showChangeTariffModal(driverId) {
+            document.getElementById('modalDriverId').value = driverId;
+            document.getElementById('changeTariffModal').style.display = 'flex';
+        }
+
+        function closeChangeTariffModal() {
+            document.getElementById('changeTariffModal').style.display = 'none';
+        }
+
+        function submitChangeTariff() {
+            const driverId = document.getElementById('modalDriverId').value;
+            const tariffId = document.getElementById('modalTariffSelect').value;
+            if (driverId && tariffId) {
+                document.getElementById('newTariffInput-' + driverId).value = tariffId;
+                document.getElementById('changeTariffForm-' + driverId).submit();
+            }
+        }
     </script>
+<script th:replace="~{admin/fragments :: scripts}"></script>
 </body>
 </html>

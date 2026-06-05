@@ -8,19 +8,39 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         :root { 
-            --primary: #0D6EFD; 
-            --primary-hover: #0b5ed7;
-            --dark: #0B0E11; 
-            --surface: #1B2026; 
-            --surface-hover: #222830;
-            --text: #F8F9FA; 
+            --primary: #2563EB; 
+            --primary-hover: #1D4ED8;
+            --dark: #0F172A; 
+            --surface: #1E293B; 
+            --surface-hover: #334155;
+            --text: #F8FAFC; 
             --text-dim: #94A3B8; 
-            --success: #198754; 
-            --pending: #FFC107; 
-            --error: #DC3545; 
-            --info: #0D6EFD;
-            --warning: #ffc107;
-            --border: rgba(255,255,255,0.08);
+            --success: #10B981; 
+            --pending: #F59E0B; 
+            --error: #EF4444; 
+            --info: #3B82F6;
+            --warning: #F59E0B;
+            --border: rgba(255,255,255,0.1);
+            --input-bg: rgba(0,0,0,0.2);
+            --input-focus: rgba(0,0,0,0.3);
+            --overlay-light: rgba(255,255,255,0.05);
+            --overlay-hover: rgba(255,255,255,0.1);
+            --modal-bg: rgba(0,0,0,0.6);
+        }
+        [data-theme="light"] {
+            --primary: #2563EB; 
+            --primary-hover: #1D4ED8;
+            --dark: #FFFFFF; 
+            --surface: #F8F9FA; 
+            --surface-hover: #F1F5F9;
+            --text: #111827; 
+            --text-dim: #6B7280;
+            --border: #E5E7EB;
+            --input-bg: #F3F4F6;
+            --input-focus: #E5E7EB;
+            --overlay-light: rgba(0,0,0,0.04);
+            --overlay-hover: rgba(0,0,0,0.08);
+            --modal-bg: rgba(0,0,0,0.4);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--dark); color: var(--text); display: flex; min-height: 100vh; }
@@ -55,8 +75,8 @@
         /* Form Inputs */
         .form-group { margin-bottom: 1.25rem; }
         .form-label { display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.875rem; font-weight: 500; }
-        .form-control { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: rgba(0,0,0,0.2); color: white; transition: all 0.2s; font-size: 0.95rem; }
-        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); background: rgba(0,0,0,0.3); }
+        .form-control { width: 100%; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); transition: all 0.2s; font-size: 0.95rem; }
+        .form-control:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15); background: var(--input-focus); }
         .form-check { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none; }
         .form-check-input { width: 1.1rem; height: 1.1rem; accent-color: var(--primary); cursor: pointer; }
         .form-check-label { color: var(--text); font-size: 0.95rem; cursor: pointer; }
@@ -71,10 +91,10 @@
 
         /* Buttons */
         .btn { border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.875rem; line-height: 1.5; }
-        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary { background: var(--primary); color: #fff; }
         .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,110,253,0.3); }
-        .btn-outline { background: rgba(255, 255, 255, 0.05); color: var(--text); border: 1px solid var(--border); }
-        .btn-outline:hover { background: rgba(255, 255, 255, 0.1); }
+        .btn-outline { background: var(--overlay-light); color: var(--text); border: 1px solid var(--border); }
+        .btn-outline:hover { background: var(--overlay-hover); }
         .btn-danger { background: rgba(220, 53, 69, 0.1); color: #ff6b6b; border: 1px solid rgba(220, 53, 69, 0.2); }
         .btn-danger:hover { background: #dc3545; color: white; border-color: #dc3545; }
         .btn-warning { background: rgba(255, 193, 7, 0.1); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2); }
@@ -89,22 +109,31 @@
         .actions { display: flex; gap: 0.5rem; align-items: center; }
 
         /* Modal */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: var(--modal-bg); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 1rem; }
         .modal-overlay.active { display: flex; }
         .modal { background: var(--surface); border-radius: 1rem; border: 1px solid var(--border); width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
         .modal-overlay.active .modal { transform: translateY(0); opacity: 1; }
         .modal-header { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .modal-title { font-size: 1.25rem; font-weight: 600; color: var(--text); margin: 0; }
         .modal-close { background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0.5rem; border-radius: 0.5rem; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .modal-close:hover { background: rgba(255,255,255,0.05); color: white; }
+        .modal-close:hover { background: var(--overlay-light); color: var(--text); }
         .modal-body { padding: 1.5rem; max-height: 70vh; overflow-y: auto; }
-        .modal-footer { padding: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 1rem; background: rgba(0,0,0,0.2); }
+        .modal-footer { padding: 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 1rem; background: var(--input-bg); }
     </style>
+    <script>
+        const savedTheme = localStorage.getItem('waygo-admin-theme') || 'dark';
+        if (savedTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+    </script>
 </head>
 <body>
 
     <div th:fragment="sidebar(activeItem)" class="sidebar">
-        <a th:href="@{/admin/dashboard}" class="logo"><span>🚖</span> WayGO Admin</a>
+        <a th:href="@{/admin/dashboard}" class="logo">
+            <img th:src="@{/images/logo_icon.png}" alt="WayGo Logo" style="width: 150px; height: auto;" />
+            <span style="display: none;">WayGO Admin</span>
+        </a>
         
         <nav>
             <a th:href="@{/admin/dashboard}" class="nav-item" th:classappend="${activeItem == 'dashboard' ? 'active' : ''}">
@@ -140,17 +169,51 @@
             </a>
             
             <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-                <a th:href="@{/admin/logout}" class="nav-item" style="color: #ff6b6b;">
+                <button type="button" class="nav-item" style="width: 100%; border: none; background: transparent; cursor: pointer; text-align: left;" onclick="toggleTheme()">
+                    <i class="ph ph-moon" id="theme-icon"></i> <span id="theme-text">Tungi rejim</span>
+                </button>
+                <a th:href="@{/admin/logout}" class="nav-item" style="color: #ff6b6b; margin-top: 0.5rem;">
                     <i class="ph ph-sign-out"></i> Chiqish
                 </a>
             </div>
         </nav>
         
-        <div style="margin-top: auto; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 0.5rem; border: 1px solid var(--border);">
+        <div style="margin-top: auto; padding: 1rem; background: var(--input-bg); border-radius: 0.5rem; border: 1px solid var(--border);">
             <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.25rem;">Tizim versiyasi</div>
             <div style="font-size: 0.875rem; font-weight: 600; color: var(--text);">v1.0.4-beta</div>
         </div>
     </div>
-
+    
+    <script th:fragment="scripts">
+        // Theme Toggler
+        function updateThemeUI() {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (icon && text) {
+                if (isLight) {
+                    icon.className = 'ph ph-sun';
+                    text.textContent = 'Kunduzgi rejim';
+                } else {
+                    icon.className = 'ph ph-moon';
+                    text.textContent = 'Tungi rejim';
+                }
+            }
+        }
+        
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const newTheme = current === 'light' ? 'dark' : 'light';
+            if (newTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            localStorage.setItem('waygo-admin-theme', newTheme);
+            updateThemeUI();
+        }
+        
+        document.addEventListener('DOMContentLoaded', updateThemeUI);
+    </script>
 </body>
 </html>

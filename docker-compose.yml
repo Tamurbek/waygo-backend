@@ -4,6 +4,7 @@ services:
     container_name: waygo_db_local
     restart: always
     environment:
+      TZ: Asia/Tashkent
       POSTGRES_DB: waygo_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -21,6 +22,8 @@ services:
     image: redis:7-alpine
     container_name: waygo_redis_local
     restart: always
+    environment:
+      TZ: Asia/Tashkent
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -36,6 +39,7 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
+      TZ: Asia/Tashkent
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waygo_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password

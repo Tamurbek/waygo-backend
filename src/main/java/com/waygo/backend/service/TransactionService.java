@@ -6,11 +6,16 @@ import com.waygo.backend.exception.InsufficientBalanceException;
 import com.waygo.backend.exception.ResourceNotFoundException;
 import com.waygo.backend.repository.TransactionRepository;
 import com.waygo.backend.repository.UserRepository;
+import com.waygo.backend.entity.config.TariffPlan;
+import com.waygo.backend.repository.config.TariffPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -19,6 +24,7 @@ public class TransactionService {
 
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
+    private final TariffPlanRepository tariffPlanRepository;
 
     @Transactional
     public Transaction processPayment(Long senderId, Long receiverId, BigDecimal amount) {
@@ -75,5 +81,80 @@ public class TransactionService {
 
     public List<Transaction> getUserTransactions(Long userId) {
         return transactionRepository.findBySenderIdOrReceiverIdOrderByCreatedAtDesc(userId, userId);
+    }
+
+    @Transactional
+    public User buyTariff(Long userId, Long tariffId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        TariffPlan tariff = tariffPlanRepository.findById(tariffId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with id: " + tariffId));
+
+        if (user.getBalance().compareTo(tariff.getPrice()) < 0) {
+            throw new InsufficientBalanceException("Hisobingizda mablag' yetarli emas!");
+        }
+
+        user.setBalance(user.getBalance().subtract(tariff.getPrice()));
+
+        Transaction transaction = Transaction.builder()
+                .sender(user)
+                .receiver(null)
+                .amount(tariff.getPrice())
+                .type(Transaction.TransactionType.TARIFF_PURCHASE)
+                .status(Transaction.TransactionStatus.SUCCESS)
+                .description("Tarif xarid qilindi: " + tariff.getDuration())
+                .build();
+        transactionRepository.save(transaction);
+
+        int days = 1;
+        if (tariff.getDuration() != null) {
+            String dStr = tariff.getDuration().toLowerCase();
+            if (dStr.contains("kun")) {
+                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")); } catch (Exception e) {}
+            } else if (dStr.contains("oy")) {
+                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 30; } catch (Exception e) {}
+            } else if (dStr.contains("yil")) {
+                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 365; } catch (Exception e) {}
+            }
+        }
+        user.setActiveTariff(tariff);
+        user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));
+
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User cancelDriverTariff(Long driverId) {
+        User user = userRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
+        user.setActiveTariff(null);
+        user.setTariffExpiryDate(null);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User changeDriverTariff(Long driverId, Long newTariffId) {
+        User user = userRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
+        
+        TariffPlan tariff = tariffPlanRepository.findById(newTariffId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with id: " + newTariffId));
+
+        int days = 1;
+        if (tariff.getDuration() != null) {
+            String dStr = tariff.getDuration().toLowerCase();
+            if (dStr.contains("kun")) {
+                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")); } catch (Exception e) {}
+            } else if (dStr.contains("oy")) {
+                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 30; } catch (Exception e) {}
+            } else if (dStr.contains("yil")) {
+                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 365; } catch (Exception e) {}
+            }
+        }
+        
+        user.setActiveTariff(tariff);
+        user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));
+        return userRepository.save(user);
     }
 }

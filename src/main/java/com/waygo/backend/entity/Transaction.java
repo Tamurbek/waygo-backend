@@ -43,7 +43,8 @@ public class Transaction {
     public enum TransactionType {
         TOP_UP,     // User charging balance
         PAYMENT,    // Passenger paying driver
-        WITHDRAW    // Driver taking money out
+        WITHDRAW,   // Driver taking money out
+        TARIFF_PURCHASE // Driver buying tariff
     }
 
     public enum TransactionStatus {
