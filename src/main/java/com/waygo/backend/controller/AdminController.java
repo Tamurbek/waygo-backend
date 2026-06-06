@@ -249,8 +249,24 @@ public class AdminController {
     public String toggleDriverBilling(@org.springframework.web.bind.annotation.PathVariable Long id) {
         try {
             User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Driver not found"));
-            driver.setDriverBillingEnabled(!driver.isDriverBillingEnabled());
-            userRepository.save(driver);
+            boolean newBillingState = !driver.isDriverBillingEnabled();
+            driver.setDriverBillingEnabled(newBillingState);
+            if (newBillingState) {
+                driver.unfreezeTariff();
+            } else {
+                driver.freezeTariff();
+            }
+            User saved = userRepository.save(driver);
+            
+            try {
+                String message = newBillingState 
+                    ? "To'lov tizimi faollashtirildi. Iltimos, joriy tarif yoki balansni tekshiring." 
+                    : "To'lov tizimi o'chirildi. Sizga VIP statusi berildi!";
+                notificationService.notifyTariffUpdate(saved, message);
+            } catch (Exception e) {
+                // Ignore notification failure to prevent transaction rollback
+            }
+            
             return "redirect:/admin/drivers?success";
         } catch (Exception e) {
             return "redirect:/admin/drivers?error=" + e.getMessage();
@@ -277,6 +293,19 @@ public class AdminController {
         }
     }
 
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/assign-vip")
+    public String assignDriverVip(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam("price") java.math.BigDecimal price,
+            @org.springframework.web.bind.annotation.RequestParam("durationDays") Integer durationDays) {
+        try {
+            transactionService.assignManualVip(id, price, durationDays);
+            return "redirect:/admin/drivers?success";
+        } catch (Exception e) {
+            return "redirect:/admin/drivers?error=" + e.getMessage();
+        }
+    }
+
     @org.springframework.web.bind.annotation.PostMapping("/drivers/bulk-action")
     @org.springframework.transaction.annotation.Transactional
     public String bulkActionDrivers(
@@ -288,8 +317,24 @@ public class AdminController {
                 List<User> drivers = userRepository.findAllById(driverIds);
                 for (User driver : drivers) {
                     if (driver.getRole() == User.Role.DRIVER) {
-                        driver.setDriverBillingEnabled(enable);
-                        userRepository.save(driver);
+                        if (driver.isDriverBillingEnabled() != enable) {
+                            driver.setDriverBillingEnabled(enable);
+                            if (enable) {
+                                driver.unfreezeTariff();
+                            } else {
+                                driver.freezeTariff();
+                            }
+                            User saved = userRepository.save(driver);
+                            
+                            try {
+                                String message = enable 
+                                    ? "To'lov tizimi faollashtirildi. Iltimos, joriy tarif yoki balansni tekshiring." 
+                                    : "To'lov tizimi o'chirildi. Sizga VIP statusi berildi!";
+                                notificationService.notifyTariffUpdate(saved, message);
+                            } catch (Exception notificationEx) {
+                                // Ignore notification failure for individual driver
+                            }
+                        }
                     }
                 }
                 return "redirect:/admin/drivers?success";

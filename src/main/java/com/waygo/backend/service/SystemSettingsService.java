@@ -12,17 +12,24 @@ public class SystemSettingsService {
 
     private final SystemSettingsRepository repository;
     private static volatile boolean globalBillingEnabled = false;
+    private static volatile boolean vipTariffEnabled = true;
 
     public static boolean isGlobalBillingEnabled() {
         return globalBillingEnabled;
+    }
+
+    public static boolean isVipTariffEnabled() {
+        return vipTariffEnabled;
     }
 
     @jakarta.annotation.PostConstruct
     public void init() {
         try {
             globalBillingEnabled = getSettings().isBillingEnabled();
+            vipTariffEnabled = getSettings().isVipTariffEnabled();
         } catch (Exception e) {
             globalBillingEnabled = false;
+            vipTariffEnabled = true;
         }
     }
 
@@ -35,6 +42,7 @@ public class SystemSettingsService {
                         .eskizFrom("4546")
                         .build()));
         globalBillingEnabled = settings.isBillingEnabled();
+        vipTariffEnabled = settings.isVipTariffEnabled();
         return settings;
     }
 
@@ -47,8 +55,10 @@ public class SystemSettingsService {
         existing.setEskizFrom(newSettings.getEskizFrom());
         existing.setOtpMessageTemplate(newSettings.getOtpMessageTemplate());
         existing.setBillingEnabled(newSettings.isBillingEnabled());
+        existing.setVipTariffEnabled(newSettings.isVipTariffEnabled());
         SystemSettings saved = repository.save(existing);
         globalBillingEnabled = saved.isBillingEnabled();
+        vipTariffEnabled = saved.isVipTariffEnabled();
         return saved;
     }
 }

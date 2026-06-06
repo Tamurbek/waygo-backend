@@ -32,4 +32,18 @@ public class TariffPlan {
     private boolean isPopular;
     
     private boolean isActive;
+    
+    private Boolean isVip;
+
+    public boolean isVip() {
+        return Boolean.TRUE.equals(this.isVip);
+    }
+
+    public boolean getVip() {
+        return isVip();
+    }
+
+    public void setVip(Boolean vip) {
+        this.isVip = vip;
+    }
 }

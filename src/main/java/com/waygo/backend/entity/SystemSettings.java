@@ -28,7 +28,18 @@ public class SystemSettings {
     @Builder.Default
     private Boolean billingEnabled = false;
 
+    @Builder.Default
+    private Boolean vipTariffEnabled = true;
+
     public boolean isBillingEnabled() {
         return Boolean.TRUE.equals(this.billingEnabled);
+    }
+
+    public Boolean getVipTariffEnabled() {
+        return this.vipTariffEnabled == null || this.vipTariffEnabled;
+    }
+
+    public boolean isVipTariffEnabled() {
+        return getVipTariffEnabled();
     }
 }

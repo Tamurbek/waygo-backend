@@ -52,25 +52,40 @@
                             <td style="font-weight: 500;" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</td>
                             <td th:text="${driver.phone}">+998...</td>
                             <td>
-                                <span style="font-weight: 600; color: var(--success);" th:text="${#numbers.formatDecimal(driver.balance, 0, 'COMMA', 0, 'POINT')} + ' UZS'">0 UZS</span>
+                                <span th:if="${driver.driverBillingEnabled}" style="font-weight: 600; color: var(--success);" th:text="${driver.balance != null ? #numbers.formatDecimal(driver.balance, 0, 'COMMA', 0, 'POINT') + ' UZS' : '0 UZS'}">0 UZS</span>
+                                <span th:if="${!driver.driverBillingEnabled}" style="color: var(--text-dim); font-size: 0.85rem;">Cheksiz (To'lovsiz)</span>
                             </td>
                             <td>
-                                <div th:if="${driver.activeTariff != null}" style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                    <span style="font-weight: 600; color: var(--primary);" th:text="${driver.activeTariff.duration}">15 kun</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-dim);" th:text="'Gacha: ' + ${#temporals.format(driver.tariffExpiryDate, 'dd.MM.yyyy HH:mm')}">Date</span>
+                                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                                    <div th:if="${driver.activeTariff != null}">
+                                        <span style="font-weight: 600; color: var(--primary);" th:text="${driver.activeTariff.duration}">15 kun</span>
+                                    </div>
+                                    <span th:if="${driver.activeTariff == null}" style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 0.25rem;">Tarif yo'q</span>
                                     
+                                    <!-- If billing is enabled, show expiration date -->
+                                    <th:block th:if="${driver.driverBillingEnabled}">
+                                        <span style="font-size: 0.75rem; color: var(--text-dim);" th:if="${driver.tariffExpiryDate != null}" th:text="'Gacha: ' + ${#temporals.format(driver.tariffExpiryDate, 'dd.MM.yyyy HH:mm')}">Date</span>
+                                    </th:block>
+                                    
+                                    <!-- If billing is disabled (frozen), show status and remaining time -->
+                                    <th:block th:if="${!driver.driverBillingEnabled}">
+                                        <span style="font-size: 0.75rem; color: #ffc107; font-weight: 500;">Muzlatilgan (To'lovsiz)</span>
+                                        <span style="font-size: 0.75rem; color: var(--text-dim);" th:if="${driver.frozenTariffDuration != null}" th:text="'Qolgan: ' + ${driver.getFrozenTariffDurationFormatted()}">Qolgan: -</span>
+                                    </th:block>
+                                    
+                                    <!-- Action buttons -->
                                     <div style="display: flex; gap: 0.25rem; margin-top: 0.25rem;">
-                                        <button type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 0.25rem; color: var(--error); border-color: rgba(255, 77, 77, 0.3);"
+                                        <button th:if="${driver.activeTariff != null}" type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 0.25rem; color: var(--error); border-color: rgba(255, 77, 77, 0.3);"
                                                 th:onclick="'document.getElementById(\'cancelTariffForm-\' + ' + ${driver.id} + ').submit();'">
                                             Bekor qilish
                                         </button>
                                         <button type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 0.25rem;"
-                                                th:onclick="'showChangeTariffModal(' + ${driver.id} + ')'">
+                                                th:onclick="'showChangeTariffModal(' + ${driver.id} + ')'"
+                                                th:text="${driver.activeTariff != null ? 'Almashtirish' : 'O''rnatish'}">
                                             Almashtirish
                                         </button>
                                     </div>
                                 </div>
-                                <span th:if="${driver.activeTariff == null}" style="color: var(--text-dim); font-size: 0.85rem;">Tarif yo'q</span>
                             </td>
                             <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
                             <td>
@@ -84,7 +99,7 @@
                                     </button>
                                     
                                     <!-- Add Balance Form Trigger -->
-                                    <div style="display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.2rem 0.4rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div th:if="${driver.driverBillingEnabled}" style="display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.2rem 0.4rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.05);">
                                         <input type="number" th:id="'balanceInput-' + ${driver.id}" placeholder="+ UZS" style="width: 80px; padding: 0.35rem; font-size: 0.75rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text);">
                                         <button type="button" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; border-radius: 0.25rem; background: rgba(13, 110, 253, 0.1); border-color: rgba(13, 110, 253, 0.3);"
                                                 th:onclick="'submitAddBalance(' + ${driver.id} + ')'">
@@ -111,24 +126,50 @@
                 <form th:id="'changeTariffForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/change-tariff'}" method="post">
                     <input type="hidden" name="tariffId" th:id="'newTariffInput-' + ${driver.id}">
                 </form>
+                <form th:id="'assignVipForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/assign-vip'}" method="post">
+                    <input type="hidden" name="price" th:id="'vipPriceInput-' + ${driver.id}">
+                    <input type="hidden" name="durationDays" th:id="'vipDurationInput-' + ${driver.id}">
+                </form>
             </div>
         </div>
     </div>
 
     <!-- Modal for Changing Tariff -->
     <div id="changeTariffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div style="background: var(--surface); padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05); min-width: 300px;">
-            <h3 style="margin-bottom: 1rem;">Tarifni almashtirish</h3>
+        <div style="background: var(--surface); padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05); min-width: 350px;">
+            <h3 style="margin-bottom: 1rem;">Tarifni almashtirish / VIP o'rnatish</h3>
             <input type="hidden" id="modalDriverId">
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.875rem;">Yangi tarifni tanlang</label>
-                <select id="modalTariffSelect" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text);">
-                    <option th:each="tariff : ${tariffs}" th:value="${tariff.id}" th:text="${tariff.duration} + ' - ' + ${#numbers.formatDecimal(tariff.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'"></option>
-                </select>
+            
+            <div style="display: flex; gap: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                <button type="button" id="tabStandard" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 0.5rem;" onclick="switchTab('standard')">Standart Tariflar</button>
+                <button type="button" id="tabCustomVip" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 0.5rem;" onclick="switchTab('custom-vip')">Maxsus VIP</button>
             </div>
+            
+            <!-- Standard Tariffs Tab -->
+            <div id="tabContentStandard">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.875rem;">Yangi standart tarifni tanlang</label>
+                    <select id="modalTariffSelect" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text);">
+                        <option th:each="tariff : ${tariffs}" th:value="${tariff.id}" th:text="${tariff.duration} + ' - ' + ${#numbers.formatDecimal(tariff.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'"></option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Custom VIP Tab -->
+            <div id="tabContentCustomVip" style="display: none;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.875rem;">Kelishilgan summa (UZS)</label>
+                    <input type="number" id="modalVipPrice" value="0" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text);" placeholder="Masalan: 50000">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-dim); font-size: 0.875rem;">Muddat (Kunlarda)</label>
+                    <input type="number" id="modalVipDuration" value="30" style="width: 100%; padding: 0.75rem; border-radius: 0.5rem; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: var(--text);" placeholder="Masalan: 30">
+                </div>
+            </div>
+            
             <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
                 <button type="button" class="btn btn-outline" onclick="closeChangeTariffModal()">Yopish</button>
-                <button type="button" class="btn btn-primary" onclick="submitChangeTariff()">Saqlash</button>
+                <button type="button" class="btn btn-primary" onclick="submitModalAction()">Saqlash</button>
             </div>
         </div>
     </div>
@@ -149,21 +190,57 @@
             document.getElementById('addBalanceForm-' + driverId).submit();
         }
 
+        let activeTab = 'standard';
+        
+        function switchTab(tab) {
+            activeTab = tab;
+            if (tab === 'standard') {
+                document.getElementById('tabContentStandard').style.display = 'block';
+                document.getElementById('tabContentCustomVip').style.display = 'none';
+                document.getElementById('tabStandard').className = 'btn btn-primary';
+                document.getElementById('tabCustomVip').className = 'btn btn-outline';
+            } else {
+                document.getElementById('tabContentStandard').style.display = 'none';
+                document.getElementById('tabContentCustomVip').style.display = 'block';
+                document.getElementById('tabStandard').className = 'btn btn-outline';
+                document.getElementById('tabCustomVip').className = 'btn btn-primary';
+            }
+        }
+
         function showChangeTariffModal(driverId) {
             document.getElementById('modalDriverId').value = driverId;
             document.getElementById('changeTariffModal').style.display = 'flex';
+            switchTab('standard'); // reset tab on show
         }
 
         function closeChangeTariffModal() {
             document.getElementById('changeTariffModal').style.display = 'none';
         }
 
-        function submitChangeTariff() {
+        function submitModalAction() {
             const driverId = document.getElementById('modalDriverId').value;
-            const tariffId = document.getElementById('modalTariffSelect').value;
-            if (driverId && tariffId) {
-                document.getElementById('newTariffInput-' + driverId).value = tariffId;
-                document.getElementById('changeTariffForm-' + driverId).submit();
+            if (!driverId) return;
+            
+            if (activeTab === 'standard') {
+                const tariffId = document.getElementById('modalTariffSelect').value;
+                if (tariffId) {
+                    document.getElementById('newTariffInput-' + driverId).value = tariffId;
+                    document.getElementById('changeTariffForm-' + driverId).submit();
+                }
+            } else {
+                const price = document.getElementById('modalVipPrice').value;
+                const duration = document.getElementById('modalVipDuration').value;
+                if (!price || isNaN(price) || parseFloat(price) < 0) {
+                    alert("Iltimos, kelishilgan to'g'ri summani kiriting (kamida 0)!");
+                    return;
+                }
+                if (!duration || isNaN(duration) || parseInt(duration) <= 0) {
+                    alert("Iltimos, to'g'ri kun sonini kiriting!");
+                    return;
+                }
+                document.getElementById('vipPriceInput-' + driverId).value = price;
+                document.getElementById('vipDurationInput-' + driverId).value = duration;
+                document.getElementById('assignVipForm-' + driverId).submit();
             }
         }
     </script>

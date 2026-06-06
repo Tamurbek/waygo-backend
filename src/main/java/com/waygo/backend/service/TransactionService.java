@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -121,6 +122,11 @@ public class TransactionService {
         }
         user.setActiveTariff(tariff);
         user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));
+        if (tariff.isVip()) {
+            user.setDriverBillingEnabled(false);
+        } else {
+            user.setDriverBillingEnabled(true);
+        }
 
         User savedUser = userRepository.save(user);
         try {
@@ -169,10 +175,56 @@ public class TransactionService {
         
         user.setActiveTariff(tariff);
         user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));
+        if (tariff.isVip()) {
+            user.setDriverBillingEnabled(false);
+        } else {
+            user.setDriverBillingEnabled(true);
+        }
         User savedUser = userRepository.save(user);
         try {
             String tariffName = tariff.getDuration() != null ? tariff.getDuration() : "Noma'lum";
             notificationService.notifyTariffUpdate(savedUser, "Tarifingiz \"" + tariffName + "\" ga o'zgartirildi.");
+        } catch (Exception e) {
+            // Log or ignore
+        }
+        return savedUser;
+    }
+
+    @Transactional
+    public User assignManualVip(Long driverId, java.math.BigDecimal price, int durationDays) {
+        User user = userRepository.findById(driverId)
+                .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
+        
+        user.setBalance(user.getBalance().subtract(price));
+        user.setDriverBillingEnabled(false);
+        
+        TariffPlan customVip = tariffPlanRepository.findAll().stream()
+                .filter(t -> "Maxsus VIP".equals(t.getDuration()))
+                .findFirst()
+                .orElseGet(() -> tariffPlanRepository.save(TariffPlan.builder()
+                        .duration("Maxsus VIP")
+                        .price(price)
+                        .isActive(false)
+                        .isVip(true)
+                        .features(Arrays.asList("Maxsus VIP status", "Operator tomonidan o'rnatilgan"))
+                        .build()));
+        
+        user.setActiveTariff(customVip);
+        user.setTariffExpiryDate(LocalDateTime.now().plusDays(durationDays));
+        
+        Transaction transaction = Transaction.builder()
+                .sender(user)
+                .receiver(null)
+                .amount(price)
+                .type(Transaction.TransactionType.TARIFF_PURCHASE)
+                .status(Transaction.TransactionStatus.SUCCESS)
+                .description("Maxsus VIP o'rnatildi (" + durationDays + " kun, kelishilgan narx: " + price + " UZS)")
+                .build();
+        transactionRepository.save(transaction);
+        
+        User savedUser = userRepository.save(user);
+        try {
+            notificationService.notifyTariffUpdate(savedUser, "Sizga maxsus VIP o'rnatildi: " + durationDays + " kun");
         } catch (Exception e) {
             // Log or ignore
         }

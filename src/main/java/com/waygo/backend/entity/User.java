@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Entity
 @Table(name = "users")
@@ -50,6 +52,7 @@ public class User implements UserDetails {
     @Column(name = "driver_id", unique = true)
     private String driverId;
 
+    @JsonIgnore
     @Builder.Default
     @Column(precision = 19, scale = 4)
     private BigDecimal balance = BigDecimal.ZERO;
@@ -72,11 +75,19 @@ public class User implements UserDetails {
 
     private LocalDateTime tariffExpiryDate;
 
+    private Long frozenTariffDuration;
+
     @Transient
     public boolean isBillingEnabled() {
+        if (this.role == Role.DRIVER && !isDriverBillingEnabled()) {
+            return false;
+        }
         boolean billingActive = com.waygo.backend.service.SystemSettingsService.isGlobalBillingEnabled() 
-                || Boolean.TRUE.equals(this.driverBillingEnabled);
+                || isDriverBillingEnabled();
         if (billingActive) {
+            if (this.tariffExpiryDate != null && this.tariffExpiryDate.isAfter(LocalDateTime.now())) {
+                return false;
+            }
             return this.balance == null || this.balance.compareTo(java.math.BigDecimal.ZERO) <= 0;
         }
         return false;
@@ -84,6 +95,60 @@ public class User implements UserDetails {
 
     public boolean isDriverBillingEnabled() {
         return Boolean.TRUE.equals(this.driverBillingEnabled);
+    }
+
+    @Transient
+    @JsonProperty("vipTariffEnabled")
+    public boolean isVipTariffEnabled() {
+        return com.waygo.backend.service.SystemSettingsService.isVipTariffEnabled();
+    }
+
+    @JsonProperty("balance")
+    public BigDecimal getBalanceForJson() {
+        if (this.role == Role.DRIVER && !isDriverBillingEnabled()) {
+            return null;
+        }
+        return this.balance;
+    }
+
+    public void freezeTariff() {
+        if (this.tariffExpiryDate != null && this.tariffExpiryDate.isAfter(LocalDateTime.now())) {
+            this.frozenTariffDuration = java.time.Duration.between(LocalDateTime.now(), this.tariffExpiryDate).toSeconds();
+        } else {
+            this.frozenTariffDuration = null;
+        }
+        this.tariffExpiryDate = null;
+    }
+
+    public void unfreezeTariff() {
+        if (this.frozenTariffDuration != null && this.frozenTariffDuration > 0) {
+            this.tariffExpiryDate = LocalDateTime.now().plusSeconds(this.frozenTariffDuration);
+        }
+        this.frozenTariffDuration = null;
+    }
+
+    public String getFrozenTariffDurationFormatted() {
+        if (frozenTariffDuration == null || frozenTariffDuration <= 0) {
+            return null;
+        }
+        long days = frozenTariffDuration / 86400;
+        long hours = (frozenTariffDuration % 86400) / 3600;
+        long minutes = (frozenTariffDuration % 3600) / 60;
+        
+        StringBuilder sb = new StringBuilder();
+        if (days > 0) {
+            sb.append(days).append(" kun ");
+        }
+        if (hours > 0) {
+            sb.append(hours).append(" soat ");
+        }
+        if (minutes > 0) {
+            sb.append(minutes).append(" daqiqa");
+        }
+        if (sb.length() == 0) {
+            sb.append(frozenTariffDuration).append(" soniya");
+        }
+        return sb.toString().trim();
     }
 
     public String getInitials() {

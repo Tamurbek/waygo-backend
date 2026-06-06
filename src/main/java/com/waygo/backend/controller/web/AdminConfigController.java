@@ -35,6 +35,7 @@ public class AdminConfigController {
 
     @PostMapping("/tariffs/add")
     public String addTariff(@ModelAttribute TariffPlan tariffPlan) {
+        tariffPlan.setVip(false);
         tariffPlanRepository.save(tariffPlan);
         return "redirect:/admin/config/tariffs?success";
     }

@@ -43,6 +43,7 @@
                         <td>
                             <strong th:text="${t.duration}"></strong><br>
                             <span th:if="${t.isPopular}" class="status-badge status-pending" style="margin-top: 0.5rem;"><i class="ph ph-star-fill"></i> Ommabop</span>
+                            <span th:if="${t.isVip}" class="status-badge" style="margin-top: 0.5rem; background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;"><i class="ph ph-crown"></i> VIP</span>
                         </td>
                         <td>
                             <span style="font-weight: 600;" th:text="${#numbers.formatDecimal(t.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'"></span><br>
