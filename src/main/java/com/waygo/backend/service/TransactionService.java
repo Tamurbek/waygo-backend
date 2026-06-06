@@ -25,6 +25,7 @@ public class TransactionService {
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
     private final TariffPlanRepository tariffPlanRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Transaction processPayment(Long senderId, Long receiverId, BigDecimal amount) {
@@ -121,7 +122,14 @@ public class TransactionService {
         user.setActiveTariff(tariff);
         user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        try {
+            String tariffName = tariff.getDuration() != null ? tariff.getDuration() : "Noma'lum";
+            notificationService.notifyTariffUpdate(savedUser, "Tarif xarid qilindi: \"" + tariffName + "\"");
+        } catch (Exception e) {
+            // Log or ignore to avoid rolling back transaction if notification fails
+        }
+        return savedUser;
     }
 
     @Transactional
@@ -130,7 +138,13 @@ public class TransactionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Driver not found with id: " + driverId));
         user.setActiveTariff(null);
         user.setTariffExpiryDate(null);
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        try {
+            notificationService.notifyTariffUpdate(savedUser, "Tarifingiz bekor qilindi.");
+        } catch (Exception e) {
+            // Log or ignore
+        }
+        return savedUser;
     }
 
     @Transactional
@@ -155,6 +169,13 @@ public class TransactionService {
         
         user.setActiveTariff(tariff);
         user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        try {
+            String tariffName = tariff.getDuration() != null ? tariff.getDuration() : "Noma'lum";
+            notificationService.notifyTariffUpdate(savedUser, "Tarifingiz \"" + tariffName + "\" ga o'zgartirildi.");
+        } catch (Exception e) {
+            // Log or ignore
+        }
+        return savedUser;
     }
 }

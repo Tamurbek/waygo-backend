@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 
-import java.math.BigDecimal;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -28,7 +27,7 @@ public class DataInitializer implements CommandLineRunner {
         }
 
         String defaultPassword = passwordEncoder.encode("password123");
-        
+
         // System Admin (doim tekshirib kiritiladi)
         if (userRepository.findByEmail("admin@waygo.uz").isEmpty()) {
             userRepository.save(User.builder()
@@ -38,59 +37,7 @@ public class DataInitializer implements CommandLineRunner {
                     .password(defaultPassword)
                     .role(User.Role.ADMIN)
                     .build());
-        }
-
-        if (true) { // Enable automatic test data recreation
-            // Test Passengers
-            if (userRepository.findByPhone("+998901234567").isEmpty()) {
-                userRepository.save(User.builder()
-                        .phone("+998901234567")
-                        .fullName("Temur Yo'ldoshev")
-                        .password(defaultPassword)
-                        .role(User.Role.PASSENGER)
-                        .balance(BigDecimal.ZERO)
-                        .build());
-            }
-
-            if (userRepository.findByPhone("+998901112233").isEmpty()) {
-                userRepository.save(User.builder()
-                        .phone("+998901112233")
-                        .fullName("Yo'lovchi Ali")
-                        .role(User.Role.PASSENGER)
-                        .balance(BigDecimal.ZERO)
-                        .build());
-            }
-
-            // Test Drivers
-            if (userRepository.findByPhone("+998991234567").isEmpty()) {
-                userRepository.save(User.builder()
-                        .phone("+998991234567")
-                        .fullName("Haydovchi Valijon")
-                        .role(User.Role.DRIVER)
-                        .balance(new BigDecimal("0"))
-                        .build());
-            }
-            
-            if (userRepository.findByPhone("+998997778899").isEmpty()) {
-                userRepository.save(User.builder()
-                        .phone("+998997778899")
-                        .fullName("Haydovchi Sardor")
-                        .role(User.Role.DRIVER)
-                        .balance(new BigDecimal("0"))
-                        .build());
-            }
-
-            System.out.println("✅ Test ma'lumotlari (Yo'lovchi va Haydovchilar) tekshirildi va yaratildi!");
-        }
-
-        // Generate driverId for existing drivers if they don't have one
-        java.util.List<User> allDrivers = userRepository.findByRoleOrderByCreatedAtDesc(User.Role.DRIVER);
-        for (User driver : allDrivers) {
-            if (driver.getDriverId() == null || driver.getDriverId().isEmpty()) {
-                driver.setDriverId("WG" + (1000000 + new java.util.Random().nextInt(9000000)));
-                userRepository.save(driver);
-                System.out.println("✅ Generated driver_id " + driver.getDriverId() + " for existing driver: " + driver.getFullName());
-            }
+            System.out.println("✅ System Admin yaratildi: admin@waygo.uz / password123");
         }
     }
 }

@@ -224,4 +224,22 @@ public class NotificationService {
                 payload
         );
     }
+
+    public void notifyTariffUpdate(User user, String message) {
+        if (user == null || user.getPhone() == null) {
+            return;
+        }
+        smsService.sendSms(user.getPhone(), "WayGO: " + message);
+
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", "TARIFF_UPDATE");
+        payload.put("message", message);
+
+        // Send directly to the user's numeric ID specific topic
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + user.getId(),
+                payload
+        );
+    }
 }
+

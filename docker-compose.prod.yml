@@ -21,6 +21,8 @@ services:
     image: redis:7-alpine
     container_name: waygo_redis
     restart: always
+    volumes:
+      - waygo-backend_redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -60,3 +62,4 @@ networks:
 volumes:
   waygo-backend_postgres_data:
     external: true
+  waygo-backend_redis_data:

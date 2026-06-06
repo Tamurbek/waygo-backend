@@ -1,8 +1,10 @@
 package com.waygo.backend.controller;
 
 import com.waygo.backend.entity.Order;
+import com.waygo.backend.entity.Transaction;
 import com.waygo.backend.entity.User;
 import com.waygo.backend.repository.OrderRepository;
+import com.waygo.backend.repository.TransactionRepository;
 import com.waygo.backend.repository.UserRepository;
 import com.waygo.backend.service.BackupService;
 import com.waygo.backend.service.SystemSettingsService;
@@ -15,6 +17,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -26,6 +30,7 @@ public class AdminController {
     private final OrderRepository orderRepository;
     private final SystemSettingsService settingsService;
     private final BackupService backupService;
+    private final TransactionRepository transactionRepository;
     private final com.waygo.backend.service.TransactionService transactionService;
     private final com.waygo.backend.service.NotificationService notificationService;
     private final com.waygo.backend.repository.config.TariffPlanRepository tariffPlanRepository;
@@ -54,6 +59,78 @@ public class AdminController {
         model.addAttribute("activeItem", "dashboard");
         
         return "admin/dashboard";
+    }
+
+    @GetMapping("/payments")
+    public String payments(
+            @org.springframework.web.bind.annotation.RequestParam(value = "startDate", required = false) String startDateStr,
+            @org.springframework.web.bind.annotation.RequestParam(value = "endDate", required = false) String endDateStr,
+            Model model) {
+        
+        List<Transaction> tariffPurchases;
+        boolean isFiltered = false;
+        BigDecimal filteredRevenue = BigDecimal.ZERO;
+        long filteredCount = 0;
+        
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+        
+        if (startDateStr != null && !startDateStr.trim().isEmpty()) {
+            try {
+                start = java.time.LocalDate.parse(startDateStr.trim()).atStartOfDay();
+            } catch (Exception ignored) {}
+        }
+        if (endDateStr != null && !endDateStr.trim().isEmpty()) {
+            try {
+                end = java.time.LocalDate.parse(endDateStr.trim()).atTime(23, 59, 59, 999999000);
+            } catch (Exception ignored) {}
+        }
+        
+        if (start != null || end != null) {
+            isFiltered = true;
+            if (start == null) {
+                start = LocalDateTime.of(1970, 1, 1, 0, 0);
+            }
+            if (end == null) {
+                end = LocalDateTime.now();
+            }
+            tariffPurchases = transactionRepository
+                    .findByTypeAndCreatedAtBetweenOrderByCreatedAtDesc(Transaction.TransactionType.TARIFF_PURCHASE, start, end);
+            filteredRevenue = transactionRepository
+                    .sumAmountByTypeAndCreatedAtBetween(Transaction.TransactionType.TARIFF_PURCHASE, start, end);
+            filteredCount = transactionRepository
+                    .countByTypeAndCreatedAtBetween(Transaction.TransactionType.TARIFF_PURCHASE, start, end);
+        } else {
+            tariffPurchases = transactionRepository
+                    .findByTypeOrderByCreatedAtDesc(Transaction.TransactionType.TARIFF_PURCHASE);
+        }
+
+        // Statistika
+        BigDecimal totalRevenue = transactionRepository
+                .sumAmountByType(Transaction.TransactionType.TARIFF_PURCHASE);
+        long totalCount = transactionRepository
+                .countByType(Transaction.TransactionType.TARIFF_PURCHASE);
+        BigDecimal todayRevenue = transactionRepository
+                .sumTariffRevenueFrom(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0));
+        BigDecimal monthRevenue = transactionRepository
+                .sumTariffRevenueFrom(LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0));
+
+        model.addAttribute("title", "WayGO To'lovlar Statistikasi");
+        model.addAttribute("tariffPurchases", tariffPurchases);
+        model.addAttribute("totalRevenue", totalRevenue != null ? totalRevenue : BigDecimal.ZERO);
+        model.addAttribute("totalCount", totalCount);
+        model.addAttribute("todayRevenue", todayRevenue != null ? todayRevenue : BigDecimal.ZERO);
+        model.addAttribute("monthRevenue", monthRevenue != null ? monthRevenue : BigDecimal.ZERO);
+        
+        // Filter information
+        model.addAttribute("isFiltered", isFiltered);
+        model.addAttribute("startDate", startDateStr);
+        model.addAttribute("endDate", endDateStr);
+        model.addAttribute("filteredRevenue", filteredRevenue != null ? filteredRevenue : BigDecimal.ZERO);
+        model.addAttribute("filteredCount", filteredCount);
+        
+        model.addAttribute("activeItem", "payments");
+        return "admin/payments";
     }
 
     @GetMapping("/settings")

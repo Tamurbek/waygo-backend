@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "authorities", "password"})
 public class User implements UserDetails {
 
+    private static final long serialVersionUID = -1623425564715250968L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -82,6 +84,24 @@ public class User implements UserDetails {
 
     public boolean isDriverBillingEnabled() {
         return Boolean.TRUE.equals(this.driverBillingEnabled);
+    }
+
+    public String getInitials() {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            if (phone != null && phone.length() >= 2) {
+                return phone.substring(phone.length() - 2);
+            }
+            return "WG";
+        }
+        String cleaned = fullName.trim();
+        String[] parts = cleaned.split("\\s+");
+        if (parts.length >= 2 && parts[0].length() > 0 && parts[1].length() > 0) {
+            return (parts[0].substring(0, 1) + parts[1].substring(0, 1)).toUpperCase();
+        }
+        if (cleaned.length() >= 2) {
+            return cleaned.substring(0, 2).toUpperCase();
+        }
+        return cleaned.toUpperCase();
     }
 
     public enum Role {
