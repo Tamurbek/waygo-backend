@@ -4,16 +4,26 @@ import com.waygo.backend.entity.DriverOffer;
 import com.waygo.backend.entity.Order;
 import com.waygo.backend.entity.RideBooking;
 import com.waygo.backend.entity.User;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class NotificationService {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final SmsService smsService;
+    private final SmsService realSmsService;
+
+    public NotificationService(
+            SimpMessagingTemplate messagingTemplate,
+            @Qualifier("consoleSmsService") SmsService smsService,
+            @Qualifier("dynamicSmsService") SmsService realSmsService
+    ) {
+        this.messagingTemplate = messagingTemplate;
+        this.smsService = smsService;
+        this.realSmsService = realSmsService;
+    }
 
     public void notifyNewOrder(Order order) {
         // Notify all drivers about a new pending order
@@ -210,7 +220,7 @@ public class NotificationService {
                 ? user.getBalance().setScale(0, java.math.RoundingMode.HALF_UP).toString()
                 : "0";
         String msg = "WayGO: Hisobingiz " + formattedAmount + " UZS ga to'ldirildi! Joriy balans: " + formattedBalance + " UZS";
-        smsService.sendSms(user.getPhone(), msg);
+        realSmsService.sendSms(user.getPhone(), msg);
 
         java.util.Map<String, Object> payload = new java.util.HashMap<>();
         payload.put("type", "BALANCE_UPDATE");
