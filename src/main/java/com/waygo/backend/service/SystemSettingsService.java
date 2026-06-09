@@ -14,6 +14,18 @@ public class SystemSettingsService {
     private static volatile boolean globalBillingEnabled = false;
     private static volatile boolean vipTariffEnabled = true;
 
+    @org.springframework.beans.factory.annotation.Value("${waygo.sms.provider:eskiz}")
+    private String defaultSmsProvider;
+
+    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.email:temuryoldoshev10@gmail.com}")
+    private String defaultEskizEmail;
+
+    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.password:KPFEnVlNoYwlwVkzSJvoLCCFbUhL33wz3fXasYIm}")
+    private String defaultEskizPassword;
+
+    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.from:4546}")
+    private String defaultEskizFrom;
+
     public static boolean isGlobalBillingEnabled() {
         return globalBillingEnabled;
     }
@@ -25,8 +37,16 @@ public class SystemSettingsService {
     @jakarta.annotation.PostConstruct
     public void init() {
         try {
-            globalBillingEnabled = getSettings().isBillingEnabled();
-            vipTariffEnabled = getSettings().isVipTariffEnabled();
+            SystemSettings settings = getSettings();
+            if ("test@test.com".equals(settings.getEskizEmail()) || "password".equals(settings.getEskizPassword())) {
+                settings.setSmsProvider(defaultSmsProvider);
+                settings.setEskizEmail(defaultEskizEmail);
+                settings.setEskizPassword(defaultEskizPassword);
+                settings.setEskizFrom(defaultEskizFrom);
+                repository.save(settings);
+            }
+            globalBillingEnabled = settings.isBillingEnabled();
+            vipTariffEnabled = settings.isVipTariffEnabled();
         } catch (Exception e) {
             globalBillingEnabled = false;
             vipTariffEnabled = true;
@@ -36,10 +56,10 @@ public class SystemSettingsService {
     public SystemSettings getSettings() {
         SystemSettings settings = repository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> repository.save(SystemSettings.builder()
-                        .smsProvider("console")
-                        .eskizEmail("test@test.com")
-                        .eskizPassword("password")
-                        .eskizFrom("4546")
+                        .smsProvider(defaultSmsProvider)
+                        .eskizEmail(defaultEskizEmail)
+                        .eskizPassword(defaultEskizPassword)
+                        .eskizFrom(defaultEskizFrom)
                         .build()));
         globalBillingEnabled = settings.isBillingEnabled();
         vipTariffEnabled = settings.isVipTariffEnabled();

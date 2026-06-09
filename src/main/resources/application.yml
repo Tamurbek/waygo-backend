@@ -68,7 +68,7 @@ waygo:
     provider: ${SMS_PROVIDER:eskiz} # Set to 'eskiz' to use real SMS service
   eskiz:
     email: ${ESKIZ_EMAIL:temuryoldoshev10@gmail.com}
-    password: ${ESKIZ_PASSWORD:0ko2ifH5jKWLLwZSoTlsaiXu3IIwM9CYcAJDroFg}
+    password: ${ESKIZ_PASSWORD:KPFEnVlNoYwlwVkzSJvoLCCFbUhL33wz3fXasYIm}
     from: ${ESKIZ_FROM:4546}
     baseUrl: https://notify.eskiz.uz/api/
   mail:
