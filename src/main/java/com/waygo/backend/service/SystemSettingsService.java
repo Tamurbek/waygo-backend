@@ -20,7 +20,7 @@ public class SystemSettingsService {
     @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.email:temuryoldoshev10@gmail.com}")
     private String defaultEskizEmail;
 
-    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.password:KPFEnVlNoYwlwVkzSJvoLCCFbUhL33wz3fXasYIm}")
+    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.password:0ko2ifH5jKWLLwZSoTlsaiXu3IIwM9CYcAJDroFg}")
     private String defaultEskizPassword;
 
     @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.from:4546}")
