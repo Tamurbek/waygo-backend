@@ -17,10 +17,10 @@ public class SystemSettingsService {
     @org.springframework.beans.factory.annotation.Value("${waygo.sms.provider:eskiz}")
     private String defaultSmsProvider;
 
-    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.email:temuryoldoshev10@gmail.com}")
+    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.email:farrux.xolmatov19890221@gmail.com}")
     private String defaultEskizEmail;
 
-    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.password:0ko2ifH5jKWLLwZSoTlsaiXu3IIwM9CYcAJDroFg}")
+    @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.password:KPFEnVlNoYwlwVkzSJvoLCCFbUhL33wz3fXasYIm}")
     private String defaultEskizPassword;
 
     @org.springframework.beans.factory.annotation.Value("${waygo.eskiz.from:4546}")
@@ -38,7 +38,7 @@ public class SystemSettingsService {
     public void init() {
         try {
             SystemSettings settings = getSettings();
-            if ("test@test.com".equals(settings.getEskizEmail()) || "password".equals(settings.getEskizPassword())) {
+            if ("test@test.com".equals(settings.getEskizEmail()) || "password".equals(settings.getEskizPassword()) || "temuryoldoshev10@gmail.com".equals(settings.getEskizEmail())) {
                 settings.setSmsProvider(defaultSmsProvider);
                 settings.setEskizEmail(defaultEskizEmail);
                 settings.setEskizPassword(defaultEskizPassword);
