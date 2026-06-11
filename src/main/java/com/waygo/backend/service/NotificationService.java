@@ -17,11 +17,10 @@ public class NotificationService {
 
     public NotificationService(
             SimpMessagingTemplate messagingTemplate,
-            @Qualifier("consoleSmsService") SmsService smsService,
             @Qualifier("dynamicSmsService") SmsService realSmsService
     ) {
         this.messagingTemplate = messagingTemplate;
-        this.smsService = smsService;
+        this.smsService = realSmsService;
         this.realSmsService = realSmsService;
     }
 
