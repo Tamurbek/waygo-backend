@@ -22,6 +22,7 @@ public class AdminConfigController {
     private final CarColorRepository carColorRepository;
     private final ServiceOptionRepository serviceOptionRepository;
     private final TopUpStepRepository topUpStepRepository;
+    private final com.waygo.backend.service.FileService fileService;
 
     @GetMapping("/tariffs")
     public String tariffs(Model model, @RequestParam(required = false) Long edit) {
@@ -236,18 +237,38 @@ public class AdminConfigController {
     }
 
     @PostMapping("/top-up-steps/add")
-    public String addTopUpStep(@ModelAttribute TopUpStep topUpStep) {
+    public String addTopUpStep(
+            @ModelAttribute TopUpStep topUpStep,
+            @RequestParam(value = "imageFile", required = false) org.springframework.web.multipart.MultipartFile imageFile) {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                String fileName = fileService.saveFile(imageFile);
+                topUpStep.setImageUrl("/uploads/" + fileName);
+            } catch (java.io.IOException e) {
+                // Log and ignore
+            }
+        }
         topUpStepRepository.save(topUpStep);
         return "redirect:/admin/config/top-up-steps?success";
     }
 
     @PostMapping("/top-up-steps/edit/{id}")
-    public String editTopUpStep(@PathVariable Long id, @ModelAttribute TopUpStep form) {
+    public String editTopUpStep(
+            @PathVariable Long id,
+            @ModelAttribute TopUpStep form,
+            @RequestParam(value = "imageFile", required = false) org.springframework.web.multipart.MultipartFile imageFile) {
         topUpStepRepository.findById(id).ifPresent(existing -> {
             existing.setStepNumber(form.getStepNumber());
             existing.setTitle(form.getTitle());
             existing.setDescription(form.getDescription());
-            existing.setImageUrl(form.getImageUrl());
+            if (imageFile != null && !imageFile.isEmpty()) {
+                try {
+                    String fileName = fileService.saveFile(imageFile);
+                    existing.setImageUrl("/uploads/" + fileName);
+                } catch (java.io.IOException e) {
+                    // Log
+                }
+            }
             topUpStepRepository.save(existing);
         });
         return "redirect:/admin/config/top-up-steps?updated";

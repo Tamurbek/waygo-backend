@@ -8,7 +8,7 @@
     <div class="main-content">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h1 th:text="${title}" style="margin: 0;">Balans To'ldirish Qo'llanmasi</h1>
-            <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('active')">
+            <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('active'); initUploadZone('addModal');">
                 <i class="ph ph-plus-circle"></i> Yangi Qadam Qo'shish
             </button>
         </div>
@@ -33,9 +33,9 @@
                 <thead>
                     <tr>
                         <th style="width: 80px;">Tartibi</th>
+                        <th style="width: 120px;">Rasm</th>
                         <th>Sarlavha</th>
                         <th>Tavsif (Qadam mazmuni)</th>
-                        <th>Rasm URL (Ixtiyoriy)</th>
                         <th style="text-align: right; width: 120px;">Amallar</th>
                     </tr>
                 </thead>
@@ -45,13 +45,16 @@
                             <strong th:text="${step.stepNumber}"></strong>
                         </td>
                         <td>
+                            <div th:if="${step.imageUrl != null && !step.imageUrl.empty}" style="width: 80px; height: 50px; border-radius: 0.25rem; overflow: hidden; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: var(--input-bg);">
+                                <img th:src="${step.imageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                            </div>
+                            <span th:unless="${step.imageUrl != null && !step.imageUrl.empty}" style="color: var(--text-dim); font-size: 0.85rem;">—</span>
+                        </td>
+                        <td>
                             <strong th:text="${step.title}"></strong>
                         </td>
                         <td>
                             <span th:text="${step.description}" style="white-space: pre-wrap; font-size: 0.9rem;"></span>
-                        </td>
-                        <td>
-                            <span th:text="${step.imageUrl != null && !step.imageUrl.empty ? step.imageUrl : '—'}" style="color: var(--text-dim); font-size: 0.85rem;"></span>
                         </td>
                         <td style="text-align: right;">
                             <div class="actions" style="justify-content: flex-end;">
@@ -84,8 +87,21 @@
                 <h3 class="modal-title">Yangi Qadam Qo'shish</h3>
                 <button type="button" class="modal-close" onclick="document.getElementById('addModal').classList.remove('active')"><i class="ph ph-x" style="font-size: 1.25rem;"></i></button>
             </div>
-            <form th:action="@{/admin/config/top-up-steps/add}" method="post">
+            <form th:action="@{/admin/config/top-up-steps/add}" method="post" enctype="multipart/form-data">
                 <div class="modal-body">
+                    <!-- Image Upload Zone at the very top -->
+                    <div class="form-group">
+                        <label class="form-label">Qadam rasmi (Ixtiyoriy)</label>
+                        <div class="image-upload-zone" style="border: 2px dashed var(--border); border-radius: 0.5rem; padding: 1.5rem; text-align: center; cursor: pointer; background: var(--input-bg); transition: all 0.2s; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; min-height: 120px; overflow: hidden; margin-bottom: 1.25rem;">
+                            <i class="ph ph-image" style="font-size: 2rem; color: var(--text-dim);"></i>
+                            <span class="upload-text" style="font-size: 0.85rem; color: var(--text-dim);">
+                                Rasm yuklash (Rasm bosing, sudrab olib keling yoki Paste qiling)
+                            </span>
+                            <img class="image-preview-element" src="" style="display: none; max-width: 100%; max-height: 120px; object-fit: contain; border-radius: 0.375rem; border: 1px solid var(--border);" />
+                            <input type="file" name="imageFile" accept="image/*" style="display: none;" />
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Qadam tartib raqami (masalan: 1)</label>
                         <input type="number" name="stepNumber" required class="form-control" placeholder="1">
@@ -99,11 +115,6 @@
                     <div class="form-group">
                         <label class="form-label">Qadam tavsifi (batafsil ma'lumot)</label>
                         <textarea name="description" required class="form-control" rows="4" placeholder="Qadam qanday bajarilishini tushuntiring..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Rasm URL (Ixtiyoriy, rasmli yo'riqnoma uchun)</label>
-                        <input type="text" name="imageUrl" class="form-control" placeholder="https://example.com/step1.png">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -121,8 +132,21 @@
                 <h3 class="modal-title">Qadamni Tahrirlash</h3>
                 <a th:href="@{/admin/config/top-up-steps}" class="modal-close"><i class="ph ph-x" style="font-size: 1.25rem;"></i></a>
             </div>
-            <form th:action="@{'/admin/config/top-up-steps/edit/' + ${editItem.id}}" method="post">
+            <form th:action="@{'/admin/config/top-up-steps/edit/' + ${editItem.id}}" method="post" enctype="multipart/form-data">
                 <div class="modal-body">
+                    <!-- Image Upload Zone at the very top -->
+                    <div class="form-group">
+                        <label class="form-label">Qadam rasmi (Ixtiyoriy)</label>
+                        <div class="image-upload-zone" style="border: 2px dashed var(--border); border-radius: 0.5rem; padding: 1.5rem; text-align: center; cursor: pointer; background: var(--input-bg); transition: all 0.2s; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; min-height: 120px; overflow: hidden; margin-bottom: 1.25rem;">
+                            <i class="ph ph-image" style="font-size: 2rem; color: var(--text-dim);" th:styleappend="${editItem.imageUrl != null && !editItem.imageUrl.empty ? 'display: none;' : ''}"></i>
+                            <span class="upload-text" style="font-size: 0.85rem; color: var(--text-dim);" th:styleappend="${editItem.imageUrl != null && !editItem.imageUrl.empty ? 'display: none;' : ''}">
+                                Rasm yuklash (Rasm bosing, sudrab olib keling yoki Paste qiling)
+                            </span>
+                            <img class="image-preview-element" th:src="${editItem.imageUrl}" th:style="${editItem.imageUrl != null && !editItem.imageUrl.empty ? 'display: block; max-width: 100%; max-height: 120px; object-fit: contain; border-radius: 0.375rem; border: 1px solid var(--border);' : 'display: none;'}" />
+                            <input type="file" name="imageFile" accept="image/*" style="display: none;" />
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Qadam tartib raqami</label>
                         <input type="number" name="stepNumber" th:value="${editItem.stepNumber}" required class="form-control">
@@ -137,11 +161,6 @@
                         <label class="form-label">Qadam tavsifi</label>
                         <textarea name="description" th:text="${editItem.description}" required class="form-control" rows="4"></textarea>
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Rasm URL (Ixtiyoriy)</label>
-                        <input type="text" name="imageUrl" th:value="${editItem.imageUrl}" class="form-control">
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <a th:href="@{/admin/config/top-up-steps}" class="btn btn-outline">Bekor qilish</a>
@@ -152,5 +171,108 @@
     </div>
 
 <script th:replace="~{admin/fragments :: scripts}"></script>
+<script>
+    function initUploadZone(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        
+        const zone = modal.querySelector('.image-upload-zone');
+        const fileInput = modal.querySelector('input[type="file"]');
+        const previewImg = modal.querySelector('.image-preview-element');
+        const uploadText = modal.querySelector('.upload-text');
+        const uploadIcon = modal.querySelector('.ph-image');
+        
+        if (!zone || !fileInput) return;
+        
+        // Prevent event bubbling when clicked inside zone to avoid multiple triggers
+        zone.onclick = (e) => {
+            if (e.target !== fileInput) {
+                fileInput.click();
+            }
+        };
+        
+        // Drag over / Drag leave transitions
+        zone.ondragover = (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--primary)';
+            zone.style.background = 'var(--surface-hover)';
+        };
+        
+        zone.ondragleave = () => {
+            zone.style.borderColor = 'var(--border)';
+            zone.style.background = 'var(--input-bg)';
+        };
+        
+        zone.ondrop = (e) => {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--border)';
+            zone.style.background = 'var(--input-bg)';
+            
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(fileInput.files[0], previewImg, uploadText, uploadIcon);
+            }
+        };
+        
+        fileInput.onchange = () => {
+            if (fileInput.files.length > 0) {
+                handleFileSelect(fileInput.files[0], previewImg, uploadText, uploadIcon);
+            }
+        };
+    }
+
+    function handleFileSelect(file, previewImg, uploadText, uploadIcon) {
+        if (!file || !file.type.startsWith('image/')) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (previewImg) {
+                previewImg.src = e.target.result;
+                previewImg.style.display = 'block';
+                previewImg.style.maxWidth = '100%';
+                previewImg.style.maxHeight = '120px';
+                previewImg.style.objectFit = 'contain';
+                previewImg.style.borderRadius = '0.375rem';
+                previewImg.style.border = '1px solid var(--border)';
+            }
+            if (uploadText) uploadText.style.display = 'none';
+            if (uploadIcon) uploadIcon.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Handle paste event globally to support paste directly into active modal
+    document.addEventListener('paste', function (e) {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                
+                const activeModal = document.querySelector('.modal-overlay.active');
+                if (activeModal) {
+                    const fileInput = activeModal.querySelector('input[type="file"]');
+                    const previewImg = activeModal.querySelector('.image-preview-element');
+                    const uploadText = activeModal.querySelector('.upload-text');
+                    const uploadIcon = activeModal.querySelector('.ph-image');
+                    
+                    if (fileInput) {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        fileInput.files = dataTransfer.files;
+                        handleFileSelect(file, previewImg, uploadText, uploadIcon);
+                    }
+                }
+            }
+        }
+    });
+
+    // Initialize edit modal upload zone automatically on window load if active
+    window.addEventListener('load', () => {
+        const editModal = document.getElementById('editModal');
+        if (editModal) {
+            initUploadZone('editModal');
+        }
+    });
+</script>
 </body>
 </html>
