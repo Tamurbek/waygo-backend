@@ -38,11 +38,20 @@ public class SystemSettingsService {
     public void init() {
         try {
             SystemSettings settings = getSettings();
+            boolean needsSave = false;
             if ("test@test.com".equals(settings.getEskizEmail()) || "password".equals(settings.getEskizPassword()) || "temuryoldoshev10@gmail.com".equals(settings.getEskizEmail())) {
                 settings.setSmsProvider(defaultSmsProvider);
                 settings.setEskizEmail(defaultEskizEmail);
                 settings.setEskizPassword(defaultEskizPassword);
                 settings.setEskizFrom(defaultEskizFrom);
+                needsSave = true;
+            }
+            if (settings.getOtpMessageTemplate() == null || 
+                "WayGO tasdiqlash kodi: %s".equals(settings.getOtpMessageTemplate())) {
+                settings.setOtpMessageTemplate("WayGoUz ilovasini tasdiqlash kodi: %s");
+                needsSave = true;
+            }
+            if (needsSave) {
                 repository.save(settings);
             }
             globalBillingEnabled = settings.isBillingEnabled();

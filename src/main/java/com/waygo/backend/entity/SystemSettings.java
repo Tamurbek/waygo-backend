@@ -23,7 +23,7 @@ public class SystemSettings {
     private String eskizFrom;
     
     @Builder.Default
-    private String otpMessageTemplate = "WayGO tasdiqlash kodi: %s";
+    private String otpMessageTemplate = "WayGoUz ilovasini tasdiqlash kodi: %s";
 
     @Builder.Default
     private Boolean billingEnabled = false;
