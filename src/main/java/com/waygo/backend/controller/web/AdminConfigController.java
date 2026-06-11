@@ -89,14 +89,17 @@ public class AdminConfigController {
 
     @PostMapping("/regions/add")
     public String addRegion(@ModelAttribute Region region) {
+        region.setActive(true);
         regionRepository.save(region);
         return "redirect:/admin/config/regions?success";
     }
 
     @PostMapping("/regions/edit/{id}")
     public String editRegion(@PathVariable Long id, @ModelAttribute Region region) {
-        region.setId(id);
-        regionRepository.save(region);
+        regionRepository.findById(id).ifPresent(existing -> {
+            existing.setName(region.getName());
+            regionRepository.save(existing);
+        });
         return "redirect:/admin/config/regions?updated";
     }
 
@@ -104,16 +107,19 @@ public class AdminConfigController {
     public String addDistrict(@ModelAttribute District district, @RequestParam Long regionId) {
         Region region = regionRepository.findById(regionId).orElseThrow();
         district.setRegion(region);
+        district.setActive(true);
         districtRepository.save(district);
         return "redirect:/admin/config/regions?success";
     }
 
     @PostMapping("/districts/edit/{id}")
     public String editDistrict(@PathVariable Long id, @ModelAttribute District district, @RequestParam Long regionId) {
-        district.setId(id);
-        Region region = regionRepository.findById(regionId).orElseThrow();
-        district.setRegion(region);
-        districtRepository.save(district);
+        districtRepository.findById(id).ifPresent(existing -> {
+            existing.setName(district.getName());
+            Region region = regionRepository.findById(regionId).orElseThrow();
+            existing.setRegion(region);
+            districtRepository.save(existing);
+        });
         return "redirect:/admin/config/regions?updated";
     }
 

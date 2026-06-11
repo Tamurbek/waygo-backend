@@ -96,6 +96,20 @@ public class ConfigDataSeeder implements CommandLineRunner {
             ));
             
             // Just basic data, admins can add the rest
+        } else {
+            // Fix existing inactive regions/districts added through admin dashboard (which default to isActive=false)
+            regionRepository.findAll().forEach(r -> {
+                if (!r.isActive()) {
+                    r.setActive(true);
+                    regionRepository.save(r);
+                }
+            });
+            districtRepository.findAll().forEach(d -> {
+                if (!d.isActive()) {
+                    d.setActive(true);
+                    districtRepository.save(d);
+                }
+            });
         }
     }
 
