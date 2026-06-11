@@ -19,12 +19,14 @@ public class ConfigDataSeeder implements CommandLineRunner {
     private final CarBrandRepository carBrandRepository;
     private final CarModelRepository carModelRepository;
     private final CarColorRepository carColorRepository;
+    private final TopUpStepRepository topUpStepRepository;
 
     @Override
     public void run(String... args) throws Exception {
         seedTariffPlans();
         seedRegionsAndDistricts();
         seedCarData();
+        seedTopUpSteps();
     }
 
     private void seedTariffPlans() {
@@ -120,6 +122,33 @@ public class ConfigDataSeeder implements CommandLineRunner {
                 CarColor.builder().name("Qora").hexCode("#000000").isActive(true).build(),
                 CarColor.builder().name("Kulrang").hexCode("#808080").isActive(true).build(),
                 CarColor.builder().name("Sariq").hexCode("#FFFF00").isActive(true).build()
+            ));
+        }
+    }
+
+    private void seedTopUpSteps() {
+        if (topUpStepRepository.count() == 0) {
+            topUpStepRepository.saveAll(Arrays.asList(
+                TopUpStep.builder()
+                    .stepNumber(1)
+                    .title("Payme ilovasini oching")
+                    .description("Telefoningizda Payme ilovasini oching va asosiy sahifadagi 'To'lov' (Oplata) bo'limiga o'ting.")
+                    .build(),
+                TopUpStep.builder()
+                    .stepNumber(2)
+                    .title("'WayGO' xizmatini qidiring")
+                    .description("Qidiruv satriga 'WayGO' deb yozing va qidiruv natijalaridan xizmatimizni tanlang.")
+                    .build(),
+                TopUpStep.builder()
+                    .stepNumber(3)
+                    .title("Billing ID va summani kiriting")
+                    .description("Profil bo'limidagi 6 xonali Billing ID raqamingizni (masalan: WG12345) hamda to'ldirmoqchi bo'lgan summani kiriting.")
+                    .build(),
+                TopUpStep.builder()
+                    .stepNumber(4)
+                    .title("To'lovni tasdiqlang")
+                    .description("Kiritilgan ma'lumotlar to'g'riligini tekshirib, to'lov tugmasini bosing. Mablag' hisobingizga darhol o'tkaziladi.")
+                    .build()
             ));
         }
     }

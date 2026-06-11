@@ -351,8 +351,7 @@ public class AdminController {
             @org.springframework.web.bind.annotation.PathVariable Long id,
             @org.springframework.web.bind.annotation.RequestParam("amount") java.math.BigDecimal amount) {
         try {
-            User driver = transactionService.topUp(id, amount);
-            notificationService.notifyBalanceUpdate(driver, amount);
+            transactionService.topUp(id, amount);
             return "redirect:/admin/drivers?success";
         } catch (Exception e) {
             return "redirect:/admin/drivers?error=" + e.getMessage();

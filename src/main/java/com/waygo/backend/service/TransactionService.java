@@ -78,7 +78,13 @@ public class TransactionService {
                 .build();
         transactionRepository.save(transaction);
         
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        try {
+            notificationService.notifyBalanceUpdate(savedUser, amount);
+        } catch (Exception e) {
+            // Log or ignore to avoid rolling back transaction if notification fails
+        }
+        return savedUser;
     }
 
     public List<Transaction> getUserTransactions(Long userId) {

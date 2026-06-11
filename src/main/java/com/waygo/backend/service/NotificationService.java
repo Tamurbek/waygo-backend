@@ -219,7 +219,7 @@ public class NotificationService {
                 ? user.getBalance().setScale(0, java.math.RoundingMode.HALF_UP).toString()
                 : "0";
         String msg = "WayGO: Hisobingiz " + formattedAmount + " UZS ga to'ldirildi! Joriy balans: " + formattedBalance + " UZS";
-        realSmsService.sendSms(user.getPhone(), msg);
+        // realSmsService.sendSms(user.getPhone(), msg);
 
         java.util.Map<String, Object> payload = new java.util.HashMap<>();
         payload.put("type", "BALANCE_UPDATE");

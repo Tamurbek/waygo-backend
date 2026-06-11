@@ -21,6 +21,7 @@ public class AdminConfigController {
     private final CarModelRepository carModelRepository;
     private final CarColorRepository carColorRepository;
     private final ServiceOptionRepository serviceOptionRepository;
+    private final TopUpStepRepository topUpStepRepository;
 
     @GetMapping("/tariffs")
     public String tariffs(Model model, @RequestParam(required = false) Long edit) {
@@ -221,5 +222,40 @@ public class AdminConfigController {
     public String deleteService(@PathVariable Long id) {
         serviceOptionRepository.deleteById(id);
         return "redirect:/admin/config/services?deleted";
+    }
+
+    @GetMapping("/top-up-steps")
+    public String topUpSteps(Model model, @RequestParam(required = false) Long edit) {
+        model.addAttribute("title", "Balans To'ldirish Qo'llanmasi");
+        model.addAttribute("steps", topUpStepRepository.findAll(Sort.by(Sort.Direction.ASC, "stepNumber")));
+        model.addAttribute("activeItem", "config_top_up_steps");
+        if (edit != null) {
+            topUpStepRepository.findById(edit).ifPresent(step -> model.addAttribute("editItem", step));
+        }
+        return "admin/config/top-up-steps";
+    }
+
+    @PostMapping("/top-up-steps/add")
+    public String addTopUpStep(@ModelAttribute TopUpStep topUpStep) {
+        topUpStepRepository.save(topUpStep);
+        return "redirect:/admin/config/top-up-steps?success";
+    }
+
+    @PostMapping("/top-up-steps/edit/{id}")
+    public String editTopUpStep(@PathVariable Long id, @ModelAttribute TopUpStep form) {
+        topUpStepRepository.findById(id).ifPresent(existing -> {
+            existing.setStepNumber(form.getStepNumber());
+            existing.setTitle(form.getTitle());
+            existing.setDescription(form.getDescription());
+            existing.setImageUrl(form.getImageUrl());
+            topUpStepRepository.save(existing);
+        });
+        return "redirect:/admin/config/top-up-steps?updated";
+    }
+
+    @PostMapping("/top-up-steps/delete/{id}")
+    public String deleteTopUpStep(@PathVariable Long id) {
+        topUpStepRepository.deleteById(id);
+        return "redirect:/admin/config/top-up-steps?deleted";
     }
 }

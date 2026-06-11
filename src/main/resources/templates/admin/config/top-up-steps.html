@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+
+    <div th:replace="~{admin/fragments :: sidebar('config_top_up_steps')}"></div>
+
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h1 th:text="${title}" style="margin: 0;">Balans To'ldirish Qo'llanmasi</h1>
+            <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('active')">
+                <i class="ph ph-plus-circle"></i> Yangi Qadam Qo'shish
+            </button>
+        </div>
+        
+        <div th:if="${param.success}" class="card" style="background: rgba(25, 135, 84, 0.1); border-color: var(--success); margin-bottom: 2rem;">
+            <div style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Qadam muvaffaqiyatli saqlandi!</div>
+        </div>
+        
+        <div th:if="${param.updated}" class="card" style="background: rgba(13, 110, 253, 0.1); border-color: var(--primary); margin-bottom: 2rem;">
+            <div style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-check-circle" style="font-size: 1.25rem;"></i> Qadam muvaffaqiyatli yangilandi!</div>
+        </div>
+
+        <div th:if="${param.deleted}" class="card" style="background: rgba(220, 53, 69, 0.1); border-color: var(--error); margin-bottom: 2rem;">
+            <div style="color: var(--error); font-weight: 600; display: flex; align-items: center; gap: 0.5rem;"><i class="ph ph-trash" style="font-size: 1.25rem;"></i> Qadam o'chirildi!</div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Mavjud Qadamlar</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Tartibi</th>
+                        <th>Sarlavha</th>
+                        <th>Tavsif (Qadam mazmuni)</th>
+                        <th>Rasm URL (Ixtiyoriy)</th>
+                        <th style="text-align: right; width: 120px;">Amallar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="step : ${steps}">
+                        <td>
+                            <strong th:text="${step.stepNumber}"></strong>
+                        </td>
+                        <td>
+                            <strong th:text="${step.title}"></strong>
+                        </td>
+                        <td>
+                            <span th:text="${step.description}" style="white-space: pre-wrap; font-size: 0.9rem;"></span>
+                        </td>
+                        <td>
+                            <span th:text="${step.imageUrl != null && !step.imageUrl.empty ? step.imageUrl : '—'}" style="color: var(--text-dim); font-size: 0.85rem;"></span>
+                        </td>
+                        <td style="text-align: right;">
+                            <div class="actions" style="justify-content: flex-end;">
+                                <a th:href="@{/admin/config/top-up-steps(edit=${step.id})}" class="btn-icon btn-icon-edit" title="Tahrirlash">
+                                    <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
+                                </a>
+                                <form th:action="@{/admin/config/top-up-steps/delete/{id}(id=${step.id})}" method="post" onsubmit="return confirm('Ushbu qadamni o\'chirmoqchimisiz?');" style="display: inline;">
+                                    <button type="submit" class="btn-icon btn-icon-delete" title="O'chirish">
+                                        <i class="ph ph-trash" style="font-size: 1.25rem;"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(steps)}">
+                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 3rem 1rem;">
+                            <i class="ph ph-list-numbers" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i><br>
+                            Tizimda qo'llanma qadamlari mavjud emas
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Modal -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Qadam Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="document.getElementById('addModal').classList.remove('active')"><i class="ph ph-x" style="font-size: 1.25rem;"></i></button>
+            </div>
+            <form th:action="@{/admin/config/top-up-steps/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Qadam tartib raqami (masalan: 1)</label>
+                        <input type="number" name="stepNumber" required class="form-control" placeholder="1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Sarlavha</label>
+                        <input type="text" name="title" required class="form-control" placeholder="Payme ilovasini oching">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Qadam tavsifi (batafsil ma'lumot)</label>
+                        <textarea name="description" required class="form-control" rows="4" placeholder="Qadam qanday bajarilishini tushuntiring..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Rasm URL (Ixtiyoriy, rasmli yo'riqnoma uchun)</label>
+                        <input type="text" name="imageUrl" class="form-control" placeholder="https://example.com/step1.png">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="document.getElementById('addModal').classList.remove('active')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" th:if="${editItem != null}" class="modal-overlay active">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Qadamni Tahrirlash</h3>
+                <a th:href="@{/admin/config/top-up-steps}" class="modal-close"><i class="ph ph-x" style="font-size: 1.25rem;"></i></a>
+            </div>
+            <form th:action="@{'/admin/config/top-up-steps/edit/' + ${editItem.id}}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Qadam tartib raqami</label>
+                        <input type="number" name="stepNumber" th:value="${editItem.stepNumber}" required class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Sarlavha</label>
+                        <input type="text" name="title" th:value="${editItem.title}" required class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Qadam tavsifi</label>
+                        <textarea name="description" th:text="${editItem.description}" required class="form-control" rows="4"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Rasm URL (Ixtiyoriy)</label>
+                        <input type="text" name="imageUrl" th:value="${editItem.imageUrl}" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a th:href="@{/admin/config/top-up-steps}" class="btn btn-outline">Bekor qilish</a>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script th:replace="~{admin/fragments :: scripts}"></script>
+</body>
+</html>

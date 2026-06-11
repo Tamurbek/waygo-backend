@@ -55,4 +55,9 @@ public class ConfigController {
     public ResponseEntity<List<ServiceOption>> getServices() {
         return ResponseEntity.ok(configService.getActiveServiceOptions());
     }
+
+    @GetMapping("/top-up-steps")
+    public ResponseEntity<List<TopUpStep>> getTopUpSteps() {
+        return ResponseEntity.ok(configService.getTopUpSteps());
+    }
 }

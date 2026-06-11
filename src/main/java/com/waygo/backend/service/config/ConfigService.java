@@ -18,6 +18,11 @@ public class ConfigService {
     private final CarModelRepository carModelRepository;
     private final CarColorRepository carColorRepository;
     private final ServiceOptionRepository serviceOptionRepository;
+    private final TopUpStepRepository topUpStepRepository;
+
+    public List<TopUpStep> getTopUpSteps() {
+        return topUpStepRepository.findAllByOrderByStepNumberAsc();
+    }
 
     public List<TariffPlan> getActiveTariffPlans() {
         return tariffPlanRepository.findAllByIsActiveTrue();
