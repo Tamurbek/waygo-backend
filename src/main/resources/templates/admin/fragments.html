@@ -9,8 +9,8 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         :root { 
-            --primary: #2563EB; 
-            --primary-hover: #1D4ED8;
+            --primary: #3B82F6; 
+            --primary-hover: #60A5FA;
             --dark: #0F172A; 
             --surface: #1E293B; 
             --surface-hover: #334155;
@@ -27,6 +27,8 @@
             --overlay-light: rgba(255,255,255,0.05);
             --overlay-hover: rgba(255,255,255,0.1);
             --modal-bg: rgba(0,0,0,0.6);
+            --nav-active-bg: rgba(59, 130, 246, 0.15);
+            --nav-active-text: #60A5FA;
         }
         [data-theme="light"] {
             --primary: #2563EB; 
@@ -42,6 +44,8 @@
             --overlay-light: rgba(0,0,0,0.04);
             --overlay-hover: rgba(0,0,0,0.08);
             --modal-bg: rgba(0,0,0,0.4);
+            --nav-active-bg: rgba(37, 99, 235, 0.08);
+            --nav-active-text: #2563EB;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--dark); color: var(--text); display: flex; min-height: 100vh; }
@@ -51,7 +55,7 @@
         .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 3rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
         .nav-item { padding: 0.75rem 1rem; border-radius: 0.5rem; color: var(--text-dim); text-decoration: none; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; transition: all 0.2s; font-weight: 500; }
         .nav-item i { font-size: 1.25rem; }
-        .nav-item:hover, .nav-item.active { background-color: rgba(13, 110, 253, 0.1); color: var(--primary); }
+        .nav-item:hover, .nav-item.active { background-color: var(--nav-active-bg); color: var(--nav-active-text); }
         
         /* Layout */
         .main-content { flex: 1; padding: 2rem 3rem; overflow-y: auto; }
