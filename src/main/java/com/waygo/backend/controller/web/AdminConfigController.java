@@ -98,9 +98,20 @@ public class AdminConfigController {
     public String editRegion(@PathVariable Long id, @ModelAttribute Region region) {
         regionRepository.findById(id).ifPresent(existing -> {
             existing.setName(region.getName());
+            existing.setActive(region.isActive());
             regionRepository.save(existing);
         });
         return "redirect:/admin/config/regions?updated";
+    }
+
+    @PostMapping("/regions/toggle-active/{id}")
+    @ResponseBody
+    public String toggleRegionActive(@PathVariable Long id) {
+        regionRepository.findById(id).ifPresent(region -> {
+            region.setActive(!region.isActive());
+            regionRepository.save(region);
+        });
+        return "ok";
     }
 
     @PostMapping("/districts/add")
@@ -118,9 +129,20 @@ public class AdminConfigController {
             existing.setName(district.getName());
             Region region = regionRepository.findById(regionId).orElseThrow();
             existing.setRegion(region);
+            existing.setActive(district.isActive());
             districtRepository.save(existing);
         });
         return "redirect:/admin/config/regions?updated";
+    }
+
+    @PostMapping("/districts/toggle-active/{id}")
+    @ResponseBody
+    public String toggleDistrictActive(@PathVariable Long id) {
+        districtRepository.findById(id).ifPresent(district -> {
+            district.setActive(!district.isActive());
+            districtRepository.save(district);
+        });
+        return "ok";
     }
 
     @Transactional(readOnly = true)

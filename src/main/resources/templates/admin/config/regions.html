@@ -38,6 +38,7 @@
                         <tr>
                             <th>Nomi</th>
                             <th>Tumanlar Soni</th>
+                            <th>Aktivlik</th>
                             <th style="text-align: right;">Amallar</th>
                         </tr>
                     </thead>
@@ -49,17 +50,26 @@
                                     <span th:text="${#lists.size(r.districts)}"></span> tuman
                                 </span>
                             </td>
+                            <td>
+                                <label class="switch">
+                                    <input type="checkbox" th:checked="${r.active}"
+                                           th:data-id="${r.id}"
+                                           onchange="toggleRegionActive(this.dataset.id)">
+                                    <span class="slider"></span>
+                                </label>
+                            </td>
                             <td style="text-align: right;">
                                 <button type="button" class="btn-icon btn-icon-edit"
                                     th:data-id="${r.id}"
                                     th:data-name="${r.name}"
+                                    th:data-active="${r.active}"
                                     onclick="openEditRegionModal(this)">
                                     <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
                                 </button>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(regions)}">
-                            <td colspan="3" style="text-align: center; color: var(--text-dim); padding: 3rem 1rem;">
+                            <td colspan="4" style="text-align: center; color: var(--text-dim); padding: 3rem 1rem;">
                                 <i class="ph ph-map-trifold" style="font-size: 3rem; opacity: 0.5;"></i><br>Hozircha viloyatlar yo'q
                             </td>
                         </tr>
@@ -82,10 +92,9 @@
                               th:data-id="${d.id}"
                               th:data-name="${d.name}"
                               th:data-region-id="${r.id}"
-                              style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: border-color 0.2s;"
-                              onclick="openEditDistrictModal(this)"
-                              onmouseover="this.style.borderColor='#ffc107'" 
-                              onmouseout="this.style.borderColor='var(--border)'">
+                              th:data-active="${d.active}"
+                              th:style="${d.active ? 'background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;' : 'background: rgba(220, 53, 69, 0.05); border: 1px dashed var(--error); color: var(--text-dim); opacity: 0.6; padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;'}"
+                              onclick="openEditDistrictModal(this)">
                             <span th:text="${d.name}"></span>
                             <i class="ph ph-pencil-simple" style="color: var(--text-dim); font-size: 0.8rem;"></i>
                         </span>
@@ -136,6 +145,12 @@
                     <div class="form-group">
                         <label class="form-label">Viloyat Nomi</label>
                         <input type="text" id="editRegionName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" id="editRegionActive" name="active" value="true" class="form-check-input">
+                            <span class="form-check-label">Aktiv (Mobil ilovalarda ko'rinadi)</span>
+                        </label>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -198,6 +213,12 @@
                         <label class="form-label">Tuman Nomi</label>
                         <input type="text" id="editDistrictName" name="name" required class="form-control">
                     </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" id="editDistrictActive" name="active" value="true" class="form-check-input">
+                            <span class="form-check-label">Aktiv (Mobil ilovalarda ko'rinadi)</span>
+                        </label>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('editDistrictModal')">Bekor qilish</button>
@@ -218,6 +239,7 @@
         function openEditRegionModal(btn) {
             document.getElementById('editRegionForm').action = '/admin/config/regions/edit/' + btn.dataset.id;
             document.getElementById('editRegionName').value = btn.dataset.name;
+            document.getElementById('editRegionActive').checked = (btn.dataset.active === 'true');
             openModal('editRegionModal');
         }
 
@@ -225,7 +247,15 @@
             document.getElementById('editDistrictForm').action = '/admin/config/districts/edit/' + el.dataset.id;
             document.getElementById('editDistrictName').value = el.dataset.name;
             document.getElementById('editDistrictRegionId').value = el.dataset.regionId;
+            document.getElementById('editDistrictActive').checked = (el.dataset.active === 'true');
             openModal('editDistrictModal');
+        }
+
+        function toggleRegionActive(id) {
+            fetch('/admin/config/regions/toggle-active/' + id, { method: 'POST' })
+                .then(response => {
+                    if (!response.ok) alert('Xatolik yuz berdi');
+                });
         }
 
         document.querySelectorAll('.modal-overlay').forEach(overlay => {
