@@ -236,4 +236,35 @@ public class TransactionService {
         }
         return savedUser;
     }
+
+    @Transactional
+    public User resetBalance(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        
+        BigDecimal oldBalance = user.getBalance();
+        if (oldBalance == null) {
+            oldBalance = BigDecimal.ZERO;
+        }
+        
+        user.setBalance(BigDecimal.ZERO);
+        
+        Transaction transaction = Transaction.builder()
+                .sender(user)
+                .receiver(null)
+                .amount(oldBalance)
+                .type(Transaction.TransactionType.WITHDRAW)
+                .status(Transaction.TransactionStatus.SUCCESS)
+                .description("Balance set to 0 by Admin")
+                .build();
+        transactionRepository.save(transaction);
+        
+        User savedUser = userRepository.save(user);
+        try {
+            notificationService.notifyBalanceUpdate(savedUser, BigDecimal.ZERO);
+        } catch (Exception e) {
+            // Log or ignore
+        }
+        return savedUser;
+    }
 }

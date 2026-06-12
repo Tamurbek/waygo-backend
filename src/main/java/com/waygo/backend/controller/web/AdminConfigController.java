@@ -220,18 +220,21 @@ public class AdminConfigController {
     }
 
     @PostMapping("/services/add")
-    public String addService(@ModelAttribute ServiceOption serviceOption) {
+    public String addService(@ModelAttribute ServiceOption serviceOption,
+                             @RequestParam(name = "active", required = false) String activeParam) {
+        serviceOption.setActive("true".equals(activeParam));
         serviceOptionRepository.save(serviceOption);
         return "redirect:/admin/config/services?success";
     }
 
     @PostMapping("/services/edit/{id}")
-    public String editService(@PathVariable Long id, @ModelAttribute ServiceOption form) {
+    public String editService(@PathVariable Long id, @ModelAttribute ServiceOption form,
+                              @RequestParam(name = "active", required = false) String activeParam) {
         serviceOptionRepository.findById(id).ifPresent(existing -> {
             existing.setName(form.getName());
             existing.setIconKey(form.getIconKey());
             existing.setType(form.getType());
-            existing.setActive(form.isActive());
+            existing.setActive("true".equals(activeParam));
             serviceOptionRepository.save(existing);
         });
         return "redirect:/admin/config/services?updated";

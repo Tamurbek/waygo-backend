@@ -106,6 +106,15 @@
                                             +
                                         </button>
                                     </div>
+
+                                    <!-- Reset Balance Button -->
+                                    <button th:if="${driver.driverBillingEnabled and driver.balance != null and driver.balance.compareTo(T(java.math.BigDecimal).ZERO) > 0}" 
+                                            type="button" 
+                                            class="btn" 
+                                            style="background: rgba(220, 53, 69, 0.15); color: var(--error); border: 1px solid rgba(220, 53, 69, 0.3); padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem; cursor: pointer; margin-left: 0.5rem;"
+                                            th:onclick="'confirmResetBalance(' + ${driver.id} + ')'">
+                                        Nollash
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -122,6 +131,7 @@
                 <form th:id="'addBalanceForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/add-balance'}" method="post">
                     <input type="hidden" name="amount" th:id="'amountInput-' + ${driver.id}">
                 </form>
+                <form th:id="'resetBalanceForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/reset-balance'}" method="post"></form>
                 <form th:id="'cancelTariffForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/cancel-tariff'}" method="post"></form>
                 <form th:id="'changeTariffForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/change-tariff'}" method="post">
                     <input type="hidden" name="tariffId" th:id="'newTariffInput-' + ${driver.id}">
@@ -188,6 +198,12 @@
             }
             document.getElementById('amountInput-' + driverId).value = val;
             document.getElementById('addBalanceForm-' + driverId).submit();
+        }
+
+        function confirmResetBalance(driverId) {
+            if (confirm("Haqiqatan ham ushbu haydovchi balansini 0 qilmoqchisiz?")) {
+                document.getElementById('resetBalanceForm-' + driverId).submit();
+            }
         }
 
         let activeTab = 'standard';

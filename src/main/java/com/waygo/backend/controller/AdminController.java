@@ -357,5 +357,15 @@ public class AdminController {
             return "redirect:/admin/drivers?error=" + e.getMessage();
         }
     }
+
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/reset-balance")
+    public String resetDriverBalance(@org.springframework.web.bind.annotation.PathVariable Long id) {
+        try {
+            transactionService.resetBalance(id);
+            return "redirect:/admin/drivers?success";
+        } catch (Exception e) {
+            return "redirect:/admin/drivers?error=" + e.getMessage();
+        }
+    }
 }
 
