@@ -214,12 +214,20 @@ public class NotificationService {
         if (user == null || user.getPhone() == null) {
             return;
         }
-        String formattedAmount = amount.setScale(0, java.math.RoundingMode.HALF_UP).toString();
-        String formattedBalance = user.getBalance() != null
-                ? user.getBalance().setScale(0, java.math.RoundingMode.HALF_UP).toString()
-                : "0";
-        String msg = "WayGO: Hisobingiz " + formattedAmount + " UZS ga to'ldirildi! Joriy balans: " + formattedBalance + " UZS";
-        // realSmsService.sendSms(user.getPhone(), msg);
+        java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new java.util.Locale("uz", "UZ"));
+        nf.setGroupingUsed(true);
+        nf.setMaximumFractionDigits(0);
+
+        String formattedAmount  = nf.format(amount.setScale(0, java.math.RoundingMode.HALF_UP));
+        String formattedBalance = nf.format(
+                (user.getBalance() != null ? user.getBalance() : java.math.BigDecimal.ZERO)
+                        .setScale(0, java.math.RoundingMode.HALF_UP));
+
+        String msg = "WayGoUz: Hisobingizga " + formattedAmount + " so'm tushdi. "
+                   + "Joriy balansingiz: " + formattedBalance + " so'm.";
+
+        // Send SMS via Eskiz
+        smsService.sendSms(user.getPhone(), msg);
 
         java.util.Map<String, Object> payload = new java.util.HashMap<>();
         payload.put("type", "BALANCE_UPDATE");
