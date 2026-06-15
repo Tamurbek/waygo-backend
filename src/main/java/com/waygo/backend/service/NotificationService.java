@@ -4,6 +4,7 @@ import com.waygo.backend.entity.DriverOffer;
 import com.waygo.backend.entity.Order;
 import com.waygo.backend.entity.RideBooking;
 import com.waygo.backend.entity.User;
+import com.waygo.backend.entity.VipChatMessage;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -257,6 +258,40 @@ public class NotificationService {
                 "/topic/notifications/" + user.getId(),
                 payload
         );
+    }
+
+    public void notifyNewChatMessage(VipChatMessage message) {
+        if (message == null || message.getDriver() == null) {
+            return;
+        }
+        
+        Runnable sendNotification = () -> {
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("type", "CHAT_MESSAGE");
+            payload.put("messageText", message.getMessageText());
+            payload.put("sender", message.getSender().name());
+            payload.put("createdAt", message.getCreatedAt() != null ? message.getCreatedAt().toString() : java.time.LocalDateTime.now().toString());
+            payload.put("id", message.getId());
+
+            // Send directly to the user's numeric ID specific topic
+            messagingTemplate.convertAndSend(
+                    "/topic/notifications/" + message.getDriver().getId(),
+                    payload
+            );
+        };
+
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sendNotification.run();
+                    }
+                }
+            );
+        } else {
+            sendNotification.run();
+        }
     }
 }
 

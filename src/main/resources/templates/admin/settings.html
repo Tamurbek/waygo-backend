@@ -69,6 +69,19 @@
                         </label>
                     </div>
 
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">Telegram Bot (WayGO Support Chat)</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Telegram Bot Token</label>
+                            <input type="text" th:field="*{telegramBotToken}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Telegram Chat ID (Admin/Guruh)</label>
+                            <input type="text" th:field="*{telegramChatId}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">Xabarlar</h3>
                     
                     <div class="form-group">

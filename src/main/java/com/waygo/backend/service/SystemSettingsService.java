@@ -85,6 +85,8 @@ public class SystemSettingsService {
         existing.setOtpMessageTemplate(newSettings.getOtpMessageTemplate());
         existing.setBillingEnabled(newSettings.isBillingEnabled());
         existing.setVipTariffEnabled(newSettings.isVipTariffEnabled());
+        existing.setTelegramBotToken(newSettings.getTelegramBotToken());
+        existing.setTelegramChatId(newSettings.getTelegramChatId());
         SystemSettings saved = repository.save(existing);
         globalBillingEnabled = saved.isBillingEnabled();
         vipTariffEnabled = saved.isVipTariffEnabled();

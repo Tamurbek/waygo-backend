@@ -31,6 +31,9 @@ public class SystemSettings {
     @Builder.Default
     private Boolean vipTariffEnabled = true;
 
+    private String telegramBotToken;
+    private String telegramChatId;
+
     public boolean isBillingEnabled() {
         return Boolean.TRUE.equals(this.billingEnabled);
     }
