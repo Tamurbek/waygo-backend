@@ -51,7 +51,6 @@ services:
         condition: service_healthy
     networks:
       - waygo_net
-      - caddy_net
 
   db-backup:
     image: prodrigestivill/postgres-backup-local:15
@@ -78,8 +77,6 @@ services:
 networks:
   waygo_net:
     driver: bridge
-  caddy_net:
-    external: true
 
 volumes:
   waygo-backend_postgres_data:
