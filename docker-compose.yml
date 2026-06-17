@@ -56,6 +56,28 @@ services:
     networks:
       - waygo_local_net
 
+  db-backup:
+    image: prodrigestivill/postgres-backup-local:15
+    container_name: waygo_db_backup_local
+    restart: always
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=waygo_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - SCHEDULING=true
+      - BACKUP_NUM_KEEP=7
+      - SCHEDULE=0 2 * * *
+      - BACKUP_DIR=/backups
+      - TZ=Asia/Tashkent
+    networks:
+      - waygo_local_net
+
 networks:
   waygo_local_net:
     driver: bridge
