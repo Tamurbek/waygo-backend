@@ -85,6 +85,7 @@
         tr:last-child td { border-bottom: none; }
         
         /* Badges */
+        .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--border); background: var(--input-bg); }
         .status-badge { padding: 0.35rem 0.85rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; display: inline-flex; align-items: center; gap: 0.35rem; }
         .status-completed, .status-active { background: rgba(25, 135, 84, 0.15); color: #20c997; border: 1px solid rgba(32, 201, 151, 0.2); }
         .status-pending { background: rgba(255, 193, 7, 0.15); color: var(--pending); border: 1px solid rgba(255, 193, 7, 0.2); }
@@ -109,6 +110,7 @@
         input:checked + .slider:before { transform: translateX(20px); background-color: var(--primary); }
 
         /* Buttons */
+        button, input[type="button"], input[type="submit"], [role="button"] { cursor: pointer; }
         .btn { border: none; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; font-size: 0.875rem; line-height: 1.5; }
         .btn-primary { background: var(--primary); color: #fff; }
         .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(13,110,253,0.3); }
@@ -257,6 +259,24 @@
         }
         
         document.addEventListener('DOMContentLoaded', updateThemeUI);
+
+        // Close modals when clicking outside (on the overlay backdrop)
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                const closeBtn = e.target.querySelector('.modal-close');
+                if (closeBtn) {
+                    closeBtn.click();
+                } else {
+                    e.target.classList.remove('active');
+                }
+            } else if (e.target.id === 'changeTariffModal') {
+                if (typeof closeChangeTariffModal === 'function') {
+                    closeChangeTariffModal();
+                } else {
+                    e.target.style.display = 'none';
+                }
+            }
+        });
     </script>
 </body>
 </html>

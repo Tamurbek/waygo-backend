@@ -6,11 +6,14 @@
 
     <div class="main-content">
         <h1 th:text="${title}">Haydovchilar</h1>
-        <div th:if="${param.success}" style="padding: 0.75rem; margin-top: 1rem; border-radius: 0.5rem; background: rgba(0, 255, 128, 0.15); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); font-size: 0.9rem;">
+        <div id="successAlert" style="display: none; padding: 0.75rem; margin-top: 1rem; border-radius: 0.5rem; background: rgba(0, 255, 128, 0.15); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); font-size: 0.9rem;">
+            ✓ Muvaffaqiyatli yangilandi!
+        </div>
+        <div th:if="${param.success}" id="successAlertParam" style="padding: 0.75rem; margin-top: 1rem; border-radius: 0.5rem; background: rgba(0, 255, 128, 0.15); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); font-size: 0.9rem;">
             ✓ Haydovchi sozlamalari muvaffaqiyatli yangilandi!
         </div>
         
-        <div class="card" style="margin-top: 2rem;">
+        <div class="card" style="margin-top: 2rem;" id="driversContentWrapper">
             <form th:action="@{/admin/drivers/bulk-action}" method="post" id="bulkForm">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <h2 style="font-size: 1.125rem;">Barcha haydovchilar</h2>
@@ -26,19 +29,15 @@
                     <button type="submit" name="action" value="disable-billing" class="btn" style="background: rgba(0, 255, 128, 0.15); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem; cursor: pointer;">
                         To'lovni o'chirish (Ochish)
                     </button>
-                </div>
-
-                <table>
+                </div>                <table>
                     <thead>
                         <tr>
                             <th style="width: 40px;"><input type="checkbox" id="selectAll" style="cursor: pointer;"></th>
-                            <th>Avatar</th>
-                            <th>F.I.SH</th>
-                            <th>Telefon</th>
+                            <th>Haydovchi</th>
                             <th>Balans</th>
                             <th>Joriy Tarif</th>
                             <th>Sana</th>
-                            <th>Amallar</th>
+                            <th style="text-align: right; width: 220px;">Amallar</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -47,79 +46,69 @@
                                 <input type="checkbox" name="driverIds" th:value="${driver.id}" style="cursor: pointer;">
                             </td>
                             <td>
-                                <img th:src="${driver.imageUrl != null ? driver.imageUrl : 'https://ui-avatars.com/api/?background=FFD700&color=000&name=' + (driver.fullName != null ? driver.fullName : driver.phone)}" class="avatar">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <img th:src="${driver.imageUrl != null ? driver.imageUrl : 'https://ui-avatars.com/api/?background=FFD700&color=000&name=' + (driver.fullName != null ? driver.fullName : driver.phone)}" class="avatar">
+                                    <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                                        <span style="font-weight: 600; color: var(--text);" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</span>
+                                        <span style="font-size: 0.8rem; color: var(--text-dim);" th:text="${driver.phone}">+998...</span>
+                                    </div>
+                                </div>
                             </td>
-                            <td style="font-weight: 500;" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</td>
-                            <td th:text="${driver.phone}">+998...</td>
                             <td>
                                 <span th:if="${driver.driverBillingEnabled}" style="font-weight: 600; color: var(--success);" th:text="${driver.balance != null ? #numbers.formatDecimal(driver.balance, 0, 'COMMA', 0, 'POINT') + ' UZS' : '0 UZS'}">0 UZS</span>
-                                <span th:if="${!driver.driverBillingEnabled}" style="color: var(--text-dim); font-size: 0.85rem;">Cheksiz (To'lovsiz)</span>
+                                <span th:if="${!driver.driverBillingEnabled}" style="color: var(--text-dim); font-size: 0.85rem; font-weight: 500;">Cheksiz (To'lovsiz)</span>
                             </td>
                             <td>
-                                <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                                    <div th:if="${driver.activeTariff != null}">
-                                        <span style="font-weight: 600; color: var(--primary);" th:text="${driver.activeTariff.duration}">15 kun</span>
+                                <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+                                    <div th:if="${driver.activeTariff != null}" style="display: flex; flex-direction: column; gap: 0.15rem;">
+                                        <span style="font-weight: 600; color: var(--primary); font-size: 0.9rem;" th:text="${driver.activeTariff.duration}">15 kun</span>
+                                        <span th:if="${driver.driverBillingEnabled and driver.tariffExpiryDate != null}" 
+                                              style="font-size: 0.75rem; color: var(--text-dim); display: inline-flex; align-items: center; gap: 0.25rem;">
+                                            <i class="ph ph-calendar" style="font-size: 0.8rem;"></i>
+                                            <span th:text="'Gacha: ' + ${#temporals.format(driver.tariffExpiryDate, 'dd.MM.yyyy HH:mm')}">Date</span>
+                                        </span>
                                     </div>
-                                    <span th:if="${driver.activeTariff == null}" style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 0.25rem;">Tarif yo'q</span>
+                                    <span th:if="${driver.activeTariff == null}" style="color: var(--text-dim); font-size: 0.85rem; font-weight: 500;">Tarif yo'q</span>
                                     
-                                    <!-- If billing is enabled, show expiration date -->
-                                    <th:block th:if="${driver.driverBillingEnabled}">
-                                        <span style="font-size: 0.75rem; color: var(--text-dim);" th:if="${driver.tariffExpiryDate != null}" th:text="'Gacha: ' + ${#temporals.format(driver.tariffExpiryDate, 'dd.MM.yyyy HH:mm')}">Date</span>
-                                    </th:block>
+                                    <div th:if="${!driver.driverBillingEnabled}" style="display: flex; flex-direction: column; gap: 0.15rem;">
+                                        <span class="status-badge" style="background: rgba(255, 193, 7, 0.12); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.2); padding: 0.15rem 0.5rem; font-size: 0.68rem; border-radius: 4px; display: inline-flex; width: fit-content; font-weight: 600; text-transform: none;">Muzlatilgan</span>
+                                        <span style="font-size: 0.72rem; color: var(--text-dim);" th:if="${driver.frozenTariffDuration != null}" th:text="'Qolgan: ' + ${driver.getFrozenTariffDurationFormatted()}">Qolgan: -</span>
+                                    </div>
                                     
-                                    <!-- If billing is disabled (frozen), show status and remaining time -->
-                                    <th:block th:if="${!driver.driverBillingEnabled}">
-                                        <span style="font-size: 0.75rem; color: #ffc107; font-weight: 500;">Muzlatilgan (To'lovsiz)</span>
-                                        <span style="font-size: 0.75rem; color: var(--text-dim);" th:if="${driver.frozenTariffDuration != null}" th:text="'Qolgan: ' + ${driver.getFrozenTariffDurationFormatted()}">Qolgan: -</span>
-                                    </th:block>
-                                    
-                                    <!-- Action buttons -->
-                                    <div style="display: flex; gap: 0.25rem; margin-top: 0.25rem;">
-                                        <button th:if="${driver.activeTariff != null}" type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 0.25rem; color: var(--error); border-color: rgba(255, 77, 77, 0.3);"
-                                                th:onclick="'document.getElementById(\'cancelTariffForm-\' + ' + ${driver.id} + ').submit();'">
-                                            Bekor qilish
+                                    <div style="display: flex; gap: 0.35rem; margin-top: 0.15rem;">
+                                        <button th:if="${driver.activeTariff != null}" type="button" class="btn btn-outline" 
+                                                style="padding: 0.25rem 0.5rem; font-size: 0.72rem; border-radius: 0.375rem; color: var(--error); border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); display: inline-flex; align-items: center; gap: 0.25rem;"
+                                                th:onclick="'submitFormWithAjax(\'cancelTariffForm-\' + ' + ${driver.id} + ', \'Tarif bekor qilindi\');'">
+                                            <i class="ph ph-x-circle"></i> Bekor qilish
                                         </button>
-                                        <button type="button" class="btn btn-outline" style="padding: 0.2rem 0.4rem; font-size: 0.7rem; border-radius: 0.25rem;"
-                                                th:onclick="'showChangeTariffModal(' + ${driver.id} + ')'"
-                                                th:text="${driver.activeTariff != null ? 'Almashtirish' : 'O''rnatish'}">
-                                            Almashtirish
+                                        <button type="button" class="btn btn-outline" 
+                                                style="padding: 0.25rem 0.5rem; font-size: 0.72rem; border-radius: 0.375rem; display: inline-flex; align-items: center; gap: 0.25rem;"
+                                                th:onclick="'showChangeTariffModal(' + ${driver.id} + ')'">
+                                            <i class="ph ph-arrows-left-right"></i>
+                                            <span th:text="${driver.activeTariff != null ? 'Almashtirish' : 'O''rnatish'}">Almashtirish</span>
                                         </button>
                                     </div>
                                 </div>
                             </td>
                             <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
-                            <td>
-                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                                    <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem;">Profil</a>
-                                    <button type="button" class="btn" 
-                                            th:style="${driver.driverBillingEnabled} ? 'background: rgba(255, 77, 77, 0.15); color: var(--error); padding: 0.4rem 0.8rem; font-size: 0.75rem; border: 1px solid rgba(255, 77, 77, 0.3); border-radius: 0.25rem; cursor: pointer;' : 'background: rgba(0, 255, 128, 0.1); color: var(--success); padding: 0.4rem 0.8rem; font-size: 0.75rem; border: 1px solid rgba(0, 255, 128, 0.3); border-radius: 0.25rem; cursor: pointer;'"
-                                            th:onclick="'document.getElementById(\'toggleForm-\' + ' + ${driver.id} + ').submit();'"
-                                            th:text="${driver.driverBillingEnabled} ? 'To\'lov: Yoqilgan (Blokda)' : 'To\'lov: O\'chirilgan'">
-                                        To'lov
-                                    </button>
-                                    
-                                    <!-- Add Balance Form Trigger -->
-                                    <div th:if="${driver.driverBillingEnabled}" style="display: inline-flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; background: rgba(255,255,255,0.02); padding: 0.2rem 0.4rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.05);">
-                                        <input type="number" th:id="'balanceInput-' + ${driver.id}" placeholder="+ UZS" style="width: 80px; padding: 0.35rem; font-size: 0.75rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: var(--text);">
-                                        <button type="button" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.75rem; border-radius: 0.25rem; background: rgba(13, 110, 253, 0.1); border-color: rgba(13, 110, 253, 0.3);"
-                                                th:onclick="'submitAddBalance(' + ${driver.id} + ')'">
-                                            +
-                                        </button>
-                                    </div>
-
-                                    <!-- Reset Balance Button -->
-                                    <button th:if="${driver.driverBillingEnabled and driver.balance != null and driver.balance.compareTo(T(java.math.BigDecimal).ZERO) > 0}" 
-                                            type="button" 
-                                            class="btn" 
-                                            style="background: rgba(220, 53, 69, 0.15); color: var(--error); border: 1px solid rgba(220, 53, 69, 0.3); padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 0.25rem; cursor: pointer; margin-left: 0.5rem;"
-                                            th:onclick="'confirmResetBalance(' + ${driver.id} + ')'">
-                                        Nollash
-                                    </button>
-                                </div>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn-icon" 
+                                        style="color: var(--text-dim); background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 0.5rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;"
+                                        onmouseover="this.style.background='var(--overlay-light)'; this.style.color='var(--text)';"
+                                        onmouseout="this.style.background='rgba(255,255,255,0.02)'; this.style.color='var(--text-dim)';"
+                                        th:data-id="${driver.id}"
+                                        th:data-name="${driver.fullName}"
+                                        th:data-phone="${driver.phone}"
+                                        th:data-balance="${driver.balance != null ? driver.balance : 0}"
+                                        th:data-billing="${driver.driverBillingEnabled}"
+                                        th:onclick="'openDriverSettingsModal(this)'"
+                                        title="Sozlamalar">
+                                    <i class="ph ph-gear" style="font-size: 1.25rem;"></i>
+                                </button>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(drivers)}">
-                            <td colspan="7" style="text-align: center; color: var(--text-dim); padding: 4rem;">Hozircha haydovchilar ro'yxatga olinmagan</td>
+                            <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 4rem;">Hozircha haydovchilar ro'yxatga olinmagan</td>
                         </tr>
                     </tbody>
                 </table>
@@ -145,8 +134,8 @@
     </div>
 
     <!-- Modal for Changing Tariff -->
-    <div id="changeTariffModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div style="background: var(--surface); padding: 2rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.05); min-width: 350px;">
+    <div id="changeTariffModal" class="modal-overlay">
+        <div class="modal" style="padding: 2rem; min-width: 350px;">
             <h3 style="margin-bottom: 1rem;">Tarifni almashtirish / VIP o'rnatish</h3>
             <input type="hidden" id="modalDriverId">
             
@@ -183,12 +172,196 @@
             </div>
         </div>
     </div>
+ 
+    <!-- Modal for Driver Settings -->
+    <div id="driverSettingsModal" class="modal-overlay">
+        <div class="modal" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Haydovchi Sozlamalari</h3>
+                <button type="button" class="modal-close" onclick="closeDriverSettingsModal()"><i class="ph ph-x" style="font-size: 1.25rem;"></i></button>
+            </div>
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <input type="hidden" id="settingsDriverId">
+                
+                <!-- Driver Info Summary Card -->
+                <div style="display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.2rem;" id="settingsAvatar">IZ</div>
+                    <div style="display: flex; flex-direction: column; gap: 0.15rem;">
+                        <span style="font-weight: 600; color: var(--text); font-size: 1rem;" id="settingsName">Ibragimov Ziyodulla</span>
+                        <span style="font-size: 0.85rem; color: var(--text-dim);" id="settingsPhone">+998995033125</span>
+                    </div>
+                </div>
+
+                <!-- Profil Sahifasi Link -->
+                <a href="#" id="settingsProfilLink" class="btn btn-outline" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <i class="ph ph-user"></i> Haydovchi profili
+                </a>
+                
+                <!-- Billing Status Section -->
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; font-size: 0.95rem; color: var(--text);">To'lov Tizimi (Billing)</span>
+                        <label class="switch" style="transform: scale(0.95);">
+                            <input type="checkbox" id="settingsBillingToggle" onchange="toggleSettingsBilling()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <span style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">
+                        O'chirilganda haydovchi tekin (Muzlatilgan tarif bilan) foydalanadi. Yoqilganda balans va faol tarif talab etiladi.
+                    </span>
+                </div>
+                
+                <!-- Balance Control Section -->
+                <div id="settingsBalanceSection" style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.875rem; color: var(--text-dim);">Joriy balans:</span>
+                        <strong style="font-size: 1.1rem; color: var(--success);" id="settingsBalanceText">173,000 UZS</strong>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                        <!-- Input Group -->
+                        <div style="display: inline-flex; align-items: stretch; border: 1px solid var(--border); border-radius: 0.5rem; overflow: hidden; background: var(--input-bg); flex: 1; height: 38px;">
+                            <input type="number" id="settingsBalanceInput" placeholder="Summani kiriting (+ UZS)" style="border: none; background: transparent; padding: 0.5rem 0.75rem; font-size: 0.85rem; color: var(--text); width: 100%; outline: none;">
+                            <button type="button" class="btn btn-primary" style="border-radius: 0; padding: 0 1rem; font-size: 0.85rem;" onclick="submitSettingsAddBalance()">Qo'shish</button>
+                        </div>
+                        
+                        <!-- Reset Button -->
+                        <button type="button" id="settingsResetBtn" class="btn btn-danger" style="height: 38px; padding: 0 0.85rem;" onclick="submitSettingsResetBalance()" title="Balansni nollash">
+                            <i class="ph ph-wallet" style="font-size: 1.1rem;"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 1rem 1.5rem;">
+                <button type="button" class="btn btn-outline" onclick="closeDriverSettingsModal()">Yopish</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        document.getElementById('selectAll').addEventListener('change', function(e) {
-            const checkboxes = document.querySelectorAll('input[name="driverIds"]');
-            checkboxes.forEach(cb => cb.checked = e.target.checked);
+        // Setup listeners on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', () => {
+            setupSelectAllListener();
         });
+
+        function setupSelectAllListener() {
+            const selectAll = document.getElementById('selectAll');
+            if (selectAll) {
+                selectAll.addEventListener('change', function(e) {
+                    const checkboxes = document.querySelectorAll('input[name="driverIds"]');
+                    checkboxes.forEach(cb => cb.checked = e.target.checked);
+                });
+            }
+
+            // Intercept bulk action form submission
+            const bulkForm = document.getElementById('bulkForm');
+            if (bulkForm) {
+                bulkForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const action = e.submitter ? e.submitter.value : '';
+                    const formData = new FormData(this);
+                    if (action) {
+                        formData.append('action', action);
+                    }
+                    
+                    const submitBtn = e.submitter || this.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.disabled = true;
+                    
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => {
+                        if (!res.ok) throw new Error('Bulk action failed');
+                        return fetch('/admin/drivers');
+                    })
+                    .then(res => res.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        const oldWrapper = document.getElementById('driversContentWrapper');
+                        const newWrapper = doc.getElementById('driversContentWrapper');
+                        if (oldWrapper && newWrapper) {
+                            oldWrapper.innerHTML = newWrapper.innerHTML;
+                        }
+                        
+                        setupSelectAllListener();
+                        showSuccessToast("Amallar muvaffaqiyatli bajarildi!");
+                    })
+                    .catch(err => {
+                        console.error("Bulk action error:", err);
+                        alert("Xatolik yuz berdi: " + err.message);
+                    })
+                    .finally(() => {
+                        if (submitBtn) submitBtn.disabled = false;
+                    });
+                });
+            }
+        }
+
+        function showSuccessToast(message) {
+            const alertEl = document.getElementById('successAlert');
+            if (alertEl) {
+                if (message) {
+                    alertEl.innerHTML = '✓ ' + message;
+                }
+                alertEl.style.display = 'block';
+                const paramAlert = document.getElementById('successAlertParam');
+                if (paramAlert) paramAlert.style.display = 'none';
+                
+                setTimeout(() => {
+                    alertEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function submitFormWithAjax(formId, successMsg) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Action failed');
+                return fetch('/admin/drivers');
+            })
+            .then(res => res.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                const oldWrapper = document.getElementById('driversContentWrapper');
+                const newWrapper = doc.getElementById('driversContentWrapper');
+                if (oldWrapper && newWrapper) {
+                    oldWrapper.innerHTML = newWrapper.innerHTML;
+                }
+                
+                setupSelectAllListener();
+                
+                // Update settings modal if it is open
+                const openSettingsId = document.getElementById('settingsDriverId').value;
+                if (openSettingsId) {
+                    const updatedBtn = document.querySelector(`button[data-id="${openSettingsId}"]`);
+                    if (updatedBtn) {
+                        openDriverSettingsModal(updatedBtn);
+                    } else {
+                        closeDriverSettingsModal();
+                    }
+                }
+                
+                showSuccessToast(successMsg);
+                closeChangeTariffModal();
+            })
+            .catch(err => {
+                console.error("AJAX error:", err);
+                alert("Xatolik yuz berdi: " + err.message);
+            });
+        }
 
         function submitAddBalance(driverId) {
             const val = document.getElementById('balanceInput-' + driverId).value;
@@ -197,12 +370,12 @@
                 return;
             }
             document.getElementById('amountInput-' + driverId).value = val;
-            document.getElementById('addBalanceForm-' + driverId).submit();
+            submitFormWithAjax('addBalanceForm-' + driverId, 'Balans to\'ldirildi');
         }
 
         function confirmResetBalance(driverId) {
             if (confirm("Haqiqatan ham ushbu haydovchi balansini 0 qilmoqchisiz?")) {
-                document.getElementById('resetBalanceForm-' + driverId).submit();
+                submitFormWithAjax('resetBalanceForm-' + driverId, 'Balans nollashtirildi');
             }
         }
 
@@ -225,12 +398,12 @@
 
         function showChangeTariffModal(driverId) {
             document.getElementById('modalDriverId').value = driverId;
-            document.getElementById('changeTariffModal').style.display = 'flex';
+            document.getElementById('changeTariffModal').classList.add('active');
             switchTab('standard'); // reset tab on show
         }
 
         function closeChangeTariffModal() {
-            document.getElementById('changeTariffModal').style.display = 'none';
+            document.getElementById('changeTariffModal').classList.remove('active');
         }
 
         function submitModalAction() {
@@ -241,7 +414,7 @@
                 const tariffId = document.getElementById('modalTariffSelect').value;
                 if (tariffId) {
                     document.getElementById('newTariffInput-' + driverId).value = tariffId;
-                    document.getElementById('changeTariffForm-' + driverId).submit();
+                    submitFormWithAjax('changeTariffForm-' + driverId, 'Tarif muvaffaqiyatli almashtirildi');
                 }
             } else {
                 const price = document.getElementById('modalVipPrice').value;
@@ -256,7 +429,81 @@
                 }
                 document.getElementById('vipPriceInput-' + driverId).value = price;
                 document.getElementById('vipDurationInput-' + driverId).value = duration;
-                document.getElementById('assignVipForm-' + driverId).submit();
+                submitFormWithAjax('assignVipForm-' + driverId, 'VIP statusi muvaffaqiyatli o\'rnatildi');
+            }
+        }
+
+        function openDriverSettingsModal(btn) {
+            const id = btn.dataset.id;
+            const name = btn.dataset.name || '-';
+            const phone = btn.dataset.phone;
+            const balance = parseFloat(btn.dataset.balance || '0');
+            const billing = btn.dataset.billing === 'true';
+            
+            document.getElementById('settingsDriverId').value = id;
+            document.getElementById('settingsName').innerText = name;
+            document.getElementById('settingsPhone').innerText = phone;
+            
+            // Set initials in avatar
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            document.getElementById('settingsAvatar').innerText = initials || '?';
+            
+            // Set billing toggle
+            document.getElementById('settingsBillingToggle').checked = billing;
+            
+            // Set balance details
+            const formattedBalance = new Intl.NumberFormat('en-US').format(balance) + ' UZS';
+            document.getElementById('settingsBalanceText').innerText = formattedBalance;
+            
+            // Show/hide balance section based on billing status
+            const balanceSection = document.getElementById('settingsBalanceSection');
+            if (billing) {
+                balanceSection.style.display = 'flex';
+                // Show/hide reset button
+                const resetBtn = document.getElementById('settingsResetBtn');
+                if (balance > 0) {
+                    resetBtn.style.display = 'inline-flex';
+                } else {
+                    resetBtn.style.display = 'none';
+                }
+            } else {
+                balanceSection.style.display = 'none';
+            }
+            
+            // Set profile link if any (can remain #)
+            document.getElementById('settingsProfilLink').href = '#';
+            
+            document.getElementById('driverSettingsModal').classList.add('active');
+        }
+        
+        function closeDriverSettingsModal() {
+            document.getElementById('driverSettingsModal').classList.remove('active');
+        }
+        
+        function toggleSettingsBilling() {
+            const driverId = document.getElementById('settingsDriverId').value;
+            if (driverId) {
+                submitFormWithAjax('toggleForm-' + driverId, 'Billing statusi o\'zgartirildi');
+            }
+        }
+        
+        function submitSettingsAddBalance() {
+            const driverId = document.getElementById('settingsDriverId').value;
+            const val = document.getElementById('settingsBalanceInput').value;
+            if (!val || isNaN(val) || parseFloat(val) <= 0) {
+                alert("Iltimos, to'g'ri summa kiriting!");
+                return;
+            }
+            if (driverId) {
+                document.getElementById('amountInput-' + driverId).value = val;
+                submitFormWithAjax('addBalanceForm-' + driverId, 'Balans to\'ldirildi');
+            }
+        }
+        
+        function submitSettingsResetBalance() {
+            const driverId = document.getElementById('settingsDriverId').value;
+            if (driverId && confirm("Haqiqatan ham ushbu haydovchi balansini 0 qilmoqchisiz?")) {
+                submitFormWithAjax('resetBalanceForm-' + driverId, 'Balans nollashtirildi');
             }
         }
     </script>

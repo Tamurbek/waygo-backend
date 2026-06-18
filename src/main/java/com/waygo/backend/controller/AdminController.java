@@ -193,7 +193,7 @@ public class AdminController {
     public String drivers(Model model) {
         model.addAttribute("title", "WayGO Haydovchilar");
         model.addAttribute("drivers", userRepository.findByRoleOrderByCreatedAtDesc(User.Role.DRIVER));
-        model.addAttribute("tariffs", tariffPlanRepository.findAll());
+        model.addAttribute("tariffs", tariffPlanRepository.findAllByIsActiveTrue());
         model.addAttribute("activeItem", "drivers");
         return "admin/drivers";
     }

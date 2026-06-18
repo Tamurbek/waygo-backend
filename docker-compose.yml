@@ -35,11 +35,16 @@ services:
       - waygo_local_net
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     container_name: waygo_backend_app_local
     restart: always
     ports:
       - "127.0.0.1:8080:8080"
+    volumes:
+      - .:/app
+      - ~/.m2:/root/.m2
     environment:
       TZ: Asia/Tashkent
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waygo_db

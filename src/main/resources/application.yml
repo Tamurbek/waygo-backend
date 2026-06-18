@@ -1,6 +1,8 @@
 spring:
   application:
     name: waygo_backend
+  thymeleaf:
+    cache: false
   session:
     store-type: redis
     timeout: 30d

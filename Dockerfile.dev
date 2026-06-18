@@ -1,0 +1,4 @@
+FROM maven:3.8.5-openjdk-17-slim
+WORKDIR /app
+EXPOSE 8080
+ENTRYPOINT ["mvn", "spring-boot:run"]
