@@ -24,6 +24,8 @@ public class TariffPlan {
     
     private BigDecimal oldPrice;
     
+    private String description;
+    
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "tariff_plan_features", joinColumns = @JoinColumn(name = "tariff_plan_id"))
     @Column(name = "feature")
