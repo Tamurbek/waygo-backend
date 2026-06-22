@@ -20,6 +20,12 @@ public class OtpService {
     private static final long OTP_EXPIRATION_MINUTES = 2;
 
     public String sendVerificationCode(String phone) {
+        // Demo/Test bypass logic
+        if (phone.equals("+998900000001") || phone.equals("+998900000002") || phone.equals("+998999999999")) {
+            log.info("Demo account OTP request detected for {}. Skipping SMS send. Expected OTP is 1111", phone);
+            return "1111";
+        }
+
         String code = generateOtp();
         redisTemplate.opsForValue().set(
                 OTP_KEY_PREFIX + phone, 
@@ -38,6 +44,12 @@ public class OtpService {
     }
 
     public boolean verifyCode(String phone, String code) {
+        // Demo/Test bypass logic
+        if ((phone.equals("+998900000001") || phone.equals("+998900000002") || phone.equals("+998999999999")) && code.equals("1111")) {
+            log.info("Demo account OTP verified successfully for {}", phone);
+            return true;
+        }
+
         String key = OTP_KEY_PREFIX + phone;
         String storedCode = redisTemplate.opsForValue().get(key);
         
