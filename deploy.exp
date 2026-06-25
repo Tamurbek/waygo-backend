@@ -1,8 +1,8 @@
 #!/usr/bin/expect -f
 
 set timeout 300
-set password "S9dnWmq7T48GRbTkq7"
-set host "161.97.127.25"
+set password "Code2025#"
+set host "31.187.74.184"
 set user "root"
 
 spawn ssh -o StrictHostKeyChecking=no $user@$host

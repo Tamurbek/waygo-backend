@@ -1,7 +1,7 @@
 #!/usr/bin/expect -f
 set timeout 300
-set password "S9dnWmq7T48GRbTkq7"
-spawn ssh -o StrictHostKeyChecking=no root@161.97.127.25
+set password "Code2025#"
+spawn ssh -o StrictHostKeyChecking=no root@31.187.74.184
 expect "password:"
 send "$password\r"
 expect "# "
