@@ -44,6 +44,8 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    volumes:
+      - waygo_uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -82,3 +84,4 @@ volumes:
   waygo-backend_postgres_data:
     external: true
   waygo-backend_redis_data:
+  waygo_uploads:

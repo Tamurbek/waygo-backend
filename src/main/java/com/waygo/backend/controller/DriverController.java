@@ -6,9 +6,11 @@ import com.waygo.backend.entity.User;
 import com.waygo.backend.repository.DriverProfileRepository;
 import com.waygo.backend.repository.UserRepository;
 import com.waygo.backend.security.SecurityUtils;
+import com.waygo.backend.service.FileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/drivers")
@@ -18,6 +20,7 @@ public class DriverController {
     private final DriverProfileRepository driverProfileRepository;
     private final UserRepository userRepository;
     private final SecurityUtils securityUtils;
+    private final FileService fileService;
 
     @PostMapping("/register-vehicle")
     public ResponseEntity<ApiResponse<DriverProfile>> registerVehicle(
@@ -25,7 +28,8 @@ public class DriverController {
             @RequestParam String carNumber,
             @RequestParam String carColor,
             @RequestParam(required = false) String licenseNumber,
-            @RequestParam(required = false) DriverProfile.CarType carType
+            @RequestParam(required = false) DriverProfile.CarType carType,
+            @RequestParam(value = "carImage", required = false) MultipartFile carImage
     ) {
         User user = securityUtils.getCurrentUser();
         if (user == null) {
@@ -45,6 +49,15 @@ public class DriverController {
         profile.setCarColor(carColor);
         if (licenseNumber != null) profile.setLicenseNumber(licenseNumber);
         if (carType != null) profile.setCarType(carType);
+
+        if (carImage != null && !carImage.isEmpty()) {
+            try {
+                String fileName = fileService.saveFile(carImage);
+                profile.setCarImageUrl("https://waygo.uz/uploads/" + fileName);
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().body(ApiResponse.error("Mashina rasmini yuklashda xatolik: " + e.getMessage()));
+            }
+        }
 
         DriverProfile saved = driverProfileRepository.save(profile);
         

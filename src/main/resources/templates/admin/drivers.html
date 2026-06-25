@@ -47,10 +47,32 @@
                             </td>
                             <td>
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                    <img th:src="${driver.imageUrl != null ? driver.imageUrl : 'https://ui-avatars.com/api/?background=FFD700&color=000&name=' + (driver.fullName != null ? driver.fullName : driver.phone)}" class="avatar">
+                                    <div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">
+                                        <th:block th:if="${driver.imageUrl != null and !driver.imageUrl.isEmpty()}">
+                                            <img th:src="${driver.imageUrl}" class="avatar"
+                                                 style="width:40px;height:40px;border-radius:50%;object-fit:cover;"
+                                                 th:onerror="'this.style.display=\"none\"; this.nextElementSibling.style.display=\"flex\";'"
+                                            >
+                                            <div th:text="${driver.initials}"
+                                                 style="display:none;width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:0.9rem;align-items:center;justify-content:center;">
+                                            </div>
+                                        </th:block>
+                                        <th:block th:if="${driver.imageUrl == null or driver.imageUrl.isEmpty()}">
+                                            <div th:text="${driver.initials}"
+                                                 style="display:flex;width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:0.9rem;align-items:center;justify-content:center;">
+                                            </div>
+                                        </th:block>
+                                    </div>
                                     <div style="display: flex; flex-direction: column; gap: 0.15rem;">
                                         <span style="font-weight: 600; color: var(--text);" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</span>
                                         <span style="font-size: 0.8rem; color: var(--text-dim);" th:text="${driver.phone}">+998...</span>
+                                        <th:block th:if="${driver.carModel != null}">
+                                            <span style="font-size: 0.75rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.25rem;">
+                                                <i class="ph ph-car" style="font-size:0.8rem;"></i>
+                                                <span th:text="${driver.carModel}"></span>
+                                                <th:block th:if="${driver.carNumber != null}">· <span th:text="${driver.carNumber}"></span></th:block>
+                                            </span>
+                                        </th:block>
                                     </div>
                                 </div>
                             </td>
@@ -101,6 +123,9 @@
                                         th:data-phone="${driver.phone}"
                                         th:data-balance="${driver.balance != null ? driver.balance : 0}"
                                         th:data-billing="${driver.driverBillingEnabled}"
+                                        th:data-image="${driver.imageUrl != null ? driver.imageUrl : ''}"
+                                        th:data-carmodel="${driver.carModel != null ? driver.carModel : ''}"
+                                        th:data-carnumber="${driver.carNumber != null ? driver.carNumber : ''}"
                                         th:onclick="'openDriverSettingsModal(this)'"
                                         title="Sozlamalar">
                                     <i class="ph ph-gear" style="font-size: 1.25rem;"></i>
@@ -185,10 +210,20 @@
                 
                 <!-- Driver Info Summary Card -->
                 <div style="display: flex; align-items: center; gap: 0.75rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
-                    <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; font-size: 1.2rem;" id="settingsAvatar">IZ</div>
+                    <div style="position: relative; width: 52px; height: 52px; flex-shrink: 0;">
+                        <img id="settingsAvatarImg" src="" alt="" 
+                             style="width:52px;height:52px;border-radius:50%;object-fit:cover;display:none;"
+                             onerror="this.style.display='none'; document.getElementById('settingsAvatarInitials').style.display='flex';">
+                        <div id="settingsAvatarInitials" style="display:flex;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:1.2rem;align-items:center;justify-content:center;">IZ</div>
+                    </div>
                     <div style="display: flex; flex-direction: column; gap: 0.15rem;">
                         <span style="font-weight: 600; color: var(--text); font-size: 1rem;" id="settingsName">Ibragimov Ziyodulla</span>
                         <span style="font-size: 0.85rem; color: var(--text-dim);" id="settingsPhone">+998995033125</span>
+                        <span style="font-size: 0.78rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.3rem;" id="settingsCarInfo" style="display:none;">
+                            <i class="ph ph-car" style="font-size:0.85rem;"></i>
+                            <span id="settingsCarModel"></span>
+                            <span id="settingsCarNumber" style="color: var(--primary); font-weight: 600;"></span>
+                        </span>
                     </div>
                 </div>
 
@@ -439,6 +474,9 @@
             const phone = btn.dataset.phone;
             const balance = parseFloat(btn.dataset.balance || '0');
             const billing = btn.dataset.billing === 'true';
+            const imageUrl = btn.dataset.image || '';
+            const carModel = btn.dataset.carmodel || '';
+            const carNumber = btn.dataset.carnumber || '';
             
             document.getElementById('settingsDriverId').value = id;
             document.getElementById('settingsName').innerText = name;
@@ -446,7 +484,31 @@
             
             // Set initials in avatar
             const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            document.getElementById('settingsAvatar').innerText = initials || '?';
+            document.getElementById('settingsAvatarInitials').innerText = initials || '?';
+            
+            // Show image if available
+            const avatarImg = document.getElementById('settingsAvatarImg');
+            const avatarInitials = document.getElementById('settingsAvatarInitials');
+            if (imageUrl) {
+                avatarImg.src = imageUrl;
+                avatarImg.style.display = 'block';
+                avatarInitials.style.display = 'none';
+            } else {
+                avatarImg.style.display = 'none';
+                avatarInitials.style.display = 'flex';
+            }
+            
+            // Show car info
+            const carInfoEl = document.getElementById('settingsCarInfo');
+            const carModelEl = document.getElementById('settingsCarModel');
+            const carNumberEl = document.getElementById('settingsCarNumber');
+            if (carModel || carNumber) {
+                carModelEl.innerText = carModel;
+                carNumberEl.innerText = carNumber ? '· ' + carNumber : '';
+                carInfoEl.style.display = 'flex';
+            } else {
+                carInfoEl.style.display = 'none';
+            }
             
             // Set billing toggle
             document.getElementById('settingsBillingToggle').checked = billing;

@@ -24,6 +24,7 @@ public class DriverProfile {
     private String carNumber;
     private String carColor;
     private String licenseNumber;
+    private String carImageUrl;
 
     @Enumerated(EnumType.STRING)
     private CarType carType;
