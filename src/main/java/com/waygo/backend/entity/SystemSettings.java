@@ -34,6 +34,13 @@ public class SystemSettings {
     private String telegramBotToken;
     private String telegramChatId;
 
+    // App versiyalari — admin paneldan yangilanadi
+    @Builder.Default
+    private String userAppVersion = "1.0.0";
+
+    @Builder.Default
+    private String driverAppVersion = "1.0.0";
+
     public boolean isBillingEnabled() {
         return Boolean.TRUE.equals(this.billingEnabled);
     }

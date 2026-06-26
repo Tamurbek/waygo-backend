@@ -87,9 +87,30 @@ public class SystemSettingsService {
         existing.setVipTariffEnabled(newSettings.isVipTariffEnabled());
         existing.setTelegramBotToken(newSettings.getTelegramBotToken());
         existing.setTelegramChatId(newSettings.getTelegramChatId());
+        // App versiyalarini saqlash
+        if (newSettings.getUserAppVersion() != null && !newSettings.getUserAppVersion().isBlank()) {
+            existing.setUserAppVersion(newSettings.getUserAppVersion());
+        }
+        if (newSettings.getDriverAppVersion() != null && !newSettings.getDriverAppVersion().isBlank()) {
+            existing.setDriverAppVersion(newSettings.getDriverAppVersion());
+        }
         SystemSettings saved = repository.save(existing);
         globalBillingEnabled = saved.isBillingEnabled();
         vipTariffEnabled = saved.isVipTariffEnabled();
         return saved;
+    }
+
+    /**
+     * Ilova turi bo'yicha eng so'nggi versiyani qaytaradi.
+     * appType: "USER" yoki "DRIVER"
+     */
+    public String getAppVersion(String appType) {
+        SystemSettings settings = getSettings();
+        if ("DRIVER".equalsIgnoreCase(appType)) {
+            String v = settings.getDriverAppVersion();
+            return (v != null && !v.isBlank()) ? v : "1.0.0";
+        }
+        String v = settings.getUserAppVersion();
+        return (v != null && !v.isBlank()) ? v : "1.0.0";
     }
 }

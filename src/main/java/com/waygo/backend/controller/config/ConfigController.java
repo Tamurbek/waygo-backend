@@ -2,6 +2,7 @@ package com.waygo.backend.controller.config;
 
 import com.waygo.backend.entity.config.*;
 import com.waygo.backend.service.config.ConfigService;
+import com.waygo.backend.service.SystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.Map;
 public class ConfigController {
 
     private final ConfigService configService;
+    private final SystemSettingsService settingsService;
 
     @GetMapping("/tariffs")
     public ResponseEntity<List<TariffPlan>> getTariffs() {
@@ -60,6 +62,18 @@ public class ConfigController {
     @GetMapping("/top-up-steps")
     public ResponseEntity<List<TopUpStep>> getTopUpSteps() {
         return ResponseEntity.ok(configService.getTopUpSteps());
+    }
+
+    /**
+     * Flutter ilovalari ilovani ochganda chaqiradi.
+     * appType: USER yoki DRIVER
+     * Response: { "latestVersion": "1.2.0" }
+     */
+    @GetMapping("/app-version")
+    public ResponseEntity<Map<String, String>> getAppVersion(
+            @RequestParam(defaultValue = "USER") String appType) {
+        String version = settingsService.getAppVersion(appType);
+        return ResponseEntity.ok(Map.of("latestVersion", version));
     }
 
     /**
