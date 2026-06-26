@@ -93,7 +93,8 @@ public class EskizSmsServiceImpl implements SmsService {
 
     private void executeSendSms(String phone, String message) {
         SystemSettings settings = settingsService.getSettings();
-        String url = baseUrl + "message/sms/send";
+        // send-global: moderatsiya talab qilmaydi, xalqaro raqamlarda ham ishlaydi
+        String url = baseUrl + "message/sms/send-global";
 
         String cleanPhone = phone.replaceAll("\\D", "");
         if (cleanPhone.startsWith("0")) {
@@ -113,12 +114,20 @@ public class EskizSmsServiceImpl implements SmsService {
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
-        
-        if (response.getStatusCode() == HttpStatus.OK) {
-            log.info("SMS successfully dispatched to {} via Eskiz", hidePhone(cleanPhone));
-        } else {
-            log.error("Eskiz Gateway returned error for {}: {}", cleanPhone, response.getBody());
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                Object status = response.getBody() != null ? response.getBody().get("status") : null;
+                if ("error".equals(status)) {
+                    log.error("Eskiz send-global returned error for {}: {}", hidePhone(cleanPhone), response.getBody().get("message"));
+                } else {
+                    log.info("SMS successfully dispatched to {} via Eskiz send-global", hidePhone(cleanPhone));
+                }
+            } else {
+                log.error("Eskiz Gateway returned HTTP {} for {}: {}", response.getStatusCode(), hidePhone(cleanPhone), response.getBody());
+            }
+        } catch (Exception e) {
+            log.error("Eskiz send-global exception for {}: {}", hidePhone(cleanPhone), e.getMessage());
         }
     }
 
