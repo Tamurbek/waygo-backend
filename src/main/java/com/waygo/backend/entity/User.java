@@ -63,6 +63,14 @@ public class User implements UserDetails {
     @Builder.Default
     private Integer tripsCount = 0;
 
+    @Column(unique = true)
+    private String referralCode;
+
+    private Long referredById;
+
+    @Builder.Default
+    private Integer pointsBalance = 0;
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -205,9 +213,12 @@ public class User implements UserDetails {
 
     @PrePersist
     @PreUpdate
-    public void generateDriverId() {
+    public void generateDriverIdAndReferral() {
         if (this.role == Role.DRIVER && (this.driverId == null || this.driverId.isEmpty())) {
             this.driverId = "WG" + (1000000 + new java.util.Random().nextInt(9000000));
+        }
+        if (this.referralCode == null || this.referralCode.isEmpty()) {
+            this.referralCode = "WG_" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
     }
 }

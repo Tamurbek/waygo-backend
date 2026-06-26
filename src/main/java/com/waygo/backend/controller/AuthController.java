@@ -25,6 +25,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final com.waygo.backend.service.OtpService otpService;
     private final com.waygo.backend.service.FileService fileService;
+    private final com.waygo.backend.service.ReferralService referralService;
 
     @PostMapping("/request-otp")
     public ResponseEntity<ApiResponse<java.util.Map<String, String>>> requestOtp(@RequestBody OtpRequest request) {
@@ -73,6 +74,10 @@ public class AuthController {
                         .build();
                 user = userRepository.save(user);
                 
+                if (request.getReferralCode() != null && !request.getReferralCode().isEmpty()) {
+                    referralService.processReferralCodeDuringRegistration(user, request.getReferralCode());
+                }
+                
                 String jwtToken = jwtService.generateToken(user);
                 return ResponseEntity.ok(ApiResponse.success(
                         AuthenticationResponse.builder().token(jwtToken).user(user).build(),
@@ -90,7 +95,8 @@ public class AuthController {
             @RequestParam String phone,
             @RequestParam String fullName,
             @RequestParam String password,
-            @RequestParam User.Role role
+            @RequestParam User.Role role,
+            @RequestParam(required = false) String referralCode
     ) {
         if (userRepository.findByPhone(phone).isPresent()) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Phone already registered"));
@@ -104,6 +110,10 @@ public class AuthController {
                 .build();
         
         user = userRepository.save(user);
+        if (referralCode != null && !referralCode.isEmpty()) {
+            referralService.processReferralCodeDuringRegistration(user, referralCode);
+        }
+        
         String jwtToken = jwtService.generateToken(user);
         
         return ResponseEntity.ok(ApiResponse.success(

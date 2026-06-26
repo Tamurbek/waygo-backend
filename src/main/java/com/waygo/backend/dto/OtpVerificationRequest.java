@@ -20,4 +20,5 @@ public class OtpVerificationRequest {
     private boolean isLogin;
 
     private Boolean confirmRoleChange;
+    private String referralCode;
 }

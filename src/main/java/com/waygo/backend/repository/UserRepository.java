@@ -11,4 +11,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByDriverId(String driverId);
     long countByRole(User.Role role);
     java.util.List<User> findByRoleOrderByCreatedAtDesc(User.Role role);
+    Optional<User> findByReferralCode(String referralCode);
 }
