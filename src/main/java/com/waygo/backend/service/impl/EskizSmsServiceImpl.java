@@ -107,6 +107,7 @@ public class EskizSmsServiceImpl implements SmsService {
         body.add("mobile_phone", cleanPhone);
         body.add("message", message);
         body.add("from", settings.getEskizFrom());
+        body.add("country_code", "UZ");
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
