@@ -29,10 +29,17 @@ public class AuthController {
 
     @PostMapping("/request-otp")
     public ResponseEntity<ApiResponse<java.util.Map<String, String>>> requestOtp(@RequestBody OtpRequest request) {
-        String code = otpService.sendVerificationCode(request.getPhone());
-        return ResponseEntity.ok(ApiResponse.success(
-                java.util.Map.of("code", code), 
-                "Verification code sent to " + request.getPhone()));
+        System.out.println("DEBUG (request-otp): Incoming request body phone=" + request.getPhone());
+        try {
+            String code = otpService.sendVerificationCode(request.getPhone());
+            return ResponseEntity.ok(ApiResponse.success(
+                    java.util.Map.of("code", code),
+                    "Verification code sent to " + request.getPhone()));
+        } catch (Exception e) {
+            System.err.println("ERROR (request-otp): Failed for phone=" + request.getPhone() + ": " + e.getMessage());
+            return ResponseEntity.internalServerError().body(ApiResponse.error(
+                    e.getMessage() != null ? e.getMessage() : "OTP yuborishda xatolik yuz berdi"));
+        }
     }
 
     @PostMapping("/verify-otp")
