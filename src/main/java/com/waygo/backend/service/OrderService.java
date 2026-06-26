@@ -630,6 +630,10 @@ public class OrderService {
             int currentTrips = driver.getTripsCount() != null ? driver.getTripsCount() : 0;
             driver.setTripsCount(currentTrips + 1);
             userRepository.save(driver);
+            
+            if (currentTrips == 0) {
+                referralService.rewardInviterIfFirstTripCompleted(driver);
+            }
         }
 
         order.setStatus(Order.OrderStatus.COMPLETED);
