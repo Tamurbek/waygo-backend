@@ -56,6 +56,9 @@ class OrderServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private com.waygo.backend.service.ReferralService referralService;
+
     @InjectMocks
     private OrderService orderService;
 
