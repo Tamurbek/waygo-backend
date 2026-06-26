@@ -93,8 +93,8 @@ public class EskizSmsServiceImpl implements SmsService {
 
     private void executeSendSms(String phone, String message) {
         SystemSettings settings = settingsService.getSettings();
-        // send-global: moderatsiya talab qilmaydi, xalqaro raqamlarda ham ishlaydi
-        String url = baseUrl + "message/sms/send-global";
+        // message/sms/send: approved template bilan ishlaydi (OTP template tasdiqlangan)
+        String url = baseUrl + "message/sms/send";
 
         String cleanPhone = phone.replaceAll("\\D", "");
         if (cleanPhone.startsWith("0")) {
