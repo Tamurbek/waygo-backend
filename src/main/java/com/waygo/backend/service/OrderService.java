@@ -582,7 +582,7 @@ public class OrderService {
         // Process final payment automatically if passenger exists
         if (order.getPassenger() != null) {
             transactionService.processPayment(order.getPassenger().getId(), order.getDriver().getId(), order.getPrice());
-            referralService.rewardInviterIfFirstTripCompleted(order.getPassenger());
+            // referralService.rewardInviterIfFirstTripCompleted(order.getPassenger());
         } else if (order.getBookings() != null) {
             // Also process payments for all accepted bookings on this driver announcement
             for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
@@ -591,7 +591,7 @@ public class OrderService {
                     int seatsCount = booking.getSelectedSeats().size();
                     java.math.BigDecimal totalBookingPrice = order.getPrice().multiply(java.math.BigDecimal.valueOf(seatsCount));
                     transactionService.processPayment(booking.getPassenger().getId(), order.getDriver().getId(), totalBookingPrice);
-                    referralService.rewardInviterIfFirstTripCompleted(booking.getPassenger());
+                    // referralService.rewardInviterIfFirstTripCompleted(booking.getPassenger());
 
                     // Try to find the corresponding passenger request order and mark it as COMPLETED too
                     try {
@@ -632,7 +632,7 @@ public class OrderService {
             userRepository.save(driver);
             
             if (currentTrips == 0) {
-                referralService.rewardInviterIfFirstTripCompleted(driver);
+                // referralService.rewardInviterIfFirstTripCompleted(driver);
             }
         }
 

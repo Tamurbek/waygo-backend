@@ -75,7 +75,7 @@ public class AuthController {
                 user = userRepository.save(user);
                 
                 if (request.getReferralCode() != null && !request.getReferralCode().isEmpty()) {
-                    referralService.processReferralCodeDuringRegistration(user, request.getReferralCode());
+                    // referralService.processReferralCodeDuringRegistration(user, request.getReferralCode());
                 }
                 
                 String jwtToken = jwtService.generateToken(user);
@@ -111,7 +111,7 @@ public class AuthController {
         
         user = userRepository.save(user);
         if (referralCode != null && !referralCode.isEmpty()) {
-            referralService.processReferralCodeDuringRegistration(user, referralCode);
+            // referralService.processReferralCodeDuringRegistration(user, referralCode);
         }
         
         String jwtToken = jwtService.generateToken(user);
