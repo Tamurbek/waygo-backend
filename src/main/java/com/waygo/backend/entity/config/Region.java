@@ -20,6 +20,10 @@ public class Region {
     private Long id;
     
     private String name;
+
+    /** Viloyat markazining geografik koordinatalari */
+    private Double latitude;
+    private Double longitude;
     
     private boolean isActive;
     

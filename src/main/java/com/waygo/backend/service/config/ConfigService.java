@@ -64,7 +64,6 @@ public class ConfigService {
 
     @Transactional
     public Map<String, Integer> importLocations(List<Map<String, Object>> regionsData) {
-        // Clear existing data
         districtRepository.deleteAll();
         regionRepository.deleteAll();
 
@@ -75,8 +74,16 @@ public class ConfigService {
             String regionName = (String) regionData.get("name_uz");
             if (regionName == null || regionName.isBlank()) continue;
 
+            Double regionLat = toDouble(regionData.get("lat"));
+            Double regionLon = toDouble(regionData.get("lon"));
+
             Region region = regionRepository.save(
-                Region.builder().name(regionName).isActive(true).build()
+                Region.builder()
+                    .name(regionName)
+                    .latitude(regionLat)
+                    .longitude(regionLon)
+                    .isActive(true)
+                    .build()
             );
             regionCount++;
 
@@ -87,9 +94,14 @@ public class ConfigService {
                     String districtName = (String) districtData.get("name_uz");
                     if (districtName == null || districtName.isBlank()) continue;
 
+                    Double distLat = toDouble(districtData.get("lat"));
+                    Double distLon = toDouble(districtData.get("lon"));
+
                     districtRepository.save(
                         District.builder()
                             .name(districtName)
+                            .latitude(distLat)
+                            .longitude(distLon)
                             .region(region)
                             .isActive(true)
                             .build()
@@ -100,5 +112,14 @@ public class ConfigService {
         }
 
         return Map.of("regions", regionCount, "districts", districtCount);
+    }
+
+    /** JSON raqamini Double ga xavfsiz o'tkazadi (Integer ham, Double ham bo'lishi mumkin) */
+    private Double toDouble(Object value) {
+        if (value == null) return null;
+        if (value instanceof Double d) return d;
+        if (value instanceof Integer i) return i.doubleValue();
+        if (value instanceof Long l) return l.doubleValue();
+        try { return Double.parseDouble(value.toString()); } catch (NumberFormatException e) { return null; }
     }
 }

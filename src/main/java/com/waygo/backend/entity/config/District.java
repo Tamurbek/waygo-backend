@@ -18,6 +18,10 @@ public class District {
     private Long id;
     
     private String name;
+
+    /** Tuman markazining geografik koordinatalari */
+    private Double latitude;
+    private Double longitude;
     
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "region_id")
