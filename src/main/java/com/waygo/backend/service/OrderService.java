@@ -326,24 +326,39 @@ public class OrderService {
             }
         }
 
-        // Create a RideBooking to reserve the seats for this passenger
-        if (selectedSeats == null || selectedSeats.isEmpty()) {
+        // Parse custom pickup and notes from selectedSeats
+        String notes = "";
+        String pickup = "";
+        List<String> seatsToBook = new java.util.ArrayList<>();
+        for (String seat : selectedSeats) {
+            if (seat != null && seat.startsWith("PICKUP:")) {
+                pickup = seat.substring(7);
+            } else if (seat != null && seat.startsWith("NOTES:")) {
+                notes = seat.substring(6);
+            } else if (seat != null) {
+                seatsToBook.add(seat);
+            }
+        }
+
+        if (seatsToBook.isEmpty()) {
             throw new IllegalArgumentException("You must select which seats to book");
         }
 
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
                 .passenger(passenger)
-                .selectedSeats(new java.util.ArrayList<>(selectedSeats))
+                .selectedSeats(seatsToBook)
                 .status("ACCEPTED")
                 .passengerOrderId(order.getId())
+                .pickupAddress(pickup.isEmpty() ? order.getFromAddress() : pickup)
+                .notes(notes)
                 .createdAt(LocalDateTime.now())
                 .build();
 
         order.getBookings().add(booking);
 
         // Update available seats: remove passenger selected seats from saloon
-        for (String seatNum : selectedSeats) {
+        for (String seatNum : seatsToBook) {
             String seatLabel = seatNum.equals("1") ? "FRONT"
                     : seatNum.equals("2") ? "BACK_LEFT"
                     : seatNum.equals("3") ? "BACK_CENTER"
@@ -395,10 +410,11 @@ public class OrderService {
             com.waygo.backend.entity.RideBooking autoBooking = com.waygo.backend.entity.RideBooking.builder()
                     .order(activeAnnouncement)
                     .passenger(passenger)
-                    .selectedSeats(new java.util.ArrayList<>(selectedSeats))
+                    .selectedSeats(seatsToBook)
                     .status("ACCEPTED")
                     .passengerOrderId(order.getId())
-                    .pickupAddress(order.getFromAddress())
+                    .pickupAddress(pickup.isEmpty() ? order.getFromAddress() : pickup)
+                    .notes(notes)
                     .createdAt(LocalDateTime.now())
                     .build();
 
@@ -407,7 +423,7 @@ public class OrderService {
 
             // Remove seats from announcement's availableSeats
             if (activeAnnouncement.getAvailableSeats() != null) {
-                for (String seatNum : selectedSeats) {
+                for (String seatNum : seatsToBook) {
                     String seatLabel = seatNum.equals("1") ? "FRONT"
                             : seatNum.equals("2") ? "BACK_LEFT"
                             : seatNum.equals("3") ? "BACK_CENTER"
