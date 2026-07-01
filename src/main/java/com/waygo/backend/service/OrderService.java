@@ -983,15 +983,69 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null) {
+            throw new UnauthorizedAccessException("User not authenticated");
+        }
+
+        // Check if the order status allows editing (not started, completed, or cancelled)
+        if (order.getStatus() == Order.OrderStatus.STARTED || 
+            order.getStatus() == Order.OrderStatus.COMPLETED || 
+            order.getStatus() == Order.OrderStatus.CANCELLED) {
+            throw new IllegalStateException("You cannot edit this order after the trip has started or ended");
+        }
+
         boolean isOwner = (order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId())) ||
                          (order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId()));
 
-        if (currentUser == null || !isOwner) {
-            throw new UnauthorizedAccessException("You can only edit your own orders");
-        }
+        if (!isOwner) {
+            // Check if currentUser is a passenger in one of this order's bookings (shared ride)
+            com.waygo.backend.entity.RideBooking userBooking = null;
+            if (order.getBookings() != null) {
+                for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
+                    if (booking.getPassenger() != null && currentUser.getId().equals(booking.getPassenger().getId())) {
+                        userBooking = booking;
+                        break;
+                    }
+                }
+            }
 
-        if (order.getStatus() != Order.OrderStatus.PENDING) {
-            throw new IllegalStateException("You can only edit orders that are still pending");
+            if (userBooking != null) {
+                // Update booking's pickup address
+                if (dto.getFromAddress() != null) {
+                    String formattedPickupAddress = dto.getFromAddress();
+                    if (dto.getFromLat() != null && dto.getFromLon() != null) {
+                        formattedPickupAddress += " [LAT:" + dto.getFromLat() + ",LON:" + dto.getFromLon() + "]";
+                    }
+                    userBooking.setPickupAddress(formattedPickupAddress);
+                }
+                if (dto.getNotes() != null) {
+                    userBooking.setNotes(dto.getNotes());
+                }
+                rideBookingRepository.save(userBooking);
+
+                // Update passenger's virtual order
+                if (userBooking.getPassengerOrderId() != null) {
+                    Order passengerOrder = orderRepository.findById(userBooking.getPassengerOrderId()).orElse(null);
+                    if (passengerOrder != null) {
+                        if (dto.getFromAddress() != null) passengerOrder.setFromAddress(dto.getFromAddress());
+                        if (dto.getFromLat() != null) passengerOrder.setFromLat(dto.getFromLat());
+                        if (dto.getFromLon() != null) passengerOrder.setFromLon(dto.getFromLon());
+                        if (dto.getToAddress() != null) passengerOrder.setToAddress(dto.getToAddress());
+                        if (dto.getToLat() != null) passengerOrder.setToLat(dto.getToLat());
+                        if (dto.getToLon() != null) passengerOrder.setToLon(dto.getToLon());
+                        if (dto.getNotes() != null) passengerOrder.setNotes(dto.getNotes());
+                        orderRepository.save(passengerOrder);
+                    }
+                }
+
+                // Notify order update via WebSocket
+                notificationService.notifyOrderUpdate(order);
+
+                // Return the updated driver order
+                return orderRepository.save(order);
+            } else {
+                throw new UnauthorizedAccessException("You can only edit your own orders");
+            }
         }
 
         if (dto.getFromAddress() != null) order.setFromAddress(dto.getFromAddress());
