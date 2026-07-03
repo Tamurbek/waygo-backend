@@ -50,8 +50,8 @@ ATTEMPT=1
 HEALTHY=0
 
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-    # Run a temporary container in the same network to check health of the target container
-    if docker run --rm --network waygo_net nginx:alpine wget -q --spider "http://app_$INACTIVE:8080/api/v1/config/app-version"; then
+    # Run wget inside the running redis container to check health of the target container
+    if docker compose -f docker-compose.prod.yml exec -T redis wget -q --spider "http://app_$INACTIVE:8080/api/v1/config/app-version"; then
         echo "app_$INACTIVE is healthy!"
         HEALTHY=1
         break
