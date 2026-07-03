@@ -74,7 +74,7 @@ jobs:
             fi
 
             echo "Starting deployment of version $TAG_NAME..."
-            if git fetch --tags -f && git checkout "$TAG_NAME" && ./deploy.sh; then
+            if git fetch --tags -f && git checkout "$TAG_NAME" && bash ./deploy.sh; then
               if [ "$STASHED" = "1" ]; then
                 echo "Dropping pre-deploy stash (using $TAG_NAME from repository)."
                 git stash drop || true
@@ -88,7 +88,7 @@ jobs:
                 git stash pop || echo "Warning: could not re-apply stash; check git stash list on the server."
               fi
               if [ -f ./deploy.sh ]; then
-                ./deploy.sh
+                bash ./deploy.sh
               else
                 docker compose -f docker-compose.prod.yml up -d --build
               fi
