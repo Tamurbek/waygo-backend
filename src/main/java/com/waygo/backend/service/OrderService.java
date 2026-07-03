@@ -204,7 +204,7 @@ public class OrderService {
     @Transactional
     public Order confirmDriver(Long orderId) {
         User passenger = securityUtils.getCurrentUser();
-        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+        if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
             throw new UnauthorizedAccessException("Only passengers can confirm driver offers");
         }
 
@@ -228,7 +228,7 @@ public class OrderService {
     @Transactional
     public Order rejectDriver(Long orderId) {
         User passenger = securityUtils.getCurrentUser();
-        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+        if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
             throw new UnauthorizedAccessException("Only passengers can reject driver offers");
         }
 
@@ -290,7 +290,7 @@ public class OrderService {
     @Transactional
     public Order confirmDriverOffer(Long orderId, Long offerId, List<String> selectedSeats) {
         User passenger = securityUtils.getCurrentUser();
-        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+        if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
             throw new UnauthorizedAccessException("Only passengers can confirm driver offers");
         }
 
@@ -449,7 +449,7 @@ public class OrderService {
     @Transactional
     public Order rejectDriverOffer(Long orderId, Long offerId) {
         User passenger = securityUtils.getCurrentUser();
-        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+        if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
             throw new UnauthorizedAccessException("Only passengers can reject driver offers");
         }
 
@@ -559,7 +559,7 @@ public class OrderService {
 
     public Order joinOrder(Long orderId) {
         User passenger = securityUtils.getCurrentUser();
-        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+        if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
             throw new UnauthorizedAccessException("Only passengers can join ride offers");
         }
 
@@ -1228,7 +1228,7 @@ public class OrderService {
     @Transactional
     public Order bookRide(Long orderId, List<String> selectedSeats) {
         User passenger = securityUtils.getCurrentUser();
-        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+        if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
             throw new UnauthorizedAccessException("Only passengers can request to join ride offers");
         }
 
@@ -1751,7 +1751,7 @@ public class OrderService {
     @Transactional
     public Order cancelBooking(Long bookingId, String seat) {
         User passenger = securityUtils.getCurrentUser();
-        if (passenger == null || passenger.getRole() != User.Role.PASSENGER) {
+        if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
             throw new UnauthorizedAccessException("Only passengers can cancel bookings");
         }
 
