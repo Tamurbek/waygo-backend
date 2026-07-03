@@ -1039,7 +1039,7 @@ public class OrderService {
                 }
 
                 // Notify order update via WebSocket
-                notificationService.notifyOrderUpdate(order);
+                notificationService.notifyOrderStatusUpdate(order);
 
                 // Return the updated driver order
                 return orderRepository.save(order);
