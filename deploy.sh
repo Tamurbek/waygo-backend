@@ -54,13 +54,28 @@ set +e
 
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
     echo "Checking health of app_$INACTIVE (Attempt $ATTEMPT/$MAX_ATTEMPTS)..."
-    # Run a temporary gateway (nginx:alpine) container to test the app endpoint
-    docker compose -f docker-compose.prod.yml run --rm gateway wget -q --spider "http://app_$INACTIVE:8080/api/v1/config/app-version"
-    STATUS=$?
-    if [ $STATUS -eq 0 ]; then
-        echo "app_$INACTIVE is healthy!"
-        HEALTHY=1
-        break
+    
+    # Get container IP address on the host
+    CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "waygo_backend_app_$INACTIVE" 2>/dev/null)
+    
+    if [ -n "$CONTAINER_IP" ]; then
+        # Try to curl the app endpoint from the host directly
+        curl -s --fail "http://$CONTAINER_IP:8080/api/v1/config/app-version" >/dev/null 2>&1
+        STATUS=$?
+        if [ $STATUS -eq 0 ]; then
+            echo "app_$INACTIVE is healthy at IP $CONTAINER_IP!"
+            HEALTHY=1
+            break
+        fi
+        
+        # Fallback to wget if curl is not installed on the host
+        wget -q --spider "http://$CONTAINER_IP:8080/api/v1/config/app-version" >/dev/null 2>&1
+        STATUS=$?
+        if [ $STATUS -eq 0 ]; then
+            echo "app_$INACTIVE is healthy at IP $CONTAINER_IP!"
+            HEALTHY=1
+            break
+        fi
     fi
     echo "Waiting 3 seconds..."
     sleep 3
