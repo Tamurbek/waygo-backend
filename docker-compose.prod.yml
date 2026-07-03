@@ -31,12 +31,10 @@ services:
     networks:
       - waygo_net
 
-  app:
+  app_blue:
     build: .
-    container_name: waygo_backend_app
+    container_name: waygo_backend_app_blue
     restart: always
-    ports:
-      - "127.0.0.1:8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waygo_db
       SPRING_DATASOURCE_USERNAME: postgres
@@ -51,6 +49,42 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - waygo_net
+
+  app_green:
+    build: .
+    container_name: waygo_backend_app_green
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waygo_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    volumes:
+      - waygo_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - waygo_net
+
+  gateway:
+    image: nginx:alpine
+    container_name: waygo_gateway
+    restart: always
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      - ./gateway.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./upstream.conf:/etc/nginx/conf.d/upstream.conf:ro
+    depends_on:
+      - app_blue
+      - app_green
     networks:
       - waygo_net
 
