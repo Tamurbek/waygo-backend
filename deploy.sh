@@ -50,19 +50,21 @@ ATTEMPT=1
 HEALTHY=0
 
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-    # Run wget inside the running redis container to check health of the target container
-    if docker compose -f docker-compose.prod.yml exec -T redis wget -q --spider "http://app_$INACTIVE:8080/api/v1/config/app-version"; then
+    echo "Checking health of app_$INACTIVE (Attempt $ATTEMPT/$MAX_ATTEMPTS)..."
+    # Execute wget and capture exit code, print output for debugging
+    if docker compose -f docker-compose.prod.yml exec -T redis wget -S -O- "http://app_$INACTIVE:8080/api/v1/config/app-version" 2>&1; then
         echo "app_$INACTIVE is healthy!"
         HEALTHY=1
         break
     fi
-    echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: app_$INACTIVE is not ready yet. Waiting 3 seconds..."
+    echo "Waiting 3 seconds..."
     sleep 3
     ATTEMPT=$((ATTEMPT+1))
 done
 
 if [ $HEALTHY -ne 1 ]; then
-    echo "Error: app_$INACTIVE failed health check! Aborting deployment."
+    echo "Error: app_$INACTIVE failed health check! Printing container logs..."
+    docker compose -f docker-compose.prod.yml logs "app_$INACTIVE"
     # Stop the failed container to save resources
     docker compose -f docker-compose.prod.yml stop "app_$INACTIVE"
     exit 1
