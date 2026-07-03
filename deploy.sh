@@ -49,10 +49,15 @@ MAX_ATTEMPTS=40
 ATTEMPT=1
 HEALTHY=0
 
+# Temporarily disable set -e to prevent premature exit during loop retries
+set +e
+
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
     echo "Checking health of app_$INACTIVE (Attempt $ATTEMPT/$MAX_ATTEMPTS)..."
-    # Execute wget and capture exit code, print output for debugging
-    if docker compose -f docker-compose.prod.yml exec -T redis wget -S -O- "http://app_$INACTIVE:8080/api/v1/config/app-version" 2>&1; then
+    # Run a temporary gateway (nginx:alpine) container to test the app endpoint
+    docker compose -f docker-compose.prod.yml run --rm gateway wget -q --spider "http://app_$INACTIVE:8080/api/v1/config/app-version"
+    STATUS=$?
+    if [ $STATUS -eq 0 ]; then
         echo "app_$INACTIVE is healthy!"
         HEALTHY=1
         break
@@ -61,6 +66,9 @@ while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
     sleep 3
     ATTEMPT=$((ATTEMPT+1))
 done
+
+# Re-enable set -e
+set -e
 
 if [ $HEALTHY -ne 1 ]; then
     echo "Error: app_$INACTIVE failed health check! Printing container logs..."
