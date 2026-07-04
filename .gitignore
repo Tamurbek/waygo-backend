@@ -30,3 +30,4 @@ build/
 !**/src/main/resources/public/
 .env
 .DS_Store
+*.exp
