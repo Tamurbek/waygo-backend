@@ -1359,8 +1359,9 @@ public class OrderService {
 
         // Find if passenger has a matching pending request order
         Long passengerOrderId = null;
+        Order matchingRequest = null;
         try {
-            Order matchingRequest = findPendingPassengerRequestForRoute(
+            matchingRequest = findPendingPassengerRequestForRoute(
                 passenger.getId(),
                 order.getDepartureDate(),
                 order.getFromAddress(),
@@ -2008,5 +2009,19 @@ public class OrderService {
         if (driver != null && driver.getRole() == User.Role.DRIVER && driver.isBillingEnabled()) {
             throw new IllegalStateException("To'lov tizimi faolligi sababli amallar taqiqlangan. Iltimos, to'lovni amalga oshiring.");
         }
+    }
+
+    private String resolvePickupAddress(Order order, String fallbackPickup) {
+        if (order != null && order.getFromLat() != null && order.getFromLon() != null) {
+            String baseAddr = (fallbackPickup == null || fallbackPickup.trim().isEmpty()) 
+                ? (order.getFromAddress() != null ? order.getFromAddress() : "") 
+                : fallbackPickup;
+            // Prevent duplicate LAT/LON appending
+            if (baseAddr.contains("[LAT:")) {
+                return baseAddr;
+            }
+            return String.format("%s [LAT:%s, LON:%s]", baseAddr, order.getFromLat(), order.getFromLon());
+        }
+        return fallbackPickup;
     }
 }
