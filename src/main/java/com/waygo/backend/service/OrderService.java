@@ -1387,6 +1387,14 @@ public class OrderService {
 
         rideBookingRepository.save(booking);
 
+        // Auto-occupy seats for the requested booking immediately
+        if (order.getAvailableSeats() != null) {
+            for (String seat : seatsToBook) {
+                String mappedSeat = mapSeatIndexToLabel(seat);
+                order.getAvailableSeats().remove(mappedSeat);
+            }
+        }
+
         // Force Eager load by adding to bookings list
         order.getBookings().add(booking);
 
@@ -1420,6 +1428,15 @@ public class OrderService {
                                 .build();
 
                         rideBookingRepository.save(autoBooking);
+
+                        // Auto-occupy seats for the active announcement immediately
+                        if (activeAnnouncement.getAvailableSeats() != null) {
+                            for (String seat : seatsToBook) {
+                                String mappedSeat = mapSeatIndexToLabel(seat);
+                                activeAnnouncement.getAvailableSeats().remove(mappedSeat);
+                            }
+                        }
+
                         activeAnnouncement.getBookings().add(autoBooking);
                         orderRepository.save(activeAnnouncement);
                         notificationService.notifyOrderStatusUpdate(activeAnnouncement);
@@ -1454,12 +1471,7 @@ public class OrderService {
         rideBookingRepository.save(booking);
 
         // Remove the selected seats from the availableSeats list (thus booking/occupying them)
-        if (order.getAvailableSeats() != null) {
-            for (String seat : booking.getSelectedSeats()) {
-                String mappedSeat = mapSeatIndexToLabel(seat);
-                order.getAvailableSeats().remove(mappedSeat);
-            }
-        }
+        // (Seats are already removed during bookRide to prevent race conditions)
 
         // Merge this booking with any other existing ACCEPTED booking for the same passenger under this order
         java.util.List<com.waygo.backend.entity.RideBooking> existingAcceptedBookings =
@@ -1545,13 +1557,11 @@ public class OrderService {
             if (booking.getSelectedSeats().contains(seat)) {
                 booking.getSelectedSeats().remove(seat);
 
-                // If the booking was previously ACCEPTED, we must free the seat
-                if (wasAccepted) {
-                    if (order.getAvailableSeats() != null) {
-                        String mappedSeat = mapSeatIndexToLabel(seat);
-                        if (!order.getAvailableSeats().contains(mappedSeat)) {
-                            order.getAvailableSeats().add(mappedSeat);
-                        }
+                // Free the seat (auto-occupy policy)
+                if (order.getAvailableSeats() != null) {
+                    String mappedSeat = mapSeatIndexToLabel(seat);
+                    if (!order.getAvailableSeats().contains(mappedSeat)) {
+                        order.getAvailableSeats().add(mappedSeat);
                     }
                 }
 
@@ -1561,14 +1571,12 @@ public class OrderService {
                 rideBookingRepository.save(booking);
             }
         } else {
-            // If the booking was previously ACCEPTED, we must free the seats!
-            if (wasAccepted) {
-                if (order.getAvailableSeats() != null) {
-                    for (String s : booking.getSelectedSeats()) {
-                        String mappedSeat = mapSeatIndexToLabel(s);
-                        if (!order.getAvailableSeats().contains(mappedSeat)) {
-                            order.getAvailableSeats().add(mappedSeat);
-                        }
+            // Free the seats (auto-occupy policy)
+            if (order.getAvailableSeats() != null) {
+                for (String s : booking.getSelectedSeats()) {
+                    String mappedSeat = mapSeatIndexToLabel(s);
+                    if (!order.getAvailableSeats().contains(mappedSeat)) {
+                        order.getAvailableSeats().add(mappedSeat);
                     }
                 }
             }
@@ -1588,15 +1596,14 @@ public class OrderService {
                         if (seat != null && !seat.isEmpty()) {
                             if (rb.getSelectedSeats().contains(seat)) {
                                 rb.getSelectedSeats().remove(seat);
-                                if (wasAccepted) {
-                                    String mappedSeat = mapSeatIndexToLabel(seat);
-                                    Order rbOrder = rb.getOrder();
-                                    if (rbOrder != null && rbOrder.getAvailableSeats() != null) {
-                                        if (!rbOrder.getAvailableSeats().contains(mappedSeat)) {
-                                            rbOrder.getAvailableSeats().add(mappedSeat);
-                                            orderRepository.save(rbOrder);
-                                            notificationService.notifyOrderStatusUpdate(rbOrder);
-                                        }
+                                // Free the seat
+                                String mappedSeat = mapSeatIndexToLabel(seat);
+                                Order rbOrder = rb.getOrder();
+                                if (rbOrder != null && rbOrder.getAvailableSeats() != null) {
+                                    if (!rbOrder.getAvailableSeats().contains(mappedSeat)) {
+                                        rbOrder.getAvailableSeats().add(mappedSeat);
+                                        orderRepository.save(rbOrder);
+                                        notificationService.notifyOrderStatusUpdate(rbOrder);
                                     }
                                 }
                                 if (rb.getSelectedSeats().isEmpty()) {
@@ -1605,18 +1612,17 @@ public class OrderService {
                                 rideBookingRepository.save(rb);
                             }
                         } else {
-                            if (wasAccepted) {
-                                Order rbOrder = rb.getOrder();
-                                if (rbOrder != null && rbOrder.getAvailableSeats() != null) {
-                                    for (String s : rb.getSelectedSeats()) {
-                                        String mappedSeat = mapSeatIndexToLabel(s);
-                                        if (!rbOrder.getAvailableSeats().contains(mappedSeat)) {
-                                            rbOrder.getAvailableSeats().add(mappedSeat);
-                                        }
+                            // Free the seats
+                            Order rbOrder = rb.getOrder();
+                            if (rbOrder != null && rbOrder.getAvailableSeats() != null) {
+                                for (String s : rb.getSelectedSeats()) {
+                                    String mappedSeat = mapSeatIndexToLabel(s);
+                                    if (!rbOrder.getAvailableSeats().contains(mappedSeat)) {
+                                        rbOrder.getAvailableSeats().add(mappedSeat);
                                     }
-                                    orderRepository.save(rbOrder);
-                                    notificationService.notifyOrderStatusUpdate(rbOrder);
                                 }
+                                orderRepository.save(rbOrder);
+                                notificationService.notifyOrderStatusUpdate(rbOrder);
                             }
                             rb.setStatus("REJECTED");
                             rideBookingRepository.save(rb);
@@ -1772,7 +1778,7 @@ public class OrderService {
             if (booking.getSelectedSeats().contains(seat)) {
                 booking.getSelectedSeats().remove(seat);
 
-                if (wasAccepted && order.getAvailableSeats() != null) {
+                if (order.getAvailableSeats() != null) {
                     String mappedSeat = mapSeatIndexToLabel(seat);
                     if (!order.getAvailableSeats().contains(mappedSeat)) {
                         order.getAvailableSeats().add(mappedSeat);
@@ -1789,8 +1795,8 @@ public class OrderService {
                 }
             }
         } else {
-            // If the booking was previously ACCEPTED, we must free the seats
-            if (wasAccepted && order.getAvailableSeats() != null) {
+            // Free the seats (auto-occupy policy)
+            if (order.getAvailableSeats() != null) {
                 for (String s : booking.getSelectedSeats()) {
                     String mappedSeat = mapSeatIndexToLabel(s);
                     if (!order.getAvailableSeats().contains(mappedSeat)) {
