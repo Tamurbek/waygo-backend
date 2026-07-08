@@ -370,8 +370,8 @@ class OrderServiceTest {
 
         assertNotNull(confirmedOffer);
         assertEquals("ACCEPTED", booking.getStatus());
-        // Available seats should have removed "FRONT" (mapped from "1")
-        assertFalse(confirmedOffer.getAvailableSeats().contains("FRONT"));
+        // Available seats are now removed in bookRide, so confirmBooking doesn't alter them.
+        assertTrue(confirmedOffer.getAvailableSeats().contains("FRONT"));
         assertTrue(confirmedOffer.getAvailableSeats().contains("BACK_LEFT"));
         verify(rideBookingRepository).save(booking);
         verify(orderRepository).save(offer);
