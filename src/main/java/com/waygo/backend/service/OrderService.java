@@ -350,7 +350,7 @@ public class OrderService {
                 .selectedSeats(seatsToBook)
                 .status("ACCEPTED")
                 .passengerOrderId(order.getId())
-                .pickupAddress(pickup.isEmpty() ? order.getFromAddress() : pickup)
+                .pickupAddress(resolvePickupAddress(order, pickup))
                 .notes(notes)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -413,7 +413,7 @@ public class OrderService {
                     .selectedSeats(seatsToBook)
                     .status("ACCEPTED")
                     .passengerOrderId(order.getId())
-                    .pickupAddress(pickup.isEmpty() ? order.getFromAddress() : pickup)
+                    .pickupAddress(resolvePickupAddress(order, pickup))
                     .notes(notes)
                     .createdAt(LocalDateTime.now())
                     .build();
@@ -542,7 +542,7 @@ public class OrderService {
                 .passenger(order.getPassenger())
                 .selectedSeats(selectedSeats)
                 .status("ACCEPTED")
-                .pickupAddress(order.getFromAddress())
+                .pickupAddress(resolvePickupAddress(order, ""))
                 .build();
 
         rideBookingRepository.save(booking);
@@ -1378,7 +1378,7 @@ public class OrderService {
                 .order(order)
                 .passenger(passenger)
                 .selectedSeats(seatsToBook)
-                .pickupAddress(pickup)
+                .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
                 .notes(notes)
                 .status("PENDING")
                 .passengerOrderId(passengerOrderId)
@@ -1413,7 +1413,7 @@ public class OrderService {
                                 .selectedSeats(new java.util.ArrayList<>(seatsToBook))
                                 .status("PENDING")
                                 .passengerOrderId(order.getId())
-                                .pickupAddress(pickup)
+                                .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
                                 .notes(notes)
                                 .createdAt(java.time.LocalDateTime.now())
                                 .build();
