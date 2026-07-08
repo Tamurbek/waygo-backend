@@ -1286,9 +1286,9 @@ public class OrderService {
             }
         }
 
-        // Check if passenger already has a PENDING booking on this order — merge the requested seats to it!
+        // Check if passenger already has an ACCEPTED booking on this order — merge the requested seats to it!
         java.util.Optional<com.waygo.backend.entity.RideBooking> pendingBooking =
-                rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "PENDING");
+                rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "ACCEPTED");
         if (pendingBooking.isPresent()) {
             com.waygo.backend.entity.RideBooking b = pendingBooking.get();
             // Merge seats
@@ -1317,7 +1317,7 @@ public class OrderService {
                     );
                     if (activeAnnouncement != null) {
                         java.util.Optional<com.waygo.backend.entity.RideBooking> driverPending =
-                            rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(activeAnnouncement.getId(), passenger.getId(), "PENDING");
+                            rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(activeAnnouncement.getId(), passenger.getId(), "ACCEPTED");
                         if (driverPending.isPresent()) {
                             com.waygo.backend.entity.RideBooking db = driverPending.get();
                             for (String seat : seatsToBook) {
@@ -1381,7 +1381,7 @@ public class OrderService {
                 .selectedSeats(seatsToBook)
                 .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
                 .notes(notes)
-                .status("PENDING")
+                .status("ACCEPTED")
                 .passengerOrderId(passengerOrderId)
                 .build();
 
@@ -1420,7 +1420,7 @@ public class OrderService {
                                 .order(activeAnnouncement)
                                 .passenger(passenger)
                                 .selectedSeats(new java.util.ArrayList<>(seatsToBook))
-                                .status("PENDING")
+                                .status("ACCEPTED")
                                 .passengerOrderId(order.getId())
                                 .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
                                 .notes(notes)
