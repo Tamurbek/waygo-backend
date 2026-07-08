@@ -27,6 +27,7 @@ public class DriverController {
             @RequestParam String carModel,
             @RequestParam String carNumber,
             @RequestParam String carColor,
+            @RequestParam(required = false) String carBrand,
             @RequestParam(required = false) String licenseNumber,
             @RequestParam(required = false) DriverProfile.CarType carType,
             @RequestParam(value = "carImage", required = false) MultipartFile carImage
@@ -47,6 +48,7 @@ public class DriverController {
         profile.setCarModel(carModel);
         profile.setCarNumber(carNumber);
         profile.setCarColor(carColor);
+        if (carBrand != null) profile.setCarBrand(carBrand);
         if (licenseNumber != null) profile.setLicenseNumber(licenseNumber);
         if (carType != null) profile.setCarType(carType);
 
@@ -64,6 +66,8 @@ public class DriverController {
         // Sync to User entity for easy access in Orders
         user.setCarModel(carModel);
         user.setCarNumber(carNumber);
+        user.setCarColor(carColor);
+        if (carBrand != null) user.setCarBrand(carBrand);
 
         // Update user role to DRIVER if it was PASSENGER
         if (user.getRole() == User.Role.PASSENGER) {

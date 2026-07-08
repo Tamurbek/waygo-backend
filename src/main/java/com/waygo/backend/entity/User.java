@@ -48,6 +48,8 @@ public class User implements UserDetails {
 
     private String carNumber;
     private String carModel;
+    private String carColor;
+    private String carBrand;
 
     @Column(name = "driver_id", unique = true)
     private String driverId;

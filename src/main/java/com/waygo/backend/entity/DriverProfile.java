@@ -23,6 +23,7 @@ public class DriverProfile {
     private String carModel;
     private String carNumber;
     private String carColor;
+    private String carBrand;
     private String licenseNumber;
     private String carImageUrl;
 

@@ -166,6 +166,8 @@ public class AuthController {
             @RequestParam(required = false) String fullName,
             @RequestParam(required = false) String carNumber,
             @RequestParam(required = false) String carModel,
+            @RequestParam(required = false) String carColor,
+            @RequestParam(required = false) String carBrand,
             @RequestParam(required = false) org.springframework.web.multipart.MultipartFile image
     ) {
         try {
@@ -181,6 +183,8 @@ public class AuthController {
                 user.setCarNumber(carNumber);
             }
             if (carModel != null) user.setCarModel(carModel);
+            if (carColor != null) user.setCarColor(carColor);
+            if (carBrand != null) user.setCarBrand(carBrand);
             
             if (image != null && !image.isEmpty()) {
                 String fileName = fileService.saveFile(image);
