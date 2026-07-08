@@ -323,7 +323,7 @@ class OrderServiceTest {
                 
         when(orderRepository.findById(20L)).thenReturn(Optional.of(driverOffer));
         when(rideBookingRepository.findByOrderIdAndPassengerId(20L, passenger.getId())).thenReturn(new ArrayList<>());
-        when(rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(20L, passenger.getId(), "PENDING")).thenReturn(Optional.empty());
+        when(rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(20L, passenger.getId(), "ACCEPTED")).thenReturn(Optional.empty());
         when(rideBookingRepository.save(any(RideBooking.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -338,7 +338,7 @@ class OrderServiceTest {
         assertEquals(Arrays.asList("1"), booking.getSelectedSeats());
         assertEquals("Chilonzor metro", booking.getPickupAddress());
         assertEquals("Have massive box", booking.getNotes());
-        assertEquals("PENDING", booking.getStatus());
+        assertEquals("ACCEPTED", booking.getStatus());
         
         verify(rideBookingRepository).save(any(RideBooking.class));
         verify(notificationService).notifyOrderStatusUpdate(any(Order.class));
