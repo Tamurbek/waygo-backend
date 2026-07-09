@@ -16,9 +16,16 @@ public class OrderCreateDTO {
     @NotBlank(message = "To address cannot be empty")
     private String toAddress;
 
+    @NotNull(message = "From latitude is required")
     private Double fromLat;
+
+    @NotNull(message = "From longitude is required")
     private Double fromLon;
+
+    @NotNull(message = "To latitude is required")
     private Double toLat;
+
+    @NotNull(message = "To longitude is required")
     private Double toLon;
 
     @NotNull(message = "Price is required")

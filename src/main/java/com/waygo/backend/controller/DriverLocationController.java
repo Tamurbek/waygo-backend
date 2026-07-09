@@ -20,19 +20,26 @@ public class DriverLocationController {
     
     // In-memory cache for driver locations: orderId -> Location
     private final ConcurrentHashMap<Long, DriverLocationPayload> locationCache = new ConcurrentHashMap<>();
+    
+    // In-memory cache for global driver locations: driverId -> Location
+    private final ConcurrentHashMap<Long, DriverLocationPayload> driverGlobalLocationCache = new ConcurrentHashMap<>();
 
     @MessageMapping("/driver/location")
     public void handleDriverLocation(DriverLocationPayload payload) {
-        if (payload.getOrderId() == null) return;
-        
-        // Cache the latest location
-        locationCache.put(payload.getOrderId(), payload);
-        
-        // Broadcast to anyone subscribed to this order's location topic
-        messagingTemplate.convertAndSend("/topic/orders/" + payload.getOrderId() + "/location", payload);
+        // Global tracking by driverId
+        if (payload.getDriverId() != null) {
+            driverGlobalLocationCache.put(payload.getDriverId(), payload);
+            messagingTemplate.convertAndSend("/topic/drivers/" + payload.getDriverId() + "/location", payload);
+        }
+
+        // Active trip tracking by orderId
+        if (payload.getOrderId() != null && payload.getOrderId() != 0) {
+            locationCache.put(payload.getOrderId(), payload);
+            messagingTemplate.convertAndSend("/topic/orders/" + payload.getOrderId() + "/location", payload);
+        }
     }
 
-    // Add REST endpoint to get the last known location for initialization
+    // Existing REST endpoint to get the last known location for initialization by orderId
     @GetMapping("/api/v1/orders/{orderId}/driver-location")
     @ResponseBody
     public ResponseEntity<ApiResponse<DriverLocationPayload>> getDriverLocation(@PathVariable("orderId") Long orderId) {
@@ -41,5 +48,16 @@ public class DriverLocationController {
             return ResponseEntity.ok(ApiResponse.success(null, "No location cached yet"));
         }
         return ResponseEntity.ok(ApiResponse.success(cached, "Driver location retrieved successfully"));
+    }
+
+    // New REST endpoint to get the global location by driverId
+    @GetMapping("/api/v1/drivers/{driverId}/location")
+    @ResponseBody
+    public ResponseEntity<ApiResponse<DriverLocationPayload>> getGlobalDriverLocation(@PathVariable("driverId") Long driverId) {
+        DriverLocationPayload cached = driverGlobalLocationCache.get(driverId);
+        if (cached == null) {
+            return ResponseEntity.ok(ApiResponse.success(null, "No global location cached yet"));
+        }
+        return ResponseEntity.ok(ApiResponse.success(cached, "Driver global location retrieved successfully"));
     }
 }
