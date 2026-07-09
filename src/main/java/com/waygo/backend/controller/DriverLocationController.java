@@ -9,6 +9,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,5 +61,14 @@ public class DriverLocationController {
             return ResponseEntity.ok(ApiResponse.success(null, "No global location cached yet"));
         }
         return ResponseEntity.ok(ApiResponse.success(cached, "Driver global location retrieved successfully"));
+    }
+
+    // New REST endpoint to update location via HTTP (useful for background services)
+    @PostMapping("/api/v1/drivers/location")
+    @ResponseBody
+    public ResponseEntity<ApiResponse<String>> updateDriverLocation(@RequestBody DriverLocationPayload payload) {
+        // Reuse the WebSocket handler logic to update caches and broadcast
+        handleDriverLocation(payload);
+        return ResponseEntity.ok(ApiResponse.success("Location updated", "Success"));
     }
 }
