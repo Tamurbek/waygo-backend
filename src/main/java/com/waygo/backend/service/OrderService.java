@@ -45,7 +45,7 @@ public class OrderService {
                 .toLon(dto.getToLon())
                 .departureDate(dto.getDepartureDate())
                 .departureTime(dto.getDepartureTime())
-                .availableSeats(dto.getAvailableSeats())
+                .availableSeats(dto.getAvailableSeats() != null ? dto.getAvailableSeats() : new java.util.ArrayList<>())
                 .passengerCount(dto.getPassengerCount())
                 .notes(dto.getNotes())
                 .price(dto.getPrice())
