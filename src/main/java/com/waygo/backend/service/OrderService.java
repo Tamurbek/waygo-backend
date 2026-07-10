@@ -1247,10 +1247,6 @@ public class OrderService {
                 seatsToBook.add(seat);
             }
         }
-        if (pickup.isEmpty() && order.getFromAddress() != null) {
-            pickup = order.getFromAddress();
-        }
-
         // Check if passenger already has active/pending bookings on this order
         List<com.waygo.backend.entity.RideBooking> existingBookings = rideBookingRepository.findByOrderIdAndPassengerId(orderId, passenger.getId());
         if (!existingBookings.isEmpty()) {
