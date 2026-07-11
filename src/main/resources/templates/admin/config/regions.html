@@ -62,6 +62,8 @@
                                 <button type="button" class="btn-icon btn-icon-edit"
                                     th:data-id="${r.id}"
                                     th:data-name="${r.name}"
+                                    th:data-lat="${r.latitude}"
+                                    th:data-lon="${r.longitude}"
                                     th:data-active="${r.active}"
                                     onclick="openEditRegionModal(this)">
                                     <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
@@ -92,6 +94,8 @@
                               th:data-id="${d.id}"
                               th:data-name="${d.name}"
                               th:data-region-id="${r.id}"
+                              th:data-lat="${d.latitude}"
+                              th:data-lon="${d.longitude}"
                               th:data-active="${d.active}"
                               th:style="${d.active ? 'background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;' : 'background: rgba(220, 53, 69, 0.05); border: 1px dashed var(--error); color: var(--text-dim); opacity: 0.6; padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s;'}"
                               onclick="openEditDistrictModal(this)">
@@ -120,7 +124,17 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label">Viloyat Nomi</label>
-                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Toshkent">
+                        <input type="text" name="name" required class="form-control" placeholder="Masalan: Toshkent sh.">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Kenglik (latitude)</label>
+                            <input type="number" step="any" name="latitude" class="form-control" placeholder="41.2995">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Uzunlik (longitude)</label>
+                            <input type="number" step="any" name="longitude" class="form-control" placeholder="69.2401">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -145,6 +159,16 @@
                     <div class="form-group">
                         <label class="form-label">Viloyat Nomi</label>
                         <input type="text" id="editRegionName" name="name" required class="form-control">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Kenglik (latitude)</label>
+                            <input type="number" step="any" id="editRegionLat" name="latitude" class="form-control" placeholder="41.2995">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Uzunlik (longitude)</label>
+                            <input type="number" step="any" id="editRegionLon" name="longitude" class="form-control" placeholder="69.2401">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-check">
@@ -183,6 +207,16 @@
                         <label class="form-label">Tuman Nomi</label>
                         <input type="text" name="name" required class="form-control" placeholder="Masalan: Yunusobod">
                     </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Kenglik (latitude)</label>
+                            <input type="number" step="any" name="latitude" class="form-control" placeholder="41.3631">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Uzunlik (longitude)</label>
+                            <input type="number" step="any" name="longitude" class="form-control" placeholder="69.2836">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('addDistrictModal')">Bekor qilish</button>
@@ -213,6 +247,16 @@
                         <label class="form-label">Tuman Nomi</label>
                         <input type="text" id="editDistrictName" name="name" required class="form-control">
                     </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Kenglik (latitude)</label>
+                            <input type="number" step="any" id="editDistrictLat" name="latitude" class="form-control" placeholder="41.3631">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Uzunlik (longitude)</label>
+                            <input type="number" step="any" id="editDistrictLon" name="longitude" class="form-control" placeholder="69.2836">
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label class="form-check">
                             <input type="checkbox" id="editDistrictActive" name="active" value="true" class="form-check-input">
@@ -239,6 +283,8 @@
         function openEditRegionModal(btn) {
             document.getElementById('editRegionForm').action = '/admin/config/regions/edit/' + btn.dataset.id;
             document.getElementById('editRegionName').value = btn.dataset.name;
+            document.getElementById('editRegionLat').value = btn.dataset.lat || '';
+            document.getElementById('editRegionLon').value = btn.dataset.lon || '';
             document.getElementById('editRegionActive').checked = (btn.dataset.active === 'true');
             openModal('editRegionModal');
         }
@@ -247,6 +293,8 @@
             document.getElementById('editDistrictForm').action = '/admin/config/districts/edit/' + el.dataset.id;
             document.getElementById('editDistrictName').value = el.dataset.name;
             document.getElementById('editDistrictRegionId').value = el.dataset.regionId;
+            document.getElementById('editDistrictLat').value = el.dataset.lat || '';
+            document.getElementById('editDistrictLon').value = el.dataset.lon || '';
             document.getElementById('editDistrictActive').checked = (el.dataset.active === 'true');
             openModal('editDistrictModal');
         }

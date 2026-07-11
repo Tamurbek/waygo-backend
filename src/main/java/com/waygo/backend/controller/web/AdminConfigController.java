@@ -99,6 +99,8 @@ public class AdminConfigController {
         regionRepository.findById(id).ifPresent(existing -> {
             existing.setName(region.getName());
             existing.setActive(region.isActive());
+            existing.setLatitude(region.getLatitude());
+            existing.setLongitude(region.getLongitude());
             regionRepository.save(existing);
         });
         return "redirect:/admin/config/regions?updated";
@@ -130,6 +132,8 @@ public class AdminConfigController {
             Region region = regionRepository.findById(regionId).orElseThrow();
             existing.setRegion(region);
             existing.setActive(district.isActive());
+            existing.setLatitude(district.getLatitude());
+            existing.setLongitude(district.getLongitude());
             districtRepository.save(existing);
         });
         return "redirect:/admin/config/regions?updated";
