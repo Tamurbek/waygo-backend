@@ -1329,6 +1329,7 @@ public class OrderService {
                             }
                             rideBookingRepository.save(db);
                             notificationService.notifyOrderStatusUpdate(activeAnnouncement);
+                            notificationService.notifySeatBookedByPassenger(activeAnnouncement, passenger);
                         }
                     }
                 } catch (Exception e) {
@@ -1338,6 +1339,7 @@ public class OrderService {
 
             Order savedOrder = orderRepository.save(order);
             notificationService.notifyOrderStatusUpdate(savedOrder);
+            notificationService.notifySeatBookedByPassenger(savedOrder, passenger);
             return savedOrder;
         }
 
