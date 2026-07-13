@@ -348,6 +348,12 @@ public class NotificationService {
                             .setTitle(title)
                             .setBody(body)
                             .build())
+                    .setAndroidConfig(com.google.firebase.messaging.AndroidConfig.builder()
+                            .setPriority(com.google.firebase.messaging.AndroidConfig.Priority.HIGH)
+                            .setNotification(com.google.firebase.messaging.AndroidNotification.builder()
+                                    .setChannelId("high_importance_channel")
+                                    .build())
+                            .build())
                     .putData("type", type)
                     .build();
 
