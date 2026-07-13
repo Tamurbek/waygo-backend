@@ -44,6 +44,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     volumes:
       - waygo_uploads:/app/uploads
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
     depends_on:
       - db
       - redis
@@ -63,6 +64,7 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     volumes:
       - waygo_uploads:/app/uploads
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
     depends_on:
       - db
       - redis
