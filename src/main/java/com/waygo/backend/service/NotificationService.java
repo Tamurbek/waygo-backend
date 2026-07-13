@@ -50,9 +50,6 @@ public class NotificationService {
             );
             
             sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
-            
-            // SMS to passenger
-            smsService.sendSms(order.getPassenger().getPhone(), msg);
         }
 
         // Also notify the directly assigned driver if present
@@ -87,13 +84,6 @@ public class NotificationService {
                                 "/queue/order-status",
                                 order
                         );
-                        // Send SMS to REJECTED drivers specifically
-                        if ("REJECTED".equalsIgnoreCase(offer.getStatus())) {
-                            smsService.sendSms(
-                                offer.getDriver().getPhone(),
-                                "WayGO: Afsuski, yo'lovchi boshqa haydovchini tanladi. Taklifingiz rad etildi."
-                            );
-                        }
                     }
                 }
             }
@@ -106,7 +96,6 @@ public class NotificationService {
     public void notifySeatCancelled(User passenger, String seatName, Order order) {
         if (passenger != null && passenger.getPhone() != null) {
             String msg = "WayGO: Haydovchi sizning \"" + seatName + "\" o'rindig'ingizni bekor qildi.";
-            smsService.sendSms(passenger.getPhone(), msg);
 
             // Send private WebSocket update to passenger so they immediately receive it
             messagingTemplate.convertAndSendToUser(
@@ -134,7 +123,6 @@ public class NotificationService {
         String toLoc = order != null ? order.getToAddress() : "";
 
         String msg = "WayGO: Haydovchi sizning so'rovingizni tasdiqladi! Qatnov: " + fromLoc + " -> " + toLoc;
-        smsService.sendSms(phone, msg);
 
         if (order != null) {
             messagingTemplate.convertAndSendToUser(
@@ -161,7 +149,6 @@ public class NotificationService {
         String toLoc = order != null ? order.getToAddress() : "";
 
         String msg = "WayGO: Afsuski, haydovchi sizning so'rovingizni rad etdi. Qatnov: " + fromLoc + " -> " + toLoc;
-        smsService.sendSms(phone, msg);
 
         if (order != null) {
             messagingTemplate.convertAndSendToUser(
@@ -183,7 +170,6 @@ public class NotificationService {
         }
 
         String msg = "WayGO: Afsuski, haydovchi o'z qatnovini bekor qildi. Shu sababli sizning buyurtmangiz bekor qilindi.";
-        smsService.sendSms(phone, msg);
 
         messagingTemplate.convertAndSendToUser(
                 phone,
@@ -207,7 +193,6 @@ public class NotificationService {
         String msg = "WayGO: Yo'lovchi o'z buyurtmasini bekor qildi. Qatnov: " +
                 (passengerOrder.getFromAddress() != null ? passengerOrder.getFromAddress() : "") + " -> " +
                 (passengerOrder.getToAddress() != null ? passengerOrder.getToAddress() : "");
-        smsService.sendSms(phone, msg);
 
         messagingTemplate.convertAndSendToUser(
                 phone,
@@ -229,7 +214,6 @@ public class NotificationService {
         }
 
         String msg = "WayGO: Afsuski, haydovchi o'z qatnovini bekor qildi. Shu sababli sizning band qilgan o'rindig'ingiz bekor qilindi.";
-        smsService.sendSms(phone, msg);
 
         if (driverOrder != null) {
             messagingTemplate.convertAndSendToUser(
