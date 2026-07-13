@@ -114,6 +114,8 @@ public class NotificationService {
                     "/queue/order-status",
                     order
             );
+            
+            sendFcmNotification(passenger, "Joy bekor qilindi", msg, "ORDER_UPDATE");
         }
     }
 
@@ -140,6 +142,7 @@ public class NotificationService {
                     "/queue/order-status",
                     order
             );
+            sendFcmNotification(booking.getPassenger(), "So'rov tasdiqlandi", msg, "ORDER_UPDATE");
         }
     }
 
@@ -166,6 +169,7 @@ public class NotificationService {
                     "/queue/order-status",
                     order
             );
+            sendFcmNotification(booking.getPassenger(), "So'rov rad etildi", msg, "ORDER_UPDATE");
         }
     }
 
@@ -187,6 +191,8 @@ public class NotificationService {
                 passengerOrder
         );
         messagingTemplate.convertAndSend("/topic/orders/update", passengerOrder);
+        
+        sendFcmNotification(passengerOrder.getPassenger(), "Buyurtma bekor qilindi", msg, "ORDER_UPDATE");
     }
 
     public void notifyDriverOrderCancelledByPassenger(Order passengerOrder) {
@@ -209,6 +215,8 @@ public class NotificationService {
                 passengerOrder
         );
         messagingTemplate.convertAndSend("/topic/orders/update", passengerOrder);
+        
+        sendFcmNotification(passengerOrder.getDriver(), "Buyurtma bekor qilindi", msg, "ORDER_UPDATE");
     }
 
     public void notifyBookingCancelledByDriver(RideBooking booking, Order driverOrder) {
@@ -229,7 +237,30 @@ public class NotificationService {
                     "/queue/order-status",
                     driverOrder
             );
+            sendFcmNotification(booking.getPassenger(), "Joy bekor qilindi", msg, "ORDER_UPDATE");
         }
+    }
+    
+    public void notifySeatBookedByPassenger(Order driverOrder, User passenger) {
+        if (driverOrder == null || driverOrder.getDriver() == null) {
+            return;
+        }
+        String phone = driverOrder.getDriver().getPhone();
+        if (phone == null || phone.isEmpty()) {
+            return;
+        }
+
+        String msg = "WayGO: Yo'lovchi sizning qatnovingizda joy band qildi!";
+        
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", "ORDER_UPDATE");
+        payload.put("order", driverOrder);
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + driverOrder.getDriver().getId(),
+                payload
+        );
+        
+        sendFcmNotification(driverOrder.getDriver(), "Yangi yo'lovchi", msg, "ORDER_UPDATE");
     }
 
     public void notifyBalanceUpdate(User user, java.math.BigDecimal amount) {
