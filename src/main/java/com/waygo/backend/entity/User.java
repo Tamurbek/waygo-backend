@@ -46,6 +46,8 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String fcmToken;
+
     private String carNumber;
     private String carModel;
     private String carColor;

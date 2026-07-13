@@ -31,3 +31,4 @@ build/
 .env
 .DS_Store
 *.exp
+firebase-service-account.json

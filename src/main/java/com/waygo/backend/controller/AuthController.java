@@ -197,4 +197,16 @@ public class AuthController {
             return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to upload image: " + e.getMessage()));
         }
     }
+
+    @PutMapping("/fcm-token")
+    public ResponseEntity<ApiResponse<User>> updateFcmToken(
+            @RequestHeader("Authorization") String token,
+            @RequestParam String fcmToken
+    ) {
+        String phone = jwtService.extractUsername(token.substring(7));
+        User user = userRepository.findByPhone(phone).orElseThrow();
+        user.setFcmToken(fcmToken);
+        user = userRepository.save(user);
+        return ResponseEntity.ok(ApiResponse.success(user, "FCM token updated successfully"));
+    }
 }

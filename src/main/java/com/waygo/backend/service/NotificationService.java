@@ -40,6 +40,17 @@ public class NotificationService {
                     "/queue/order-status",
                     order
             );
+            
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("type", "ORDER_UPDATE");
+            payload.put("order", order);
+            messagingTemplate.convertAndSend(
+                    "/topic/notifications/" + order.getPassenger().getId(),
+                    payload
+            );
+            
+            sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
+            
             // SMS to passenger
             smsService.sendSms(order.getPassenger().getPhone(), msg);
         }
@@ -51,6 +62,16 @@ public class NotificationService {
                     "/queue/order-status",
                     order
             );
+            
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("type", "ORDER_UPDATE");
+            payload.put("order", order);
+            messagingTemplate.convertAndSend(
+                    "/topic/notifications/" + order.getDriver().getId(),
+                    payload
+            );
+            
+            sendFcmNotification(order.getDriver(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
         }
 
         // Notify ALL drivers who submitted offers so they learn if accepted/rejected
@@ -241,6 +262,8 @@ public class NotificationService {
                 "/topic/notifications/" + user.getId(),
                 payload
         );
+        
+        sendFcmNotification(user, "Balans yangilandi", msg, "BALANCE_UPDATE");
     }
 
     public void notifyTariffUpdate(User user, String message) {
@@ -258,6 +281,8 @@ public class NotificationService {
                 "/topic/notifications/" + user.getId(),
                 payload
         );
+        
+        sendFcmNotification(user, "Tarif yangilandi", message, "TARIFF_UPDATE");
     }
 
     public void notifyNewChatMessage(VipChatMessage message) {
@@ -278,6 +303,9 @@ public class NotificationService {
                     "/topic/notifications/" + message.getDriver().getId(),
                     payload
             );
+            
+            // Send Push Notification
+            sendFcmNotification(message.getDriver(), "Yangi xabar", message.getMessageText(), "CHAT_MESSAGE");
         };
 
         if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
@@ -291,6 +319,26 @@ public class NotificationService {
             );
         } else {
             sendNotification.run();
+        }
+    }
+
+    private void sendFcmNotification(User user, String title, String body, String type) {
+        if (user == null || user.getFcmToken() == null || user.getFcmToken().isEmpty()) {
+            return;
+        }
+        try {
+            com.google.firebase.messaging.Message message = com.google.firebase.messaging.Message.builder()
+                    .setToken(user.getFcmToken())
+                    .setNotification(com.google.firebase.messaging.Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build())
+                    .putData("type", type)
+                    .build();
+
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send FCM notification to user " + user.getId() + ": " + e.getMessage());
         }
     }
 }
