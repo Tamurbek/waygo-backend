@@ -194,6 +194,12 @@ public class OrderService {
                 }
             }
         }
+
+        int requestedCount = order.getPassengerCount() != null ? order.getPassengerCount() : 1;
+        if (calculatedAvailableSeats.size() < requestedCount) {
+            throw new IllegalStateException("Sizda ushbu buyurtmani qabul qilish uchun yetarli bo'sh joy yo'q (Yo'lovchi so'ragan joylar: " + requestedCount + ", Sizdagi bo'sh joylar: " + calculatedAvailableSeats.size() + ")");
+        }
+
         offer.setAvailableSeats(calculatedAvailableSeats);
 
         Order savedOrder = orderRepository.save(order);
