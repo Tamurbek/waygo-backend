@@ -188,6 +188,20 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Booking confirmed successfully"));
     }
 
+    @PostMapping("/bookings/{bookingId}/collect")
+    @Operation(summary = "Driver marks a passenger booking as collected (picked up)")
+    public ResponseEntity<ApiResponse<Order>> collectBooking(@PathVariable("bookingId") Long bookingId) {
+        Order order = orderService.collectBooking(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Booking marked as collected successfully"));
+    }
+
+    @PostMapping("/bookings/{bookingId}/uncollect")
+    @Operation(summary = "Driver marks a collected passenger booking back to accepted (uncollected)")
+    public ResponseEntity<ApiResponse<Order>> uncollectBooking(@PathVariable("bookingId") Long bookingId) {
+        Order order = orderService.uncollectBooking(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Booking marked as uncollected successfully"));
+    }
+
     @PostMapping("/bookings/{bookingId}/reject")
     @Operation(summary = "Driver rejects a passenger seat booking")
     public ResponseEntity<ApiResponse<Order>> rejectBooking(

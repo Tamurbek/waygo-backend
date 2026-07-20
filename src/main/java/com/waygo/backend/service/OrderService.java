@@ -1542,6 +1542,56 @@ public class OrderService {
     }
 
     @Transactional
+    public Order collectBooking(Long bookingId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can collect passengers");
+        }
+        checkDriverBilling(driver);
+
+        com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        Order order = booking.getOrder();
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new UnauthorizedAccessException("You are not the driver of this ride offer");
+        }
+
+        booking.setStatus("COLLECTED");
+        rideBookingRepository.save(booking);
+
+        Order savedOrder = orderRepository.save(order);
+        synchronizeAnnouncementToPassengerOrders(savedOrder);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order uncollectBooking(Long bookingId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can uncollect passengers");
+        }
+        checkDriverBilling(driver);
+
+        com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+
+        Order order = booking.getOrder();
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new UnauthorizedAccessException("You are not the driver of this ride offer");
+        }
+
+        booking.setStatus("ACCEPTED");
+        rideBookingRepository.save(booking);
+
+        Order savedOrder = orderRepository.save(order);
+        synchronizeAnnouncementToPassengerOrders(savedOrder);
+        notificationService.notifyOrderStatusUpdate(savedOrder);
+        return savedOrder;
+    }
+
+    @Transactional
     public Order rejectBooking(Long bookingId, String seat) {
         User driver = securityUtils.getCurrentUser();
         if (driver == null || driver.getRole() != User.Role.DRIVER) {

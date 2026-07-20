@@ -379,6 +379,62 @@ class OrderServiceTest {
     }
 
     @Test
+    void testCollectBooking_Success() {
+        when(securityUtils.getCurrentUser()).thenReturn(driver);
+
+        Order offer = Order.builder()
+                .id(20L)
+                .driver(driver)
+                .build();
+
+        RideBooking booking = RideBooking.builder()
+                .id(55L)
+                .order(offer)
+                .passenger(passenger)
+                .status("ACCEPTED")
+                .build();
+
+        when(rideBookingRepository.findById(55L)).thenReturn(Optional.of(booking));
+        when(rideBookingRepository.save(any(RideBooking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order result = orderService.collectBooking(55L);
+
+        assertNotNull(result);
+        assertEquals("COLLECTED", booking.getStatus());
+        verify(rideBookingRepository).save(booking);
+        verify(orderRepository).save(offer);
+    }
+
+    @Test
+    void testUncollectBooking_Success() {
+        when(securityUtils.getCurrentUser()).thenReturn(driver);
+
+        Order offer = Order.builder()
+                .id(20L)
+                .driver(driver)
+                .build();
+
+        RideBooking booking = RideBooking.builder()
+                .id(55L)
+                .order(offer)
+                .passenger(passenger)
+                .status("COLLECTED")
+                .build();
+
+        when(rideBookingRepository.findById(55L)).thenReturn(Optional.of(booking));
+        when(rideBookingRepository.save(any(RideBooking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Order result = orderService.uncollectBooking(55L);
+
+        assertNotNull(result);
+        assertEquals("ACCEPTED", booking.getStatus());
+        verify(rideBookingRepository).save(booking);
+        verify(orderRepository).save(offer);
+    }
+
+    @Test
     void testRejectBooking_Success() {
         when(securityUtils.getCurrentUser()).thenReturn(driver);
 

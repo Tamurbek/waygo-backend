@@ -37,7 +37,7 @@ public class RideBooking {
     @Fetch(FetchMode.SUBSELECT)
     private java.util.List<String> selectedSeats = new java.util.ArrayList<>();
 
-    private String status; // "PENDING", "ACCEPTED", "REJECTED"
+    private String status; // "PENDING", "ACCEPTED", "REJECTED", "COLLECTED"
 
     @Column(name = "passenger_order_id")
     private Long passengerOrderId;
