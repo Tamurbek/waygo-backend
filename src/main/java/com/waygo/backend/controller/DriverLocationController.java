@@ -71,4 +71,21 @@ public class DriverLocationController {
         handleDriverLocation(payload);
         return ResponseEntity.ok(ApiResponse.success("Location updated", "Success"));
     }
+
+    @MessageMapping("/user/location")
+    public void handleUserLocation(DriverLocationPayload payload) {
+        if (payload.getUserId() != null) {
+            messagingTemplate.convertAndSend("/topic/users/" + payload.getUserId() + "/location", payload);
+        }
+        if (payload.getPassengerOrderId() != null && payload.getPassengerOrderId() != 0) {
+            messagingTemplate.convertAndSend("/topic/passenger-orders/" + payload.getPassengerOrderId() + "/location", payload);
+        }
+    }
+
+    @PostMapping("/api/v1/users/location")
+    @ResponseBody
+    public ResponseEntity<ApiResponse<String>> updatePassengerLocation(@RequestBody DriverLocationPayload payload) {
+        handleUserLocation(payload);
+        return ResponseEntity.ok(ApiResponse.success("User location updated", "Success"));
+    }
 }

@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 public class DriverLocationPayload {
     private Long orderId;
     private Long driverId;
+    private Long userId;
+    private Long passengerOrderId;
     private Double latitude;
     private Double longitude;
     private Double bearing;
