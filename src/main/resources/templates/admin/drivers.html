@@ -14,7 +14,7 @@
         </div>
         
         <div class="card" style="margin-top: 2rem;" id="driversContentWrapper">
-            <form th:action="@{/admin/drivers/bulk-action}" method="post" id="bulkForm">
+            <form action="/admin/drivers/bulk-action" method="post" id="bulkForm">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <h2 style="font-size: 1.125rem;">Barcha haydovchilar</h2>
                     <div style="font-size: 0.875rem; color: var(--text-dim);" th:text="|${#lists.size(drivers)} ta ro'yxatga olingan|">0 ta</div>
@@ -130,16 +130,16 @@
             
             <!-- Hidden Single Forms for Toggle Billing & Add Balance -->
             <div th:each="driver : ${drivers}" style="display: none;">
-                <form th:id="'toggleForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/toggle-billing'}" method="post"></form>
-                <form th:id="'addBalanceForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/add-balance'}" method="post">
+                <form th:id="'toggleForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/toggle-billing'}" method="post"></form>
+                <form th:id="'addBalanceForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/add-balance'}" method="post">
                     <input type="hidden" name="amount" th:id="'amountInput-' + ${driver.id}">
                 </form>
-                <form th:id="'resetBalanceForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/reset-balance'}" method="post"></form>
-                <form th:id="'cancelTariffForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/cancel-tariff'}" method="post"></form>
-                <form th:id="'changeTariffForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/change-tariff'}" method="post">
+                <form th:id="'resetBalanceForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/reset-balance'}" method="post"></form>
+                <form th:id="'cancelTariffForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/cancel-tariff'}" method="post"></form>
+                <form th:id="'changeTariffForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/change-tariff'}" method="post">
                     <input type="hidden" name="tariffId" th:id="'newTariffInput-' + ${driver.id}">
                 </form>
-                <form th:id="'assignVipForm-' + ${driver.id}" th:action="@{'/admin/drivers/' + ${driver.id} + '/assign-vip'}" method="post">
+                <form th:id="'assignVipForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/assign-vip'}" method="post">
                     <input type="hidden" name="price" th:id="'vipPriceInput-' + ${driver.id}">
                     <input type="hidden" name="durationDays" th:id="'vipDurationInput-' + ${driver.id}">
                 </form>
@@ -268,6 +268,15 @@
             setupSelectAllListener();
         });
 
+        function getSafeUrl(elementOrUrl) {
+            let url = typeof elementOrUrl === 'string' ? elementOrUrl : (elementOrUrl.getAttribute('action') || elementOrUrl.action || '');
+            if (url.startsWith('http://')) {
+                return url.replace('http://', 'https://');
+            }
+            if (!url) return window.location.pathname;
+            return url;
+        }
+
         function setupSelectAllListener() {
             const selectAll = document.getElementById('selectAll');
             if (selectAll) {
@@ -291,7 +300,7 @@
                     const submitBtn = e.submitter || this.querySelector('button[type="submit"]');
                     if (submitBtn) submitBtn.disabled = true;
                     
-                    fetch(this.action, {
+                    fetch(getSafeUrl(this), {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -351,7 +360,7 @@
             
             const formData = new FormData(form);
             
-            fetch(form.action, {
+            fetch(getSafeUrl(form), {
                 method: 'POST',
                 body: formData,
                 headers: {
