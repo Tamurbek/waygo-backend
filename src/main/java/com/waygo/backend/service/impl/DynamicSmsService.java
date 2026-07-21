@@ -6,6 +6,7 @@ import com.waygo.backend.service.SystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Primary;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service("dynamicSmsService")
@@ -16,6 +17,7 @@ public class DynamicSmsService implements SmsService {
     private final SystemSettingsService settingsService;
     private final ApplicationContext applicationContext;
 
+    @Async
     @Override
     public void sendSms(String phone, String message) {
         SystemSettings settings = settingsService.getSettings();
