@@ -293,11 +293,16 @@
                     
                     fetch(this.action, {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
                     })
                     .then(res => {
                         if (!res.ok) throw new Error('Bulk action failed');
-                        return fetch('/admin/drivers');
+                        return fetch(window.location.pathname, {
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
                     })
                     .then(res => res.text())
                     .then(html => {
@@ -348,11 +353,16 @@
             
             fetch(form.action, {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             })
             .then(res => {
                 if (!res.ok) throw new Error('Action failed');
-                return fetch('/admin/drivers');
+                return fetch(window.location.pathname, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
             })
             .then(res => res.text())
             .then(html => {

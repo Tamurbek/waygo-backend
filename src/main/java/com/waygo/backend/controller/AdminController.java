@@ -248,9 +248,24 @@ public class AdminController {
         }
     }
 
+    private Object handleActionResponse(jakarta.servlet.http.HttpServletRequest request, Exception error) {
+        boolean isXmlHttp = "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
+        if (error != null) {
+            if (isXmlHttp) {
+                return ResponseEntity.badRequest().body(Map.of("error", error.getMessage()));
+            }
+            return "redirect:/admin/drivers?error=" + error.getMessage();
+        } else {
+            if (isXmlHttp) {
+                return ResponseEntity.ok(Map.of("success", true));
+            }
+            return "redirect:/admin/drivers?success";
+        }
+    }
+
     @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/toggle-billing")
     @org.springframework.transaction.annotation.Transactional
-    public String toggleDriverBilling(@org.springframework.web.bind.annotation.PathVariable Long id) {
+    public Object toggleDriverBilling(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
         try {
             User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Driver not found"));
             boolean newBillingState = !driver.isDriverBillingEnabled();
@@ -271,50 +286,52 @@ public class AdminController {
                 // Ignore notification failure to prevent transaction rollback
             }
             
-            return "redirect:/admin/drivers?success";
+            return handleActionResponse(request, null);
         } catch (Exception e) {
-            return "redirect:/admin/drivers?error=" + e.getMessage();
+            return handleActionResponse(request, e);
         }
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/cancel-tariff")
-    public String cancelDriverTariff(@org.springframework.web.bind.annotation.PathVariable Long id) {
+    public Object cancelDriverTariff(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
         try {
             transactionService.cancelDriverTariff(id);
-            return "redirect:/admin/drivers?success";
+            return handleActionResponse(request, null);
         } catch (Exception e) {
-            return "redirect:/admin/drivers?error=" + e.getMessage();
+            return handleActionResponse(request, e);
         }
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/change-tariff")
-    public String changeDriverTariff(@org.springframework.web.bind.annotation.PathVariable Long id, @org.springframework.web.bind.annotation.RequestParam("tariffId") Long tariffId) {
+    public Object changeDriverTariff(@org.springframework.web.bind.annotation.PathVariable Long id, @org.springframework.web.bind.annotation.RequestParam("tariffId") Long tariffId, jakarta.servlet.http.HttpServletRequest request) {
         try {
             transactionService.changeDriverTariff(id, tariffId);
-            return "redirect:/admin/drivers?success";
+            return handleActionResponse(request, null);
         } catch (Exception e) {
-            return "redirect:/admin/drivers?error=" + e.getMessage();
+            return handleActionResponse(request, e);
         }
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/assign-vip")
-    public String assignDriverVip(
+    public Object assignDriverVip(
             @org.springframework.web.bind.annotation.PathVariable Long id,
             @org.springframework.web.bind.annotation.RequestParam("price") java.math.BigDecimal price,
-            @org.springframework.web.bind.annotation.RequestParam("durationDays") Integer durationDays) {
+            @org.springframework.web.bind.annotation.RequestParam("durationDays") Integer durationDays,
+            jakarta.servlet.http.HttpServletRequest request) {
         try {
             transactionService.assignManualVip(id, price, durationDays);
-            return "redirect:/admin/drivers?success";
+            return handleActionResponse(request, null);
         } catch (Exception e) {
-            return "redirect:/admin/drivers?error=" + e.getMessage();
+            return handleActionResponse(request, e);
         }
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/drivers/bulk-action")
     @org.springframework.transaction.annotation.Transactional
-    public String bulkActionDrivers(
+    public Object bulkActionDrivers(
             @org.springframework.web.bind.annotation.RequestParam(value = "driverIds", required = false) List<Long> driverIds,
-            @org.springframework.web.bind.annotation.RequestParam("action") String action) {
+            @org.springframework.web.bind.annotation.RequestParam("action") String action,
+            jakarta.servlet.http.HttpServletRequest request) {
         if (driverIds != null && !driverIds.isEmpty()) {
             try {
                 boolean enable = "enable-billing".equals(action);
@@ -341,34 +358,35 @@ public class AdminController {
                         }
                     }
                 }
-                return "redirect:/admin/drivers?success";
+                return handleActionResponse(request, null);
             } catch (Exception e) {
-                return "redirect:/admin/drivers?error=" + e.getMessage();
+                return handleActionResponse(request, e);
             }
         }
-        return "redirect:/admin/drivers";
+        return handleActionResponse(request, null);
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/add-balance")
     @org.springframework.transaction.annotation.Transactional
-    public String addDriverBalance(
+    public Object addDriverBalance(
             @org.springframework.web.bind.annotation.PathVariable Long id,
-            @org.springframework.web.bind.annotation.RequestParam("amount") java.math.BigDecimal amount) {
+            @org.springframework.web.bind.annotation.RequestParam("amount") java.math.BigDecimal amount,
+            jakarta.servlet.http.HttpServletRequest request) {
         try {
             transactionService.topUp(id, amount);
-            return "redirect:/admin/drivers?success";
+            return handleActionResponse(request, null);
         } catch (Exception e) {
-            return "redirect:/admin/drivers?error=" + e.getMessage();
+            return handleActionResponse(request, e);
         }
     }
 
     @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/reset-balance")
-    public String resetDriverBalance(@org.springframework.web.bind.annotation.PathVariable Long id) {
+    public Object resetDriverBalance(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
         try {
             transactionService.resetBalance(id);
-            return "redirect:/admin/drivers?success";
+            return handleActionResponse(request, null);
         } catch (Exception e) {
-            return "redirect:/admin/drivers?error=" + e.getMessage();
+            return handleActionResponse(request, e);
         }
     }
 }
