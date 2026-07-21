@@ -48,20 +48,9 @@
                             <td>
                                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                                     <div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">
-                                        <th:block th:if="${!#strings.isEmpty(driver.imageUrl)}">
-                                            <img th:src="${driver.imageUrl}" class="avatar"
-                                                 style="width:40px;height:40px;border-radius:50%;object-fit:cover;"
-                                                 th:onerror="'this.style.display=\"none\"; this.nextElementSibling.style.display=\"flex\";'"
-                                            >
-                                            <div th:text="${driver.initials}"
-                                                 style="display:none;width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:0.9rem;align-items:center;justify-content:center;">
-                                            </div>
-                                        </th:block>
-                                        <th:block th:if="${#strings.isEmpty(driver.imageUrl)}">
-                                            <div th:text="${driver.initials}"
-                                                 style="display:flex;width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:0.9rem;align-items:center;justify-content:center;">
-                                            </div>
-                                        </th:block>
+                                         <div th:text="${driver.initials}"
+                                              style="display:flex;width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:0.9rem;align-items:center;justify-content:center;">
+                                         </div>
                                     </div>
                                     <div style="display: flex; flex-direction: column; gap: 0.15rem;">
                                         <span style="font-weight: 600; color: var(--text);" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</span>

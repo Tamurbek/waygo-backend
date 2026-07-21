@@ -192,7 +192,9 @@ public class AdminController {
     @GetMapping("/drivers")
     public String drivers(Model model) {
         model.addAttribute("title", "WayGO Haydovchilar");
-        model.addAttribute("drivers", userRepository.findByRoleOrderByCreatedAtDesc(User.Role.DRIVER));
+        List<User> drivers = userRepository.findByRoleOrderByCreatedAtDesc(User.Role.DRIVER);
+        drivers.forEach(d -> d.setImageUrl(null));
+        model.addAttribute("drivers", drivers);
         model.addAttribute("tariffs", tariffPlanRepository.findAllByIsActiveTrue());
         model.addAttribute("activeItem", "drivers");
         return "admin/drivers";
@@ -201,7 +203,9 @@ public class AdminController {
     @GetMapping("/passengers")
     public String passengers(Model model) {
         model.addAttribute("title", "WayGO Mijozlar");
-        model.addAttribute("passengers", userRepository.findByRoleOrderByCreatedAtDesc(User.Role.PASSENGER));
+        List<User> passengers = userRepository.findByRoleOrderByCreatedAtDesc(User.Role.PASSENGER);
+        passengers.forEach(p -> p.setImageUrl(null));
+        model.addAttribute("passengers", passengers);
         model.addAttribute("activeItem", "passengers");
         return "admin/passengers";
     }
