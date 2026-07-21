@@ -901,6 +901,13 @@ public class OrderService {
         return savedOrder;
     }
 
+    public List<Order> getPassengerHistory(Long passengerId, int page, int size) {
+        List<Order> all = getPassengerHistory(passengerId);
+        int start = Math.min(page * size, all.size());
+        int end = Math.min(start + size, all.size());
+        return all.subList(start, end);
+    }
+
     public List<Order> getPassengerHistory(Long passengerId) {
         List<Order> rawOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
 
@@ -943,6 +950,13 @@ public class OrderService {
             throw new UnauthorizedAccessException("Not authenticated");
         }
         return rideBookingRepository.findByPassengerId(currentUser.getId());
+    }
+
+    public List<Order> getDriverHistory(Long driverId, int page, int size) {
+        List<Order> all = getDriverHistory(driverId);
+        int start = Math.min(page * size, all.size());
+        int end = Math.min(start + size, all.size());
+        return all.subList(start, end);
     }
 
     public List<Order> getDriverHistory(Long driverId) {

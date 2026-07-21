@@ -148,21 +148,20 @@ public class OrderController {
 
     @GetMapping("/history/passenger/{userId}")
     @Operation(summary = "Get trip history for a passenger")
-    public ResponseEntity<ApiResponse<List<Order>>> getPassengerHistory(@PathVariable("userId") Long userId) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getPassengerHistory(userId), "User history retrieved"));
+    public ResponseEntity<ApiResponse<List<Order>>> getPassengerHistory(
+            @PathVariable("userId") Long userId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getPassengerHistory(userId, page, size), "User history retrieved"));
     }
 
     @GetMapping("/history/driver/{userId}")
     @Operation(summary = "Get trip history for a driver")
-    public ResponseEntity<ApiResponse<List<Order>>> getDriverHistory(@PathVariable("userId") Long userId) {
-        List<Order> history = orderService.getDriverHistory(userId);
-        if (!history.isEmpty()) {
-            try {
-                System.out.println("DEBUG HISTORY ORDER JSON: " + new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(history.get(0)));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+    public ResponseEntity<ApiResponse<List<Order>>> getDriverHistory(
+            @PathVariable("userId") Long userId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size) {
+        List<Order> history = orderService.getDriverHistory(userId, page, size);
         return ResponseEntity.ok(ApiResponse.success(history, "Driver history retrieved"));
     }
 
