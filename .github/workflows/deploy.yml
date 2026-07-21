@@ -56,7 +56,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           envs: GITHUB_REF_NAME
           script: |
             set -e
@@ -73,9 +73,9 @@ jobs:
             fi
 
             echo "Starting deployment of version $TAG_NAME..."
-            if git fetch --tags && git checkout "$TAG_NAME" && docker compose up -d --build; then
+            if git fetch --tags -f && git reset --hard "$TAG_NAME" && chmod +x deploy.sh && bash ./deploy.sh; then
               if [ "$STASHED" = "1" ]; then
-                echo "Dropping pre-deploy stash (using $TAG_NAME from repository)."
+                echo "Dropping pre-deploy stash."
                 git stash drop || true
               fi
               echo "Deployment of $TAG_NAME successful!"
@@ -83,10 +83,9 @@ jobs:
               echo "Deployment failed! Rolling back to $OLD_COMMIT..."
               git reset --hard "$OLD_COMMIT"
               if [ "$STASHED" = "1" ]; then
-                echo "Re-applying stashed local changes..."
-                git stash pop || echo "Warning: could not re-apply stash; check git stash list on the server."
+                git stash pop || echo "Warning: could not re-apply stash."
               fi
-              docker compose up -d --build
+              chmod +x deploy.sh && bash ./deploy.sh || true
               echo "Rollback completed."
               exit 1
             fi
