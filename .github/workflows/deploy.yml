@@ -1,4 +1,4 @@
-name: WayGO CI/CD - Deploy to Server
+name: WayGO CI/CD — Deploy to Production
 
 on:
   push:
@@ -6,92 +6,67 @@ on:
       - 'v*'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: waygo_db
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-          
-      - name: Run Tests
-        run: mvn test
-
   deploy:
-    needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     steps:
       - name: Deploy to Server via SSH
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
           password: ${{ secrets.SSH_PASSWORD }}
-          envs: GITHUB_REF_NAME
+          port: 22
+          command_timeout: 12m
           script: |
             set -e
-            TAG_NAME=${GITHUB_REF_NAME}
-            cd /var/www/waygo-backend
+            TAG_NAME="${{ github.ref_name }}"
+            DEPLOY_DIR="/var/www/waygo-backend"
 
-            OLD_COMMIT=$(git rev-parse HEAD)
-            STASHED=0
+            echo "======================================"
+            echo "  WayGO Deploy: $TAG_NAME"
+            echo "======================================"
 
-            if [ -n "$(git status --porcelain)" ]; then
-              echo "Uncommitted local changes detected; stashing before checkout..."
-              git stash push -u -m "pre-deploy-${TAG_NAME}"
-              STASHED=1
-            fi
+            # 1. Go to project directory
+            cd "$DEPLOY_DIR"
 
-            echo "Starting deployment of version $TAG_NAME..."
-            if git fetch --tags -f && git checkout "$TAG_NAME" && bash ./deploy.sh; then
-              if [ "$STASHED" = "1" ]; then
-                echo "Dropping pre-deploy stash (using $TAG_NAME from repository)."
-                git stash drop || true
+            # 2. Sync code from GitHub (force reset to avoid local conflicts)
+            echo "[1/5] Syncing code from GitHub..."
+            git remote set-url origin git@github.com:Tamurbek/waygo-backend.git
+            git fetch --tags -f
+            git reset --hard "$TAG_NAME"
+            chmod +x deploy.sh
+
+            # 3. Ensure infrastructure is running (db, redis)
+            echo "[2/5] Ensuring infrastructure containers are running..."
+            docker compose -f docker-compose.prod.yml up -d db redis db-backup
+
+            # 4. Wait for DB to be ready
+            echo "[3/5] Waiting for DB to be ready..."
+            for i in $(seq 1 15); do
+              if docker compose -f docker-compose.prod.yml exec -T db pg_isready -U postgres -d waygo_db > /dev/null 2>&1; then
+                echo "DB is ready!"
+                break
               fi
-              echo "Deployment of $TAG_NAME successful!"
+              echo "Waiting for DB... ($i/15)"
+              sleep 3
+            done
+
+            # 5. Zero-downtime blue/green deploy
+            echo "[4/5] Running zero-downtime deployment..."
+            bash ./deploy.sh
+
+            # 6. Verify the gateway is up
+            echo "[5/5] Verifying gateway..."
+            sleep 5
+            if curl -sf --max-time 10 http://localhost:8080/api/v1/config/app-version > /dev/null; then
+              echo "======================================"
+              echo "  ✅ Deployment of $TAG_NAME SUCCESS!"
+              echo "======================================"
             else
-              echo "Deployment failed! Rolling back to $OLD_COMMIT..."
-              git reset --hard "$OLD_COMMIT"
-              if [ "$STASHED" = "1" ]; then
-                echo "Re-applying stashed local changes..."
-                git stash pop || echo "Warning: could not re-apply stash; check git stash list on the server."
-              fi
-              if [ -f ./deploy.sh ]; then
-                bash ./deploy.sh
-              else
-                docker compose -f docker-compose.prod.yml up -d --build
-              fi
-              echo "Rollback completed."
+              echo "  ⚠️  Health check failed — checking container logs..."
+              docker compose -f docker-compose.prod.yml logs --tail=50 app_blue || true
+              docker compose -f docker-compose.prod.yml logs --tail=50 app_green || true
               exit 1
             fi

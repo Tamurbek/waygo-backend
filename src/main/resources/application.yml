@@ -53,7 +53,7 @@ spring:
 
 server:
   port: 8080
-  forward-headers-strategy: framework
+  forward-headers-strategy: native
   servlet:
     session:
       timeout: 30d
