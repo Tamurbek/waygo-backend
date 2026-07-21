@@ -7,66 +7,54 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # Self-hosted runner serverning o'zida ishlaydi — SSH kerak emas
+    runs-on: self-hosted
     timeout-minutes: 15
 
     steps:
-      - name: Deploy to Server via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: 22
-          command_timeout: 12m
-          script: |
-            set -e
-            TAG_NAME="${{ github.ref_name }}"
-            DEPLOY_DIR="/var/www/waygo-backend"
+      - name: Deploy via self-hosted runner
+        run: |
+          set -e
+          TAG_NAME="${{ github.ref_name }}"
+          DEPLOY_DIR="/var/www/waygo-backend"
 
-            echo "======================================"
-            echo "  WayGO Deploy: $TAG_NAME"
-            echo "======================================"
+          echo "======================================"
+          echo "  WayGO Deploy: $TAG_NAME"
+          echo "======================================"
 
-            # 1. Go to project directory
-            cd "$DEPLOY_DIR"
+          cd "$DEPLOY_DIR"
 
-            # 2. Sync code from GitHub (force reset to avoid local conflicts)
-            echo "[1/5] Syncing code from GitHub..."
-            git remote set-url origin git@github.com:Tamurbek/waygo-backend.git
-            git fetch --tags -f
-            git reset --hard "$TAG_NAME"
-            chmod +x deploy.sh
+          echo "[1/5] Syncing code from GitHub..."
+          git remote set-url origin git@github.com:Tamurbek/waygo-backend.git
+          git fetch --tags -f
+          git reset --hard "$TAG_NAME"
+          chmod +x deploy.sh
 
-            # 3. Ensure infrastructure is running (db, redis)
-            echo "[2/5] Ensuring infrastructure containers are running..."
-            docker compose -f docker-compose.prod.yml up -d db redis db-backup
+          echo "[2/5] Ensuring infrastructure containers are running..."
+          docker compose -f docker-compose.prod.yml up -d db redis db-backup
 
-            # 4. Wait for DB to be ready
-            echo "[3/5] Waiting for DB to be ready..."
-            for i in $(seq 1 15); do
-              if docker compose -f docker-compose.prod.yml exec -T db pg_isready -U postgres -d waygo_db > /dev/null 2>&1; then
-                echo "DB is ready!"
-                break
-              fi
-              echo "Waiting for DB... ($i/15)"
-              sleep 3
-            done
-
-            # 5. Zero-downtime blue/green deploy
-            echo "[4/5] Running zero-downtime deployment..."
-            bash ./deploy.sh
-
-            # 6. Verify the gateway is up
-            echo "[5/5] Verifying gateway..."
-            sleep 5
-            if curl -sf --max-time 10 http://localhost:8080/api/v1/config/app-version > /dev/null; then
-              echo "======================================"
-              echo "  ✅ Deployment of $TAG_NAME SUCCESS!"
-              echo "======================================"
-            else
-              echo "  ⚠️  Health check failed — checking container logs..."
-              docker compose -f docker-compose.prod.yml logs --tail=50 app_blue || true
-              docker compose -f docker-compose.prod.yml logs --tail=50 app_green || true
-              exit 1
+          echo "[3/5] Waiting for DB to be ready..."
+          for i in $(seq 1 15); do
+            if docker compose -f docker-compose.prod.yml exec -T db pg_isready -U postgres -d waygo_db > /dev/null 2>&1; then
+              echo "DB is ready!"
+              break
             fi
+            echo "Waiting for DB... ($i/15)"
+            sleep 3
+          done
+
+          echo "[4/5] Running zero-downtime deployment..."
+          bash ./deploy.sh
+
+          echo "[5/5] Verifying gateway..."
+          sleep 5
+          if curl -sf --max-time 10 http://localhost:8080/api/v1/config/app-version > /dev/null; then
+            echo "======================================"
+            echo "  ✅ Deployment of $TAG_NAME SUCCESS!"
+            echo "======================================"
+          else
+            echo "  ⚠️  Health check failed — checking container logs..."
+            docker compose -f docker-compose.prod.yml logs --tail=50 app_blue || true
+            docker compose -f docker-compose.prod.yml logs --tail=50 app_green || true
+            exit 1
+          fi
