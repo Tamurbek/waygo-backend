@@ -378,7 +378,7 @@
                 const formattedTime = formatDateTime(d.lastMessageTime);
                 
                 html += `
-                    <div class="driver-chat-item ${activeClass}" onclick="selectDriver(${d.id}, '${escapeHtml(d.fullName)}', '${escapeHtml(d.phone)}', '${escapeHtml(d.carModel)}', '${escapeHtml(d.carNumber)}')">
+                    <div class="driver-chat-item ${activeClass}" onclick="selectDriver(${d.id})">
                         <div class="avatar-circle small">${initials}</div>
                         <div class="driver-info">
                             <div class="driver-name-row">
@@ -400,17 +400,19 @@
         }
 
         // Select a driver and open conversation
-        function selectDriver(id, name, phone, carModel, carNumber) {
+        function selectDriver(id) {
+            const driver = driversData.find(d => d.id === id);
             currentDriverId = id;
 
             // Highlight in sidebar
-            const items = document.querySelectorAll('.driver-chat-item');
-            items.forEach(el => el.classList.remove('active'));
-            
-            // Re-render sidebar to highlight the selected item
             renderDriversList();
 
             // Populate active header
+            const name = driver ? driver.fullName : "Ismsiz";
+            const phone = driver ? driver.phone : "";
+            const carModel = driver ? driver.carModel : "";
+            const carNumber = driver ? driver.carNumber : "";
+
             document.getElementById('activeName').innerText = name;
             document.getElementById('activePhone').innerText = phone;
             document.getElementById('activeAvatar').innerText = getInitials(name);
