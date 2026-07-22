@@ -43,7 +43,7 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     volumes:
-      - waygo_uploads:/app/uploads
+      - /var/www/waygo-uploads:/app/uploads
       - /var/www/firebase-service-account.json:/app/firebase-service-account.json:ro
     depends_on:
       - db
@@ -63,7 +63,7 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
     volumes:
-      - waygo_uploads:/app/uploads
+      - /var/www/waygo-uploads:/app/uploads
       - /var/www/firebase-service-account.json:/app/firebase-service-account.json:ro
     depends_on:
       - db
@@ -115,4 +115,3 @@ volumes:
   waygo-backend_postgres_data:
     external: true
   waygo-backend_redis_data:
-  waygo_uploads:
