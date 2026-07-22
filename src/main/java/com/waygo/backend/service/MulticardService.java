@@ -196,7 +196,8 @@ public class MulticardService {
             User updatedUser = transactionService.topUp(user.getId(), amountUzs);
 
             int pointsToAdd = amountUzs.divide(BigDecimal.valueOf(10), 0, RoundingMode.DOWN).intValue();
-            updatedUser.setPointsBalance(updatedUser.getPointsBalance() + pointsToAdd);
+            int currentPoints = updatedUser.getPointsBalance() != null ? updatedUser.getPointsBalance() : 0;
+            updatedUser.setPointsBalance(currentPoints + pointsToAdd);
             userRepository.save(updatedUser);
 
             log.info("Successfully completed Multicard top up for driver {}. New balance: {}, new points: {}",
@@ -205,7 +206,8 @@ public class MulticardService {
             log.info("Reverting Multicard transaction {} for driver {}", invoiceId, user.getId());
             user.setBalance(user.getBalance().subtract(amountUzs));
             int pointsToDeduct = amountUzs.divide(BigDecimal.valueOf(10), 0, RoundingMode.DOWN).intValue();
-            user.setPointsBalance(user.getPointsBalance() - pointsToDeduct);
+            int currentPoints = user.getPointsBalance() != null ? user.getPointsBalance() : 0;
+            user.setPointsBalance(currentPoints - pointsToDeduct);
             userRepository.save(user);
         }
     }
