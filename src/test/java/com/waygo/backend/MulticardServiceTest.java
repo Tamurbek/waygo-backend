@@ -80,6 +80,7 @@ class MulticardServiceTest {
                 .fullName("Sherali Driver")
                 .balance(BigDecimal.ZERO)
                 .pointsBalance(0)
+                .role(User.Role.DRIVER)
                 .build();
 
         MulticardTransaction transaction = MulticardTransaction.builder()
@@ -115,5 +116,17 @@ class MulticardServiceTest {
         assertThrows(SecurityException.class, () -> multicardService.processCallback(payload));
         verify(multicardTransactionRepository, never()).save(any());
         verify(transactionService, never()).topUp(anyLong(), any());
+    }
+
+    @Test
+    void testCreateInvoice_PassengerRole_ThrowsException() {
+        User passenger = User.builder()
+                .id(2L)
+                .role(User.Role.PASSENGER)
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> 
+            multicardService.createInvoice(passenger, BigDecimal.valueOf(10000))
+        );
     }
 }

@@ -83,6 +83,9 @@ public class MulticardService {
 
     @Transactional
     public String createInvoice(User driver, BigDecimal amountUzs) {
+        if (driver.getRole() != User.Role.DRIVER) {
+            throw new IllegalArgumentException("Faqat haydovchilar balansni to'ldirishi mumkin");
+        }
         if (amountUzs == null || amountUzs.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Musbat summa kiritilishi shart");
         }
