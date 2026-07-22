@@ -20,6 +20,25 @@ public class TariffPlan {
     
     private String duration; // e.g. "1 kunlik", "1 oy"
     
+    private Integer durationDays; // e.g. 1, 7, 30
+
+    public Integer getDurationDays() {
+        if (this.durationDays != null && this.durationDays > 0) {
+            return this.durationDays;
+        }
+        if (this.duration != null) {
+            String dStr = this.duration.toLowerCase();
+            if (dStr.contains("kun")) {
+                try { return Integer.parseInt(dStr.replaceAll("[^0-9]", "")); } catch (Exception ignored) {}
+            } else if (dStr.contains("oy")) {
+                try { return Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 30; } catch (Exception ignored) {}
+            } else if (dStr.contains("yil")) {
+                try { return Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 365; } catch (Exception ignored) {}
+            }
+        }
+        return 1;
+    }
+    
     private BigDecimal price;
     
     private BigDecimal oldPrice;

@@ -115,17 +115,7 @@ public class TransactionService {
                 .build();
         transactionRepository.save(transaction);
 
-        int days = 1;
-        if (tariff.getDuration() != null) {
-            String dStr = tariff.getDuration().toLowerCase();
-            if (dStr.contains("kun")) {
-                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")); } catch (Exception e) {}
-            } else if (dStr.contains("oy")) {
-                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 30; } catch (Exception e) {}
-            } else if (dStr.contains("yil")) {
-                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 365; } catch (Exception e) {}
-            }
-        }
+        int days = tariff.getDurationDays();
         user.setActiveTariff(tariff);
         user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));
         if (tariff.isVip()) {
@@ -173,17 +163,7 @@ public class TransactionService {
 
         user.setBalance(user.getBalance().subtract(tariff.getPrice()));
 
-        int days = 1;
-        if (tariff.getDuration() != null) {
-            String dStr = tariff.getDuration().toLowerCase();
-            if (dStr.contains("kun")) {
-                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")); } catch (Exception e) {}
-            } else if (dStr.contains("oy")) {
-                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 30; } catch (Exception e) {}
-            } else if (dStr.contains("yil")) {
-                try { days = Integer.parseInt(dStr.replaceAll("[^0-9]", "")) * 365; } catch (Exception e) {}
-            }
-        }
+        int days = tariff.getDurationDays();
         
         user.setActiveTariff(tariff);
         user.setTariffExpiryDate(LocalDateTime.now().plusDays(days));

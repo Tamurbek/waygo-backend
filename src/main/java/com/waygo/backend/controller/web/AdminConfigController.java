@@ -46,6 +46,7 @@ public class AdminConfigController {
     public String editTariff(@PathVariable Long id, @ModelAttribute TariffPlan form) {
         tariffPlanRepository.findById(id).ifPresent(existing -> {
             existing.setDuration(form.getDuration());
+            existing.setDurationDays(form.getDurationDays());
             existing.setPrice(form.getPrice());
             existing.setOldPrice(form.getOldPrice());
             existing.setPopular(form.isPopular());

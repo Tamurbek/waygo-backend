@@ -41,7 +41,7 @@
                 <tbody>
                     <tr th:each="t : ${tariffs}">
                         <td>
-                            <strong th:text="${t.duration}"></strong><br>
+                            <strong th:text="${t.duration}"></strong> <span style="font-size: 0.8rem; color: var(--text-dim);" th:text="'(' + ${t.durationDays} + ' kun)'"></span><br>
                             <span th:if="${t.isPopular}" class="status-badge status-pending" style="margin-top: 0.5rem;"><i class="ph ph-star-fill"></i> Ommabop</span>
                             <span th:if="${t.isVip}" class="status-badge" style="margin-top: 0.5rem; background: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); display: inline-flex; align-items: center; gap: 0.25rem;"><i class="ph ph-crown"></i> VIP</span>
                         </td>
@@ -91,12 +91,15 @@
             <form th:action="@{/admin/config/tariffs/add}" method="post">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label">Muddati (masalan, "1 kunlik")</label>
+                        <label class="form-label">Muddati nomi (masalan, "1 kunlik", "1 oy")</label>
                         <input type="text" name="duration" required class="form-control" placeholder="1 kunlik">
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Amal qilish muddati (Kunlarda)</label>
+                        <input type="number" name="durationDays" min="1" required class="form-control" placeholder="Masalan: 1, 7, 30">
+                    </div>
                     
-
-
                     <div class="form-group">
                         <label class="form-label">Narxi (UZS)</label>
                         <input type="number" step="0.01" name="price" required class="form-control" placeholder="Masalan: 12000">
@@ -139,12 +142,14 @@
             <form th:action="@{'/admin/config/tariffs/edit/' + ${editItem.id}}" method="post">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label">Muddati (masalan, "1 kunlik")</label>
+                        <label class="form-label">Muddati nomi (masalan, "1 kunlik", "1 oy")</label>
                         <input type="text" name="duration" th:value="${editItem.duration}" required class="form-control" placeholder="1 kunlik">
                     </div>
                     
-
-
+                    <div class="form-group">
+                        <label class="form-label">Amal qilish muddati (Kunlarda)</label>
+                        <input type="number" name="durationDays" th:value="${editItem.durationDays}" min="1" required class="form-control" placeholder="Masalan: 1, 7, 30">
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Narxi (UZS)</label>
                         <input type="number" step="0.01" name="price" th:value="${editItem.price}" required class="form-control" placeholder="Masalan: 12000">
