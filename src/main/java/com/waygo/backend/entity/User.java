@@ -94,6 +94,10 @@ public class User implements UserDetails {
         if (this.role == Role.DRIVER && !isDriverBillingEnabled()) {
             return false;
         }
+        // Free trial protection: if no tariff plan selected and tariffExpiryDate is in future → not blocked
+        if (this.activeTariff == null && this.tariffExpiryDate != null && this.tariffExpiryDate.isAfter(LocalDateTime.now())) {
+            return false;
+        }
         boolean billingActive = com.waygo.backend.service.SystemSettingsService.isGlobalBillingEnabled() 
                 || isDriverBillingEnabled();
         if (billingActive) {
@@ -103,6 +107,15 @@ public class User implements UserDetails {
             return this.balance == null || this.balance.compareTo(java.math.BigDecimal.ZERO) <= 0;
         }
         return false;
+    }
+
+    @Transient
+    @JsonProperty("isFreeTrial")
+    public boolean isFreeTrial() {
+        return this.role == Role.DRIVER
+                && this.activeTariff == null
+                && this.tariffExpiryDate != null
+                && this.tariffExpiryDate.isAfter(LocalDateTime.now());
     }
 
     public boolean isDriverBillingEnabled() {

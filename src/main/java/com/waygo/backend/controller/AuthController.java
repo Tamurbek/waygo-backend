@@ -79,6 +79,11 @@ public class AuthController {
                         .password(passwordEncoder.encode(request.getPassword()))
                         .role(request.getRole())
                         .build();
+                // 14-day free trial for new DRIVER accounts
+                if (request.getRole() == User.Role.DRIVER) {
+                    user.setDriverBillingEnabled(true);
+                    user.setTariffExpiryDate(java.time.LocalDateTime.now().plusDays(14));
+                }
                 user = userRepository.save(user);
                 
                 if (request.getReferralCode() != null && !request.getReferralCode().isEmpty()) {
@@ -117,6 +122,12 @@ public class AuthController {
                 .build();
         
         user = userRepository.save(user);
+        // 14-day free trial for new DRIVER accounts
+        if (role == User.Role.DRIVER) {
+            user.setDriverBillingEnabled(true);
+            user.setTariffExpiryDate(java.time.LocalDateTime.now().plusDays(14));
+            user = userRepository.save(user);
+        }
         if (referralCode != null && !referralCode.isEmpty()) {
             // referralService.processReferralCodeDuringRegistration(user, referralCode);
         }
