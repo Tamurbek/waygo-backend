@@ -1,0 +1,23 @@
+services:
+  app_dev:
+    build: .
+    container_name: waygo_backend_app_dev
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waygo_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    volumes:
+      - /var/www/waygo-uploads-dev:/app/uploads
+      - /var/www/firebase-service-account.json:/app/firebase-service-account.json:ro
+    ports:
+      - "127.0.0.1:8082:8080"
+    networks:
+      - waygo-backend_waygo_net
+
+networks:
+  waygo-backend_waygo_net:
+    external: true
