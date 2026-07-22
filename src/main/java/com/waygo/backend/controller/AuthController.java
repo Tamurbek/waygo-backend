@@ -188,7 +188,7 @@ public class AuthController {
             
             if (image != null && !image.isEmpty()) {
                 String fileName = fileService.saveFile(image);
-                user.setImageUrl("https://waygo.uz/uploads/" + fileName);
+                user.setImageUrl("https://backend.waygo.uz/uploads/" + fileName);
             }
             
             userRepository.save(user);

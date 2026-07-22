@@ -55,7 +55,7 @@ public class DriverController {
         if (carImage != null && !carImage.isEmpty()) {
             try {
                 String fileName = fileService.saveFile(carImage);
-                profile.setCarImageUrl("https://waygo.uz/uploads/" + fileName);
+                profile.setCarImageUrl("https://backend.waygo.uz/uploads/" + fileName);
             } catch (Exception e) {
                 return ResponseEntity.internalServerError().body(ApiResponse.error("Mashina rasmini yuklashda xatolik: " + e.getMessage()));
             }
