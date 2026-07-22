@@ -78,3 +78,10 @@ waygo:
   payme:
     merchant-key: ${PAYME_MERCHANT_KEY:test_merchant_key}
     login: ${PAYME_LOGIN:Paycom}
+  multicard:
+    application-id: ${MULTICARD_APPLICATION_ID:rhmt_test}
+    secret: ${MULTICARD_SECRET:Pw18axeBFo8V7NamKHXX}
+    store-id: ${MULTICARD_STORE_ID:6}
+    base-url: ${MULTICARD_BASE_URL:https://dev-mesh.multicard.uz}
+    backend-url: ${WAYGO_BACKEND_URL:https://backend.waygo.uz}
+
