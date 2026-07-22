@@ -167,6 +167,12 @@ public class TransactionService {
         TariffPlan tariff = tariffPlanRepository.findById(newTariffId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with id: " + newTariffId));
 
+        if (user.getBalance() == null || user.getBalance().compareTo(tariff.getPrice()) < 0) {
+            throw new InsufficientBalanceException("Haydovchining hisobida yetarli mablag' mavjud emas!");
+        }
+
+        user.setBalance(user.getBalance().subtract(tariff.getPrice()));
+
         int days = 1;
         if (tariff.getDuration() != null) {
             String dStr = tariff.getDuration().toLowerCase();
@@ -186,6 +192,17 @@ public class TransactionService {
         } else {
             user.setDriverBillingEnabled(true);
         }
+
+        Transaction transaction = Transaction.builder()
+                .sender(user)
+                .receiver(null)
+                .amount(tariff.getPrice())
+                .type(Transaction.TransactionType.TARIFF_PURCHASE)
+                .status(Transaction.TransactionStatus.SUCCESS)
+                .description("Tariff purchase by Admin: " + (tariff.getDuration() != null ? tariff.getDuration() : "Unknown"))
+                .build();
+        transactionRepository.save(transaction);
+
         User savedUser = userRepository.save(user);
         try {
             String tariffName = tariff.getDuration() != null ? tariff.getDuration() : "Noma'lum";
