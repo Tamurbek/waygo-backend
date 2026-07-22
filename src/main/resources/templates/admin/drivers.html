@@ -143,6 +143,9 @@
                     <input type="hidden" name="price" th:id="'vipPriceInput-' + ${driver.id}">
                     <input type="hidden" name="durationDays" th:id="'vipDurationInput-' + ${driver.id}">
                 </form>
+                <form th:id="'grantTrialForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/grant-trial'}" method="post">
+                    <input type="hidden" name="days" th:id="'grantTrialDaysInput-' + ${driver.id}">
+                </form>
             </div>
         </div>
     </div>
@@ -253,6 +256,15 @@
                         <button type="button" id="settingsResetBtn" class="btn btn-danger" style="height: 38px; padding: 0 0.85rem;" onclick="submitSettingsResetBalance()" title="Balansni nollash">
                             <i class="ph ph-wallet" style="font-size: 1.1rem;"></i>
                         </button>
+                    </div>
+                </div>
+
+                <!-- Free Trial Grant Section -->
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <span style="font-size: 0.875rem; color: var(--text-dim);">🎁 Bepul Sinov Berish / Uzaytirish:</span>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                        <input type="number" id="settingsTrialDaysInput" value="14" placeholder="Kunlar (masalan: 14)" style="border: 1px solid var(--border); background: var(--input-bg); border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.85rem; color: var(--text); flex: 1; height: 38px; outline: none;">
+                        <button type="button" class="btn btn-primary" style="height: 38px; padding: 0 1rem; font-size: 0.85rem; white-space: nowrap;" onclick="submitSettingsGrantTrial()">Berish</button>
                     </div>
                 </div>
             </div>
@@ -574,6 +586,19 @@
             const driverId = document.getElementById('settingsDriverId').value;
             if (driverId && confirm("Haqiqatan ham ushbu haydovchi balansini 0 qilmoqchisiz?")) {
                 submitFormWithAjax('resetBalanceForm-' + driverId, 'Balans nollashtirildi');
+            }
+        }
+
+        function submitSettingsGrantTrial() {
+            const driverId = document.getElementById('settingsDriverId').value;
+            const days = document.getElementById('settingsTrialDaysInput').value;
+            if (!days || isNaN(days) || parseInt(days) <= 0) {
+                alert("Iltimos, to'g'ri kunlar sonini kiriting!");
+                return;
+            }
+            if (driverId) {
+                document.getElementById('grantTrialDaysInput-' + driverId).value = days;
+                submitFormWithAjax('grantTrialForm-' + driverId, days + ' kunlik bepul sinov davri berildi');
             }
         }
     </script>

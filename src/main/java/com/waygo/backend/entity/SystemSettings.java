@@ -31,6 +31,9 @@ public class SystemSettings {
     @Builder.Default
     private Boolean vipTariffEnabled = true;
 
+    @Builder.Default
+    private Integer freeTrialDays = 14;
+
     private String telegramBotToken;
     private String telegramChatId;
 
@@ -51,5 +54,9 @@ public class SystemSettings {
 
     public boolean isVipTariffEnabled() {
         return getVipTariffEnabled();
+    }
+
+    public Integer getFreeTrialDays() {
+        return this.freeTrialDays != null ? this.freeTrialDays : 14;
     }
 }

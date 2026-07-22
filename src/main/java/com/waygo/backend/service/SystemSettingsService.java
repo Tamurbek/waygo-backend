@@ -13,6 +13,7 @@ public class SystemSettingsService {
     private final SystemSettingsRepository repository;
     private static volatile boolean globalBillingEnabled = false;
     private static volatile boolean vipTariffEnabled = true;
+    private static volatile int freeTrialDays = 14;
 
     @org.springframework.beans.factory.annotation.Value("${waygo.sms.provider:eskiz}")
     private String defaultSmsProvider;
@@ -32,6 +33,10 @@ public class SystemSettingsService {
 
     public static boolean isVipTariffEnabled() {
         return vipTariffEnabled;
+    }
+
+    public static int getFreeTrialDaysConfig() {
+        return freeTrialDays;
     }
 
     @jakarta.annotation.PostConstruct
@@ -56,6 +61,7 @@ public class SystemSettingsService {
             }
             globalBillingEnabled = settings.isBillingEnabled();
             vipTariffEnabled = settings.isVipTariffEnabled();
+            freeTrialDays = settings.getFreeTrialDays();
         } catch (Exception e) {
             globalBillingEnabled = false;
             vipTariffEnabled = true;
@@ -72,6 +78,7 @@ public class SystemSettingsService {
                         .build()));
         globalBillingEnabled = settings.isBillingEnabled();
         vipTariffEnabled = settings.isVipTariffEnabled();
+        freeTrialDays = settings.getFreeTrialDays();
         return settings;
     }
 
@@ -85,6 +92,9 @@ public class SystemSettingsService {
         existing.setOtpMessageTemplate(newSettings.getOtpMessageTemplate());
         existing.setBillingEnabled(newSettings.isBillingEnabled());
         existing.setVipTariffEnabled(newSettings.isVipTariffEnabled());
+        if (newSettings.getFreeTrialDays() != null) {
+            existing.setFreeTrialDays(newSettings.getFreeTrialDays());
+        }
         existing.setTelegramBotToken(newSettings.getTelegramBotToken());
         existing.setTelegramChatId(newSettings.getTelegramChatId());
         // App versiyalarini saqlash
@@ -97,6 +107,7 @@ public class SystemSettingsService {
         SystemSettings saved = repository.save(existing);
         globalBillingEnabled = saved.isBillingEnabled();
         vipTariffEnabled = saved.isVipTariffEnabled();
+        freeTrialDays = saved.getFreeTrialDays();
         return saved;
     }
 

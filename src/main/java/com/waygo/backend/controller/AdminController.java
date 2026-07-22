@@ -327,6 +327,29 @@ public class AdminController {
         }
     }
 
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/grant-trial")
+    @org.springframework.transaction.annotation.Transactional
+    public Object grantDriverTrial(
+            @org.springframework.web.bind.annotation.PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam("days") Integer days,
+            jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+            driver.setDriverBillingEnabled(true);
+            LocalDateTime baseTime = (driver.getTariffExpiryDate() != null && driver.getTariffExpiryDate().isAfter(LocalDateTime.now()))
+                    ? driver.getTariffExpiryDate()
+                    : LocalDateTime.now();
+            driver.setTariffExpiryDate(baseTime.plusDays(days != null ? days : 14));
+            User saved = userRepository.save(driver);
+            try {
+                notificationService.notifyTariffUpdate(saved, "Sizga " + days + " kunlik bepul sinov davri berildi!");
+            } catch (Exception ignored) {}
+            return handleActionResponse(request, null);
+        } catch (Exception e) {
+            return handleActionResponse(request, e);
+        }
+    }
+
     @org.springframework.web.bind.annotation.PostMapping("/drivers/bulk-action")
     @org.springframework.transaction.annotation.Transactional
     public Object bulkActionDrivers(

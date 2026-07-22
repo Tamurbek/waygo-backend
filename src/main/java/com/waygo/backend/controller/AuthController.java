@@ -79,10 +79,11 @@ public class AuthController {
                         .password(passwordEncoder.encode(request.getPassword()))
                         .role(request.getRole())
                         .build();
-                // 14-day free trial for new DRIVER accounts
+                // 14-day (or dynamic configured) free trial for new DRIVER accounts
                 if (request.getRole() == User.Role.DRIVER) {
+                    int trialDays = com.waygo.backend.service.SystemSettingsService.getFreeTrialDaysConfig();
                     user.setDriverBillingEnabled(true);
-                    user.setTariffExpiryDate(java.time.LocalDateTime.now().plusDays(14));
+                    user.setTariffExpiryDate(java.time.LocalDateTime.now().plusDays(trialDays));
                 }
                 user = userRepository.save(user);
                 
@@ -122,10 +123,11 @@ public class AuthController {
                 .build();
         
         user = userRepository.save(user);
-        // 14-day free trial for new DRIVER accounts
+        // Free trial for new DRIVER accounts
         if (role == User.Role.DRIVER) {
+            int trialDays = com.waygo.backend.service.SystemSettingsService.getFreeTrialDaysConfig();
             user.setDriverBillingEnabled(true);
-            user.setTariffExpiryDate(java.time.LocalDateTime.now().plusDays(14));
+            user.setTariffExpiryDate(java.time.LocalDateTime.now().plusDays(trialDays));
             user = userRepository.save(user);
         }
         if (referralCode != null && !referralCode.isEmpty()) {
