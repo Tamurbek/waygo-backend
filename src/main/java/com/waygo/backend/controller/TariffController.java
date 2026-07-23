@@ -26,4 +26,15 @@ public class TariffController {
         User updatedUser = transactionService.buyTariff(user.getId(), tariffId);
         return ResponseEntity.ok(ApiResponse.success(updatedUser, "Tarif muvaffaqiyatli xarid qilindi"));
     }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<ApiResponse<User>> cancelTariff() {
+        User user = securityUtils.getCurrentUser();
+        if (user == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Siz tizimga kirmagansiz"));
+        }
+
+        User updatedUser = transactionService.cancelDriverTariff(user.getId());
+        return ResponseEntity.ok(ApiResponse.success(updatedUser, "Tarif muvaffaqiyatli bekor qilindi"));
+    }
 }
