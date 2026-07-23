@@ -978,12 +978,27 @@ public class OrderService {
         return filtered;
     }
 
+    @Transactional
     public List<com.waygo.backend.entity.RideBooking> getMyBookings() {
         User currentUser = securityUtils.getCurrentUser();
         if (currentUser == null) {
             throw new UnauthorizedAccessException("Not authenticated");
         }
-        return rideBookingRepository.findByPassengerId(currentUser.getId());
+        List<com.waygo.backend.entity.RideBooking> bookings = rideBookingRepository.findByPassengerId(currentUser.getId());
+        if (bookings != null) {
+            for (com.waygo.backend.entity.RideBooking b : bookings) {
+                if (b != null && b.getPassengerOrderId() != null) {
+                    orderRepository.findById(b.getPassengerOrderId()).ifPresent(pOrder -> {
+                        if (b.getFromLat() == null) b.setFromLat(pOrder.getFromLat());
+                        if (b.getFromLon() == null) b.setFromLon(pOrder.getFromLon());
+                        if (b.getToLat() == null) b.setToLat(pOrder.getToLat());
+                        if (b.getToLon() == null) b.setToLon(pOrder.getToLon());
+                        if (b.getPickupAddress() == null) b.setPickupAddress(pOrder.getFromAddress());
+                    });
+                }
+            }
+        }
+        return bookings;
     }
 
     public List<Order> getDriverHistory(Long driverId, int page, int size) {
