@@ -898,6 +898,19 @@ public class OrderService {
         order.setStatus(status);
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
+
+        // When order status becomes STARTED or ARRIVED, notify the first uncollected passenger in sequence
+        if (status == Order.OrderStatus.STARTED || status == Order.OrderStatus.ARRIVED) {
+            if (savedOrder.getBookings() != null) {
+                for (com.waygo.backend.entity.RideBooking b : savedOrder.getBookings()) {
+                    if (b != null && "ACCEPTED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
+                        notificationService.notifyNextPassengerTurn(b.getPassenger(), savedOrder.getDriver(), savedOrder.getId());
+                        break; // Notify the 1st passenger in sequence!
+                    }
+                }
+            }
+        }
+
         return savedOrder;
     }
 
