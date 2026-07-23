@@ -1552,6 +1552,17 @@ public class OrderService {
         synchronizeAnnouncementToPassengerOrders(savedOrder);
         notificationService.notifyOrderStatusUpdate(savedOrder);
         notificationService.notifyBookingConfirmed(finalBooking);
+
+        // Notify the first uncollected passenger in sequence that their turn has arrived
+        if (savedOrder.getBookings() != null) {
+            for (com.waygo.backend.entity.RideBooking b : savedOrder.getBookings()) {
+                if (b != null && "ACCEPTED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
+                    notificationService.notifyNextPassengerTurn(b.getPassenger(), driver, savedOrder.getId());
+                    break;
+                }
+            }
+        }
+
         return savedOrder;
     }
 
