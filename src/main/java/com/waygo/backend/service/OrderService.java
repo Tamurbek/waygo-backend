@@ -915,9 +915,24 @@ public class OrderService {
         return savedOrder;
     }
 
+    @Transactional
     public Order getOrderById(Long orderId) {
-        return orderRepository.findById(orderId)
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        if (order.getBookings() != null) {
+            for (com.waygo.backend.entity.RideBooking b : order.getBookings()) {
+                if (b != null && b.getPassengerOrderId() != null) {
+                    orderRepository.findById(b.getPassengerOrderId()).ifPresent(pOrder -> {
+                        if (b.getFromLat() == null) b.setFromLat(pOrder.getFromLat());
+                        if (b.getFromLon() == null) b.setFromLon(pOrder.getFromLon());
+                        if (b.getToLat() == null) b.setToLat(pOrder.getToLat());
+                        if (b.getToLon() == null) b.setToLon(pOrder.getToLon());
+                    });
+                }
+            }
+        }
+        return order;
     }
 
     public List<Order> getPassengerHistory(Long passengerId, int page, int size) {

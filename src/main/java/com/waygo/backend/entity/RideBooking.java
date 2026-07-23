@@ -44,6 +44,11 @@ public class RideBooking {
 
     private String pickupAddress;
 
+    private Double fromLat;
+    private Double fromLon;
+    private Double toLat;
+    private Double toLon;
+
     private String notes;
 
     @Builder.Default
