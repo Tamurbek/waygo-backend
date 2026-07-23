@@ -290,6 +290,19 @@ public class NotificationService {
                 payload
         );
 
+        if (nextPassenger.getPhone() != null) {
+            messagingTemplate.convertAndSendToUser(
+                    nextPassenger.getPhone(),
+                    "/queue/notifications",
+                    payload
+            );
+        }
+
+        messagingTemplate.convertAndSend(
+                "/topic/orders/update",
+                payload
+        );
+
         sendFcmNotification(nextPassenger, "Navbat sizga keldi! 🚖", msg, "NEXT_PASSENGER_TURN");
     }
 

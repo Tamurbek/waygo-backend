@@ -901,8 +901,9 @@ public class OrderService {
 
         // When order status becomes STARTED or ARRIVED, notify the first uncollected passenger in sequence
         if (status == Order.OrderStatus.STARTED || status == Order.OrderStatus.ARRIVED) {
-            if (savedOrder.getBookings() != null) {
-                for (com.waygo.backend.entity.RideBooking b : savedOrder.getBookings()) {
+            List<com.waygo.backend.entity.RideBooking> bookings = rideBookingRepository.findByOrderId(savedOrder.getId());
+            if (bookings != null) {
+                for (com.waygo.backend.entity.RideBooking b : bookings) {
                     if (b != null && !"COLLECTED".equalsIgnoreCase(b.getStatus()) && !"REJECTED".equalsIgnoreCase(b.getStatus()) && !"CANCELLED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
                         notificationService.notifyNextPassengerTurn(b.getPassenger(), savedOrder.getDriver(), savedOrder.getId());
                         break; // Notify the 1st passenger in sequence!
@@ -1567,9 +1568,10 @@ public class OrderService {
         notificationService.notifyBookingConfirmed(finalBooking);
 
         // Notify the first uncollected passenger in sequence that their turn has arrived
-        if (savedOrder.getBookings() != null) {
-            for (com.waygo.backend.entity.RideBooking b : savedOrder.getBookings()) {
-                if (b != null && "ACCEPTED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
+        List<com.waygo.backend.entity.RideBooking> confirmBookings = rideBookingRepository.findByOrderId(savedOrder.getId());
+        if (confirmBookings != null) {
+            for (com.waygo.backend.entity.RideBooking b : confirmBookings) {
+                if (b != null && !"COLLECTED".equalsIgnoreCase(b.getStatus()) && !"REJECTED".equalsIgnoreCase(b.getStatus()) && !"CANCELLED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
                     notificationService.notifyNextPassengerTurn(b.getPassenger(), driver, savedOrder.getId());
                     break;
                 }
@@ -1603,8 +1605,9 @@ public class OrderService {
         notificationService.notifyOrderStatusUpdate(savedOrder);
 
         // Find the next passenger in sequence and notify them that it is their turn
-        if (savedOrder.getBookings() != null) {
-            for (com.waygo.backend.entity.RideBooking b : savedOrder.getBookings()) {
+        List<com.waygo.backend.entity.RideBooking> collectBookings = rideBookingRepository.findByOrderId(savedOrder.getId());
+        if (collectBookings != null) {
+            for (com.waygo.backend.entity.RideBooking b : collectBookings) {
                 if (b != null && !"COLLECTED".equalsIgnoreCase(b.getStatus()) && !"REJECTED".equalsIgnoreCase(b.getStatus()) && !"CANCELLED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
                     notificationService.notifyNextPassengerTurn(b.getPassenger(), driver, savedOrder.getId());
                     break; // Notify the next passenger in sequence
