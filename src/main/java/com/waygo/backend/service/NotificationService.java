@@ -247,6 +247,33 @@ public class NotificationService {
         sendFcmNotification(driverOrder.getDriver(), "Yangi yo'lovchi", msg, "ORDER_UPDATE");
     }
 
+    public void notifyNextPassengerTurn(User nextPassenger, User driver) {
+        if (nextPassenger == null) {
+            return;
+        }
+
+        String driverName = (driver != null && driver.getFullName() != null && !driver.getFullName().isEmpty())
+                ? driver.getFullName()
+                : "Haydovchi";
+
+        String msg = "Navbat sizga keldi! " + driverName + " sizni olib ketgani yo'lga chiqdi. Ilovada real vaqtda kuzatishingiz mumkin!";
+
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", "NEXT_PASSENGER_TURN");
+        payload.put("message", msg);
+
+        if (driver != null) {
+            payload.put("driverId", driver.getId());
+        }
+
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + nextPassenger.getId(),
+                payload
+        );
+
+        sendFcmNotification(nextPassenger, "Navbat sizga keldi! 🚖", msg, "NEXT_PASSENGER_TURN");
+    }
+
     public void notifyBalanceUpdate(User user, java.math.BigDecimal amount) {
         if (user == null || user.getPhone() == null) {
             return;
