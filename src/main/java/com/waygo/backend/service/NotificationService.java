@@ -52,6 +52,21 @@ public class NotificationService {
             sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
         }
 
+        // Notify all passengers attached to announcement bookings
+        if (order.getBookings() != null) {
+            for (RideBooking b : order.getBookings()) {
+                if (b != null && b.getPassenger() != null) {
+                    java.util.Map<String, Object> payload = new java.util.HashMap<>();
+                    payload.put("type", "ORDER_UPDATE");
+                    payload.put("order", order);
+                    messagingTemplate.convertAndSend(
+                            "/topic/notifications/" + b.getPassenger().getId(),
+                            payload
+                    );
+                }
+            }
+        }
+
         // Also notify the directly assigned driver if present
         if (order.getDriver() != null) {
             messagingTemplate.convertAndSendToUser(
