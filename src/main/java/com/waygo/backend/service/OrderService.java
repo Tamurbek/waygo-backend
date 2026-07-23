@@ -357,6 +357,10 @@ public class OrderService {
                 .status("ACCEPTED")
                 .passengerOrderId(order.getId())
                 .pickupAddress(resolvePickupAddress(order, pickup))
+                .fromLat(order.getFromLat())
+                .fromLon(order.getFromLon())
+                .toLat(order.getToLat())
+                .toLon(order.getToLon())
                 .notes(notes)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -388,25 +392,22 @@ public class OrderService {
             );
 
             if (activeAnnouncement == null) {
-                // Auto-create driver announcement (e'lon)
                 Order.OrderBuilder builder = Order.builder()
-                    .driver(driver)
-                    .passenger(null) // driver announcement
-                    .fromAddress(order.getFromAddress())
-                    .toAddress(order.getToAddress())
-                    .fromLat(order.getFromLat())
-                    .fromLon(order.getFromLon())
-                    .toLat(order.getToLat())
-                    .toLon(order.getToLon())
-                    .departureDate(order.getDepartureDate())
-                    .departureTime(order.getDepartureTime())
-                    .price(chosenOffer.getPricePerPerson())
-                    .baggageDescription(order.getBaggageDescription())
-                    .selectedServices(new java.util.ArrayList<>(order.getSelectedServices()))
-                    .notes("Yo'lovchi shartnomasi asosida avtomatik yaratildi")
-                    .status(Order.OrderStatus.PENDING);
+                        .driver(driver)
+                        .passenger(null)
+                        .fromAddress(order.getFromAddress())
+                        .toAddress(order.getToAddress())
+                        .fromLat(order.getFromLat())
+                        .fromLon(order.getFromLon())
+                        .toLat(order.getToLat())
+                        .toLon(order.getToLon())
+                        .departureDate(order.getDepartureDate())
+                        .departureTime(order.getDepartureTime())
+                        .price(chosenOffer.getPricePerPerson())
+                        .passengerCount(4)
+                        .status(Order.OrderStatus.STARTED)
+                        .createdAt(LocalDateTime.now());
 
-                // Initialize available seats to the driver's offered seats
                 builder.availableSeats(new java.util.ArrayList<>(chosenOffer.getAvailableSeats()));
                 activeAnnouncement = builder.build();
                 activeAnnouncement = orderRepository.save(activeAnnouncement);
@@ -420,6 +421,10 @@ public class OrderService {
                     .status("ACCEPTED")
                     .passengerOrderId(order.getId())
                     .pickupAddress(resolvePickupAddress(order, pickup))
+                    .fromLat(order.getFromLat())
+                    .fromLon(order.getFromLon())
+                    .toLat(order.getToLat())
+                    .toLon(order.getToLon())
                     .notes(notes)
                     .createdAt(LocalDateTime.now())
                     .build();
@@ -1320,13 +1325,41 @@ public class OrderService {
 
         String notes = "";
         String pickup = "";
+        Double reqLat = null;
+        Double reqLon = null;
         List<String> seatsToBook = new java.util.ArrayList<>();
         for (String seat : selectedSeats) {
             if (seat != null && seat.startsWith("PICKUP:")) {
                 pickup = seat.substring(7);
+                // Fallback: parse [LAT:...,LON:...] inside pickup string if present
+                try {
+                    if (pickup.contains("[LAT:") && pickup.contains("LON:")) {
+                        int latIdx = pickup.indexOf("[LAT:");
+                        int commaIdx = pickup.indexOf(",", latIdx);
+                        int lonIdx = pickup.indexOf("LON:", commaIdx);
+                        int endBracket = pickup.indexOf("]", lonIdx);
+                        if (latIdx != -1 && commaIdx != -1 && lonIdx != -1 && endBracket != -1) {
+                            String latStr = pickup.substring(latIdx + 5, commaIdx).trim();
+                            String lonStr = pickup.substring(lonIdx + 4, endBracket).trim();
+                            reqLat = Double.parseDouble(latStr);
+                            reqLon = Double.parseDouble(lonStr);
+                            pickup = pickup.substring(0, latIdx).trim();
+                        }
+                    }
+                } catch (Exception e) {}
             } else if (seat != null && seat.startsWith("NOTES:")) {
                 notes = seat.substring(6);
-            } else {
+            } else if (seat != null && (seat.startsWith("LAT:") || seat.startsWith("FROM_LAT:"))) {
+                try {
+                    int colonIdx = seat.indexOf(':');
+                    reqLat = Double.parseDouble(seat.substring(colonIdx + 1));
+                } catch (Exception e) {}
+            } else if (seat != null && (seat.startsWith("LON:") || seat.startsWith("FROM_LON:"))) {
+                try {
+                    int colonIdx = seat.indexOf(':');
+                    reqLon = Double.parseDouble(seat.substring(colonIdx + 1));
+                } catch (Exception e) {}
+            } else if (seat != null) {
                 seatsToBook.add(seat);
             }
         }
@@ -1455,12 +1488,21 @@ public class OrderService {
             e.printStackTrace();
         }
 
+        Double fromLat = reqLat != null ? reqLat : (matchingRequest != null ? matchingRequest.getFromLat() : (order.getPassenger() != null ? order.getFromLat() : null));
+        Double fromLon = reqLon != null ? reqLon : (matchingRequest != null ? matchingRequest.getFromLon() : (order.getPassenger() != null ? order.getFromLon() : null));
+        Double toLat = matchingRequest != null ? matchingRequest.getToLat() : (order.getPassenger() != null ? order.getToLat() : null);
+        Double toLon = matchingRequest != null ? matchingRequest.getToLon() : (order.getPassenger() != null ? order.getToLon() : null);
+
         // Create a new RideBooking (works for both first-time and additional seat requests)
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
                 .passenger(passenger)
                 .selectedSeats(seatsToBook)
                 .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
+                .fromLat(fromLat)
+                .fromLon(fromLon)
+                .toLat(toLat)
+                .toLon(toLon)
                 .notes(notes)
                 .status("ACCEPTED")
                 .passengerOrderId(passengerOrderId)
@@ -1504,6 +1546,10 @@ public class OrderService {
                                 .status("ACCEPTED")
                                 .passengerOrderId(order.getId())
                                 .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
+                                .fromLat(fromLat)
+                                .fromLon(fromLon)
+                                .toLat(toLat)
+                                .toLon(toLon)
                                 .notes(notes)
                                 .createdAt(java.time.LocalDateTime.now())
                                 .build();
