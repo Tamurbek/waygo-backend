@@ -247,7 +247,7 @@ public class NotificationService {
         sendFcmNotification(driverOrder.getDriver(), "Yangi yo'lovchi", msg, "ORDER_UPDATE");
     }
 
-    public void notifyNextPassengerTurn(User nextPassenger, User driver) {
+    public void notifyNextPassengerTurn(User nextPassenger, User driver, Long orderId) {
         if (nextPassenger == null) {
             return;
         }
@@ -261,6 +261,10 @@ public class NotificationService {
         java.util.Map<String, Object> payload = new java.util.HashMap<>();
         payload.put("type", "NEXT_PASSENGER_TURN");
         payload.put("message", msg);
+
+        if (orderId != null) {
+            payload.put("orderId", orderId);
+        }
 
         if (driver != null) {
             payload.put("driverId", driver.getId());

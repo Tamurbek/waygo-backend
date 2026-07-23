@@ -1582,7 +1582,7 @@ public class OrderService {
         if (savedOrder.getBookings() != null) {
             for (com.waygo.backend.entity.RideBooking b : savedOrder.getBookings()) {
                 if (b != null && "ACCEPTED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
-                    notificationService.notifyNextPassengerTurn(b.getPassenger(), driver);
+                    notificationService.notifyNextPassengerTurn(b.getPassenger(), driver, savedOrder.getId());
                     break; // Notify the next passenger in sequence
                 }
             }
