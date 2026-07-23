@@ -915,6 +915,11 @@ public class OrderService {
         return savedOrder;
     }
 
+    public Order getOrderById(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+    }
+
     public List<Order> getPassengerHistory(Long passengerId, int page, int size) {
         List<Order> all = getPassengerHistory(passengerId);
         int start = Math.min(page * size, all.size());

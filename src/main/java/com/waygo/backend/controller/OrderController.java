@@ -29,6 +29,13 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Order created successfully"));
     }
 
+    @GetMapping("/{orderId}")
+    @Operation(summary = "Get order details by ID")
+    public ResponseEntity<ApiResponse<Order>> getOrderById(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.getOrderById(orderId);
+        return ResponseEntity.ok(ApiResponse.success(order, "Order details fetched successfully"));
+    }
+
     @PutMapping("/{orderId}")
     @Operation(summary = "Passenger updates an existing booking request")
     public ResponseEntity<ApiResponse<Order>> update(@PathVariable("orderId") Long orderId, @Valid @RequestBody OrderCreateDTO dto) {
