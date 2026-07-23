@@ -905,7 +905,7 @@ public class OrderService {
             if (bookings != null) {
                 for (com.waygo.backend.entity.RideBooking b : bookings) {
                     if (b != null && !"COLLECTED".equalsIgnoreCase(b.getStatus()) && !"REJECTED".equalsIgnoreCase(b.getStatus()) && !"CANCELLED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
-                        notificationService.notifyNextPassengerTurn(b.getPassenger(), savedOrder.getDriver(), savedOrder.getId());
+                        sendNextPassengerTurnNotification(b, savedOrder.getDriver(), savedOrder.getId());
                         break; // Notify the 1st passenger in sequence!
                     }
                 }
@@ -913,6 +913,20 @@ public class OrderService {
         }
 
         return savedOrder;
+    }
+
+    private void sendNextPassengerTurnNotification(com.waygo.backend.entity.RideBooking b, User driver, Long orderId) {
+        if (b == null || b.getPassenger() == null) return;
+        Double lat = b.getFromLat();
+        Double lon = b.getFromLon();
+        if ((lat == null || lon == null) && b.getPassengerOrderId() != null) {
+            java.util.Optional<Order> pOpt = orderRepository.findById(b.getPassengerOrderId());
+            if (pOpt.isPresent()) {
+                lat = pOpt.get().getFromLat();
+                lon = pOpt.get().getFromLon();
+            }
+        }
+        notificationService.notifyNextPassengerTurn(b.getPassenger(), driver, orderId, lat, lon);
     }
 
     @Transactional
@@ -1607,7 +1621,7 @@ public class OrderService {
         if (confirmBookings != null) {
             for (com.waygo.backend.entity.RideBooking b : confirmBookings) {
                 if (b != null && !"COLLECTED".equalsIgnoreCase(b.getStatus()) && !"REJECTED".equalsIgnoreCase(b.getStatus()) && !"CANCELLED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
-                    notificationService.notifyNextPassengerTurn(b.getPassenger(), driver, savedOrder.getId());
+                    sendNextPassengerTurnNotification(b, driver, savedOrder.getId());
                     break;
                 }
             }
@@ -1644,7 +1658,7 @@ public class OrderService {
         if (collectBookings != null) {
             for (com.waygo.backend.entity.RideBooking b : collectBookings) {
                 if (b != null && !"COLLECTED".equalsIgnoreCase(b.getStatus()) && !"REJECTED".equalsIgnoreCase(b.getStatus()) && !"CANCELLED".equalsIgnoreCase(b.getStatus()) && b.getPassenger() != null) {
-                    notificationService.notifyNextPassengerTurn(b.getPassenger(), driver, savedOrder.getId());
+                    sendNextPassengerTurnNotification(b, driver, savedOrder.getId());
                     break; // Notify the next passenger in sequence
                 }
             }

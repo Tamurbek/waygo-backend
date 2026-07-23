@@ -263,6 +263,10 @@ public class NotificationService {
     }
 
     public void notifyNextPassengerTurn(User nextPassenger, User driver, Long orderId) {
+        notifyNextPassengerTurn(nextPassenger, driver, orderId, null, null);
+    }
+
+    public void notifyNextPassengerTurn(User nextPassenger, User driver, Long orderId, Double pickupLat, Double pickupLon) {
         if (nextPassenger == null) {
             return;
         }
@@ -283,6 +287,11 @@ public class NotificationService {
 
         if (driver != null) {
             payload.put("driverId", driver.getId());
+        }
+
+        if (pickupLat != null && pickupLon != null && pickupLat != 0.0 && pickupLon != 0.0) {
+            payload.put("pickupLat", pickupLat);
+            payload.put("pickupLon", pickupLon);
         }
 
         messagingTemplate.convertAndSend(
