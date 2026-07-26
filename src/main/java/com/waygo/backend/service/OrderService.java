@@ -715,6 +715,9 @@ public class OrderService {
         }
 
         if (status == Order.OrderStatus.CANCELLED && isPassenger) {
+            if (order.getStatus() == Order.OrderStatus.STARTED || order.getStatus() == Order.OrderStatus.ARRIVED || order.getStatus() == Order.OrderStatus.COMPLETED) {
+                throw new IllegalStateException("Safar boshlanganligi sababli buyurtmani bekor qila olmaysiz. Iltimos, haydovchi bilan bog'laning.");
+            }
             // Passenger is cancelling their request.
             // 1. Find all bookings linked to this order and clean them up.
             try {
@@ -1075,9 +1078,8 @@ public class OrderService {
             throw new UnauthorizedAccessException("User not authenticated");
         }
 
-        // Check if the order status allows editing (not started, completed, or cancelled)
-        if (order.getStatus() == Order.OrderStatus.STARTED || 
-            order.getStatus() == Order.OrderStatus.COMPLETED || 
+        // Check if the order status allows editing (not completed, or cancelled)
+        if (order.getStatus() == Order.OrderStatus.COMPLETED || 
             order.getStatus() == Order.OrderStatus.CANCELLED) {
             throw new IllegalStateException("You cannot edit this order after the trip has started or ended");
         }
@@ -1103,8 +1105,16 @@ public class OrderService {
                     String formattedPickupAddress = dto.getFromAddress();
                     if (dto.getFromLat() != null && dto.getFromLon() != null) {
                         formattedPickupAddress += " [LAT:" + dto.getFromLat() + ",LON:" + dto.getFromLon() + "]";
+                        userBooking.setFromLat(dto.getFromLat());
+                        userBooking.setFromLon(dto.getFromLon());
                     }
                     userBooking.setPickupAddress(formattedPickupAddress);
+                }
+                if (dto.getToLat() != null) {
+                    userBooking.setToLat(dto.getToLat());
+                }
+                if (dto.getToLon() != null) {
+                    userBooking.setToLon(dto.getToLon());
                 }
                 if (dto.getNotes() != null) {
                     userBooking.setNotes(dto.getNotes());
@@ -1975,6 +1985,10 @@ public class OrderService {
         Order order = booking.getOrder();
         boolean wasAccepted = "ACCEPTED".equals(booking.getStatus());
 
+        if (order.getStatus() == Order.OrderStatus.STARTED || order.getStatus() == Order.OrderStatus.ARRIVED || order.getStatus() == Order.OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Safar boshlanganligi sababli buyurtmani bekor qila olmaysiz. Iltimos, haydovchi bilan bog'laning.");
+        }
+
         java.util.Set<Long> deletedBookingIds = new java.util.HashSet<>();
         boolean isDeleted = false;
         if (seat != null && !seat.isEmpty()) {
@@ -2082,7 +2096,7 @@ public class OrderService {
 
                         if (!hasActiveBookings) {
                             pOrder.setDriver(null);
-                            pOrder.setStatus(Order.OrderStatus.PENDING);
+                            pOrder.setStatus(Order.OrderStatus.CANCELLED);
                             pOrder.setPassengerConfirmed(false);
                             pOrder.setLockedByDriverId(null);
                             pOrder.setLockExpirationTime(null);
