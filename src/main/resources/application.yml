@@ -63,7 +63,7 @@ server:
 # JWT Configuration
 waygo:
   jwt:
-    secret: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+    secret: ${WAYGO_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     expiration: 2592000000 # 30 days in MS
   sms:
     # provider: ${SMS_PROVIDER:console} # Set to 'eskiz' to use real SMS service
