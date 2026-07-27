@@ -2096,7 +2096,7 @@ public class OrderService {
 
                         if (!hasActiveBookings) {
                             pOrder.setDriver(null);
-                            pOrder.setStatus(Order.OrderStatus.CANCELLED);
+                            pOrder.setStatus(Order.OrderStatus.PENDING);
                             pOrder.setPassengerConfirmed(false);
                             pOrder.setLockedByDriverId(null);
                             pOrder.setLockExpirationTime(null);
