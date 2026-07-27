@@ -61,11 +61,19 @@ public class MulticardService {
                     "secret", secret
             );
 
+            // Explicitly set Content-Type: application/json to prevent 415 errors
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(request, headers);
+
             log.info("Requesting new Multicard auth token from {}", url);
-            ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 Map<String, Object> body = response.getBody();
-                cachedToken = (String) body.get("token");
+                // Multicard may return 'access_token' or 'token' depending on API version
+                cachedToken = body.get("access_token") != null
+                        ? (String) body.get("access_token")
+                        : (String) body.get("token");
                 String expiryStr = (String) body.get("expiry");
                 if (expiryStr != null) {
                     tokenExpiry = LocalDateTime.parse(expiryStr, DATE_FORMATTER);

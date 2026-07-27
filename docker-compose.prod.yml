@@ -42,6 +42,22 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # --- Multicard ---
+      MULTICARD_APPLICATION_ID: ${MULTICARD_APPLICATION_ID}
+      MULTICARD_SECRET: ${MULTICARD_SECRET}
+      MULTICARD_STORE_ID: ${MULTICARD_STORE_ID}
+      MULTICARD_BASE_URL: ${MULTICARD_BASE_URL:-https://mesh.multicard.uz}
+      WAYGO_BACKEND_URL: ${WAYGO_BACKEND_URL:-https://backend.waygo.uz}
+      # --- Payme ---
+      PAYME_MERCHANT_KEY: ${PAYME_MERCHANT_KEY}
+      PAYME_LOGIN: ${PAYME_LOGIN:-Paycom}
+      # --- Eskiz SMS ---
+      ESKIZ_EMAIL: ${ESKIZ_EMAIL}
+      ESKIZ_PASSWORD: ${ESKIZ_PASSWORD}
+      ESKIZ_FROM: ${ESKIZ_FROM:-4546}
+      SMS_PROVIDER: ${SMS_PROVIDER:-eskiz}
+      # --- JWT ---
+      WAYGO_JWT_SECRET: ${WAYGO_JWT_SECRET}
     volumes:
       - /var/www/waygo-uploads:/app/uploads
       - /var/www/firebase-service-account.json:/app/firebase-service-account.json:ro
@@ -62,6 +78,22 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # --- Multicard ---
+      MULTICARD_APPLICATION_ID: ${MULTICARD_APPLICATION_ID}
+      MULTICARD_SECRET: ${MULTICARD_SECRET}
+      MULTICARD_STORE_ID: ${MULTICARD_STORE_ID}
+      MULTICARD_BASE_URL: ${MULTICARD_BASE_URL:-https://mesh.multicard.uz}
+      WAYGO_BACKEND_URL: ${WAYGO_BACKEND_URL:-https://backend.waygo.uz}
+      # --- Payme ---
+      PAYME_MERCHANT_KEY: ${PAYME_MERCHANT_KEY}
+      PAYME_LOGIN: ${PAYME_LOGIN:-Paycom}
+      # --- Eskiz SMS ---
+      ESKIZ_EMAIL: ${ESKIZ_EMAIL}
+      ESKIZ_PASSWORD: ${ESKIZ_PASSWORD}
+      ESKIZ_FROM: ${ESKIZ_FROM:-4546}
+      SMS_PROVIDER: ${SMS_PROVIDER:-eskiz}
+      # --- JWT ---
+      WAYGO_JWT_SECRET: ${WAYGO_JWT_SECRET}
     volumes:
       - /var/www/waygo-uploads:/app/uploads
       - /var/www/firebase-service-account.json:/app/firebase-service-account.json:ro

@@ -37,8 +37,7 @@ public class TransactionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Receiver not found with id: " + receiverId));
 
         if (sender.getBalance().compareTo(amount) < 0) {
-            // Auto-topup for seamless testing/development flow so that users are never blocked by balance
-            sender.setBalance(amount);
+            throw new InsufficientBalanceException("Haydovchining hisobida yetarli mablag' mavjud emas!");
         }
 
         // Transfer funds
