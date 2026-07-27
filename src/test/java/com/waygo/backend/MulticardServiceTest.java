@@ -119,14 +119,9 @@ class MulticardServiceTest {
     }
 
     @Test
-    void testCreateInvoice_PassengerRole_ThrowsException() {
-        User passenger = User.builder()
-                .id(2L)
-                .role(User.Role.PASSENGER)
-                .build();
-
+    void testCreateInvoice_NullUser_ThrowsException() {
         assertThrows(IllegalArgumentException.class, () -> 
-            multicardService.createInvoice(passenger, BigDecimal.valueOf(10000))
+            multicardService.createInvoice(null, BigDecimal.valueOf(10000))
         );
     }
 }

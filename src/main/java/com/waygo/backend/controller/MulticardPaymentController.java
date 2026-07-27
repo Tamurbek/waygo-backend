@@ -47,8 +47,8 @@ public class MulticardPaymentController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Хатолик юз берди: " + e.getMessage()));
+            log.error("Failed to create Multicard invoice: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage() != null ? e.getMessage() : "To'lov xizmatida xatolik yuz berdi"));
         }
     }
 
