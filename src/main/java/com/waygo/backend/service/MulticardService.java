@@ -181,10 +181,18 @@ public class MulticardService {
         }
 
         long amount = Long.parseLong(amountObj.toString());
+        String storeIdStr = payload.get("store_id") != null ? String.valueOf(payload.get("store_id")) : "";
 
-        String expectedSign = sha1(uuid + invoiceId + amount + secret);
-        if (!expectedSign.equalsIgnoreCase(sign)) {
-            log.error("Invalid Multicard callback signature. Expected: {}, Got: {}", expectedSign, sign);
+        String expectedSignMd5 = md5(storeIdStr + invoiceId + amount + secret);
+        String expectedSignSha1 = sha1(uuid + invoiceId + amount + secret);
+        String expectedSignSha1Alt = sha1(storeIdStr + invoiceId + amount + secret);
+
+        boolean isValidSign = expectedSignMd5.equalsIgnoreCase(sign) 
+                || expectedSignSha1.equalsIgnoreCase(sign) 
+                || expectedSignSha1Alt.equalsIgnoreCase(sign);
+
+        if (!isValidSign) {
+            log.error("Invalid Multicard callback signature. Got: {}, Expected MD5: {}, Expected SHA1: {}", sign, expectedSignMd5, expectedSignSha1);
             throw new SecurityException("Invalid signature");
         }
 
@@ -222,6 +230,21 @@ public class MulticardService {
             int currentPoints = user.getPointsBalance() != null ? user.getPointsBalance() : 0;
             user.setPointsBalance(currentPoints - pointsToDeduct);
             userRepository.save(user);
+        }
+    }
+
+    private String md5(String input) {
+        try {
+            MessageDigest mDigest = MessageDigest.getInstance("MD5");
+            byte[] result = mDigest.digest(input.getBytes("UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : result) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            log.error("MD5 hashing failed: {}", e.getMessage(), e);
+            throw new RuntimeException("MD5 hashing failed", e);
         }
     }
 
