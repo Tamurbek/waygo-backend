@@ -168,13 +168,15 @@ public class MulticardService {
     public void processCallback(Map<String, Object> payload) {
         log.info("Received Multicard callback: {}", payload);
 
-        String uuid = (String) payload.get("uuid");
-        String invoiceId = (String) payload.get("invoice_id");
+        String uuid = payload.get("uuid") != null ? String.valueOf(payload.get("uuid")) 
+                : (payload.get("invoice_uuid") != null ? String.valueOf(payload.get("invoice_uuid")) : null);
+        String invoiceId = payload.get("invoice_id") != null ? String.valueOf(payload.get("invoice_id")) : null;
         Object amountObj = payload.get("amount");
-        String status = (String) payload.get("status");
-        String sign = (String) payload.get("sign");
+        String status = payload.get("status") != null ? String.valueOf(payload.get("status")) : "success";
+        String sign = payload.get("sign") != null ? String.valueOf(payload.get("sign")) 
+                : (payload.get("signature") != null ? String.valueOf(payload.get("signature")) : null);
 
-        if (uuid == null || invoiceId == null || amountObj == null || status == null || sign == null) {
+        if (uuid == null || invoiceId == null || amountObj == null || sign == null) {
             throw new IllegalArgumentException("Missing required callback parameters");
         }
 
