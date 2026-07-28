@@ -58,7 +58,7 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable) // In production, consider enabling CSRF for forms
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/admin/login", "/admin/forgot-password", "/admin/reset-password", "/uploads/**").permitAll()
+                .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/payment-success", "/admin/login", "/admin/forgot-password", "/admin/reset-password", "/uploads/**").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/ws-waygo/**").permitAll()
                 .anyRequest().authenticated()
