@@ -1391,11 +1391,15 @@ public class OrderService {
                 }
             }
 
-            // If no new seats are requested and we have a pickup address, update existing non-rejected bookings
-            if (!hasNewSeats && !pickup.isEmpty()) {
+            // If no new seats are requested and we have a pickup address/coords, update existing non-rejected bookings
+            if (!hasNewSeats && (!pickup.isEmpty() || reqLat != null)) {
                 for (com.waygo.backend.entity.RideBooking b : existingBookings) {
                     if (!"REJECTED".equals(b.getStatus())) {
-                        b.setPickupAddress(pickup);
+                        if (!pickup.isEmpty()) {
+                            b.setPickupAddress(pickup);
+                        }
+                        if (reqLat != null) b.setFromLat(reqLat);
+                        if (reqLon != null) b.setFromLon(reqLon);
                         if (!notes.isEmpty()) {
                             b.setNotes(notes);
                         }
@@ -1422,6 +1426,8 @@ public class OrderService {
             if (!pickup.isEmpty()) {
                 b.setPickupAddress(pickup);
             }
+            if (reqLat != null) b.setFromLat(reqLat);
+            if (reqLon != null) b.setFromLon(reqLon);
             if (!notes.isEmpty()) {
                 b.setNotes(notes);
             }
@@ -1450,6 +1456,8 @@ public class OrderService {
                             if (!pickup.isEmpty()) {
                                 db.setPickupAddress(pickup);
                             }
+                            if (reqLat != null) db.setFromLat(reqLat);
+                            if (reqLon != null) db.setFromLon(reqLon);
                             if (!notes.isEmpty()) {
                                 db.setNotes(notes);
                             }
@@ -1633,6 +1641,12 @@ public class OrderService {
             }
             if (booking.getPickupAddress() != null && !booking.getPickupAddress().isEmpty()) {
                 targetAcceptedBooking.setPickupAddress(booking.getPickupAddress());
+            }
+            if (booking.getFromLat() != null) {
+                targetAcceptedBooking.setFromLat(booking.getFromLat());
+            }
+            if (booking.getFromLon() != null) {
+                targetAcceptedBooking.setFromLon(booking.getFromLon());
             }
             if (booking.getNotes() != null && !booking.getNotes().isEmpty()) {
                 targetAcceptedBooking.setNotes(booking.getNotes());
