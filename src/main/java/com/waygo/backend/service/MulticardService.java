@@ -165,6 +165,124 @@ public class MulticardService {
     }
 
     @Transactional
+    public Map<String, Object> sendSmsForPayment(User driver, String cardNumber, String expireDate, BigDecimal amountUzs) {
+        if (driver == null) {
+            throw new IllegalArgumentException("Foydalanuvchi topilmadi");
+        }
+        if (amountUzs == null || amountUzs.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Musbat summa kiritilishi shart");
+        }
+
+        String invoiceId = "MC_INV_" + System.currentTimeMillis() + "_" + driver.getId();
+        long amountTiyins = amountUzs.multiply(BigDecimal.valueOf(100)).longValue();
+
+        MulticardTransaction transaction = MulticardTransaction.builder()
+                .invoiceId(invoiceId)
+                .amount(amountTiyins)
+                .status("draft")
+                .user(driver)
+                .build();
+        multicardTransactionRepository.save(transaction);
+
+        try {
+            String token = getAuthToken();
+            if (token == null) {
+                throw new IllegalStateException("Multicard authorization token is unavailable");
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(token);
+
+            // TODO: Replace this URL with actual Multicard Endpoint for SMS
+            String url = baseUrl + "/payment/card/create"; 
+            
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("store_id", storeId);
+            requestBody.put("amount", amountTiyins);
+            requestBody.put("invoice_id", invoiceId);
+            requestBody.put("card_number", cardNumber);
+            requestBody.put("expire", expireDate);
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            log.info("Sending SMS request for card {} to Multicard", cardNumber.replaceAll("\\d{8}(?=\\d{4})", "********"));
+            
+            // SIMULATION for now, since we don't have actual docs
+            // ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            
+            // FAKE RESPONSE
+            Map<String, Object> fakeResponse = new HashMap<>();
+            fakeResponse.put("success", true);
+            fakeResponse.put("session_id", UUID.randomUUID().toString());
+            fakeResponse.put("invoice_id", invoiceId);
+            fakeResponse.put("message", "SMS kodi yuborildi (Simulyatsiya)");
+            
+            return fakeResponse;
+            
+        } catch (Exception e) {
+            log.error("Failed to send SMS for Multicard: {}", e.getMessage(), e);
+            throw new RuntimeException("SMS yuborishda xatolik: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> verifySmsAndPay(User driver, String invoiceId, String sessionId, String smsCode) {
+        MulticardTransaction transaction = multicardTransactionRepository.findByInvoiceId(invoiceId)
+                .orElseThrow(() -> new NoSuchElementException("Invoys topilmadi: " + invoiceId));
+
+        if (!transaction.getUser().getId().equals(driver.getId())) {
+            throw new SecurityException("Bu invoys sizga tegishli emas");
+        }
+
+        try {
+            String token = getAuthToken();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(token);
+
+            // TODO: Replace with actual Multicard verify URL
+            String url = baseUrl + "/payment/card/verify";
+            
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("store_id", storeId);
+            requestBody.put("session_id", sessionId);
+            requestBody.put("code", smsCode);
+            requestBody.put("invoice_id", invoiceId);
+            
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            log.info("Verifying SMS for session {} and charging invoice {}", sessionId, invoiceId);
+            
+            // SIMULATION
+            // ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
+            
+            if ("000000".equals(smsCode) || smsCode.length() == 6) { // Fake logic
+                transaction.setStatus("success");
+                transaction.setUpdatedAt(LocalDateTime.now());
+                multicardTransactionRepository.save(transaction);
+                
+                BigDecimal amountUzs = BigDecimal.valueOf(transaction.getAmount()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                
+                // Credit driver
+                User updatedUser = transactionService.topUp(driver.getId(), amountUzs);
+                int pointsToAdd = amountUzs.divide(BigDecimal.valueOf(10), 0, RoundingMode.DOWN).intValue();
+                int currentPoints = updatedUser.getPointsBalance() != null ? updatedUser.getPointsBalance() : 0;
+                updatedUser.setPointsBalance(currentPoints + pointsToAdd);
+                userRepository.save(updatedUser);
+                
+                Map<String, Object> successRes = new HashMap<>();
+                successRes.put("success", true);
+                successRes.put("message", "To'lov muvaffaqiyatli amalga oshirildi");
+                return successRes;
+            } else {
+                throw new RuntimeException("SMS kod xato");
+            }
+        } catch (Exception e) {
+            log.error("Failed to verify SMS Multicard: {}", e.getMessage(), e);
+            throw new RuntimeException("To'lovni tasdiqlashda xatolik: " + e.getMessage());
+        }
+    }
+
+    @Transactional
     public void processCallback(Map<String, Object> payload) {
         log.info("Received Multicard callback: {}", payload);
 

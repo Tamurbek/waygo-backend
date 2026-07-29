@@ -30,6 +30,20 @@ public class MulticardPaymentController {
         private BigDecimal amount;
     }
 
+    @Data
+    public static class SendSmsRequest {
+        private String cardNumber;
+        private String expireDate;
+        private BigDecimal amount;
+    }
+
+    @Data
+    public static class VerifySmsRequest {
+        private String invoiceId;
+        private String sessionId;
+        private String smsCode;
+    }
+
     @PostMapping("/create-invoice")
     @Operation(summary = "Create acquiring invoice in Multicard and get checkout URL")
     public ResponseEntity<ApiResponse<Map<String, String>>> createInvoice(
@@ -49,6 +63,40 @@ public class MulticardPaymentController {
         } catch (Exception e) {
             log.error("Failed to create Multicard invoice: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage() != null ? e.getMessage() : "To'lov xizmatida xatolik yuz berdi"));
+        }
+    }
+
+    @PostMapping("/send-sms")
+    @Operation(summary = "Send SMS for direct card payment")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> sendSms(
+            @RequestBody SendSmsRequest request,
+            @AuthenticationPrincipal User driver
+    ) {
+        if (driver == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Аутентификациядан ўтилмаган"));
+        
+        try {
+            Map<String, Object> result = multicardService.sendSmsForPayment(driver, request.getCardNumber(), request.getExpireDate(), request.getAmount());
+            return ResponseEntity.ok(ApiResponse.success(result, "SMS kodi yuborildi"));
+        } catch (Exception e) {
+            log.error("Failed to send Multicard SMS: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/verify-sms")
+    @Operation(summary = "Verify SMS code and complete direct card payment")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> verifySms(
+            @RequestBody VerifySmsRequest request,
+            @AuthenticationPrincipal User driver
+    ) {
+        if (driver == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error("Аутентификациядан ўтилмаган"));
+        
+        try {
+            Map<String, Object> result = multicardService.verifySmsAndPay(driver, request.getInvoiceId(), request.getSessionId(), request.getSmsCode());
+            return ResponseEntity.ok(ApiResponse.success(result, "To'lov muvaffaqiyatli yakunlandi"));
+        } catch (Exception e) {
+            log.error("Failed to verify Multicard SMS: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
