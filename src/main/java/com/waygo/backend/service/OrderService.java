@@ -405,7 +405,7 @@ public class OrderService {
                         .departureTime(order.getDepartureTime())
                         .price(chosenOffer.getPricePerPerson())
                         .passengerCount(4)
-                        .status(Order.OrderStatus.STARTED)
+                        .status(Order.OrderStatus.PENDING)
                         .createdAt(LocalDateTime.now());
 
                 builder.availableSeats(new java.util.ArrayList<>(chosenOffer.getAvailableSeats()));
