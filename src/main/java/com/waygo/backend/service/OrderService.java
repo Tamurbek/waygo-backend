@@ -1404,6 +1404,17 @@ public class OrderService {
                             b.setNotes(notes);
                         }
                         rideBookingRepository.save(b);
+                        
+                        if (b.getPassengerOrderId() != null) {
+                            Order passengerOrder = orderRepository.findById(b.getPassengerOrderId()).orElse(null);
+                            if (passengerOrder != null) {
+                                if (!pickup.isEmpty()) passengerOrder.setFromAddress(pickup);
+                                if (reqLat != null) passengerOrder.setFromLat(reqLat);
+                                if (reqLon != null) passengerOrder.setFromLon(reqLon);
+                                if (!notes.isEmpty()) passengerOrder.setNotes(notes);
+                                orderRepository.save(passengerOrder);
+                            }
+                        }
                     }
                 }
                 Order savedOrder = orderRepository.save(order);
@@ -1432,6 +1443,17 @@ public class OrderService {
                 b.setNotes(notes);
             }
             rideBookingRepository.save(b);
+            
+            if (b.getPassengerOrderId() != null) {
+                Order passengerOrder = orderRepository.findById(b.getPassengerOrderId()).orElse(null);
+                if (passengerOrder != null) {
+                    if (!pickup.isEmpty()) passengerOrder.setFromAddress(pickup);
+                    if (reqLat != null) passengerOrder.setFromLat(reqLat);
+                    if (reqLon != null) passengerOrder.setFromLon(reqLon);
+                    if (!notes.isEmpty()) passengerOrder.setNotes(notes);
+                    orderRepository.save(passengerOrder);
+                }
+            }
 
             // Sync with driver's active announcement if present
             if (order.getPassenger() != null && order.getDriver() != null) {
