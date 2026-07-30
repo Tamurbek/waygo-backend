@@ -89,4 +89,27 @@ public class DriverController {
                 .map(profile -> ResponseEntity.ok(ApiResponse.success(profile, "Profile retrieved")))
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getDriverInfo(@PathVariable("id") Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("id", user.getId());
+        map.put("fullName", user.getFullName());
+        map.put("phoneNumber", user.getPhone());
+        map.put("carBrand", user.getCarBrand());
+        map.put("carModel", user.getCarModel());
+        map.put("carColor", user.getCarColor());
+        map.put("carNumber", user.getCarNumber());
+        map.put("imageUrl", user.getImageUrl());
+        
+        driverProfileRepository.findByUser(user).ifPresent(p -> {
+            if (p.getCarImageUrl() != null) map.put("carImageUrl", p.getCarImageUrl());
+        });
+
+        return ResponseEntity.ok(ApiResponse.success(map, "Driver profile details"));
+    }
 }

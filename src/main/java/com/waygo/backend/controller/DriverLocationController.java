@@ -14,11 +14,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.waygo.backend.repository.UserRepository;
+
 @Controller
 @RequiredArgsConstructor
 public class DriverLocationController {
 
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserRepository userRepository;
     
     // In-memory cache for driver locations: orderId -> Location
     private final ConcurrentHashMap<Long, DriverLocationPayload> locationCache = new ConcurrentHashMap<>();
@@ -28,8 +31,17 @@ public class DriverLocationController {
 
     @MessageMapping("/driver/location")
     public void handleDriverLocation(DriverLocationPayload payload) {
-        // Global tracking by driverId
         if (payload.getDriverId() != null) {
+            userRepository.findById(payload.getDriverId()).ifPresent(user -> {
+                payload.setDriverName(user.getFullName());
+                payload.setCarBrand(user.getCarBrand());
+                payload.setCarModel(user.getCarModel());
+                payload.setCarColor(user.getCarColor());
+                payload.setCarNumber(user.getCarNumber());
+                payload.setImageUrl(user.getImageUrl());
+            });
+
+            // Global tracking by driverId
             driverGlobalLocationCache.put(payload.getDriverId(), payload);
             messagingTemplate.convertAndSend("/topic/drivers/" + payload.getDriverId() + "/location", payload);
         }

@@ -17,4 +17,10 @@ public class DriverLocationPayload {
     private Double latitude;
     private Double longitude;
     private Double bearing;
+    private String driverName;
+    private String carBrand;
+    private String carModel;
+    private String carColor;
+    private String carNumber;
+    private String imageUrl;
 }
