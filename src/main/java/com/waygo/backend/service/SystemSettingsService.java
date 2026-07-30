@@ -44,7 +44,11 @@ public class SystemSettingsService {
         try {
             SystemSettings settings = getSettings();
             boolean needsSave = false;
-            if ("test@test.com".equals(settings.getEskizEmail()) || "password".equals(settings.getEskizPassword()) || "temuryoldoshev10@gmail.com".equals(settings.getEskizEmail())) {
+            if (!"eskiz".equalsIgnoreCase(settings.getSmsProvider()) ||
+                settings.getEskizEmail() == null || 
+                "test@test.com".equals(settings.getEskizEmail()) || 
+                "password".equals(settings.getEskizPassword()) || 
+                "temuryoldoshev10@gmail.com".equals(settings.getEskizEmail())) {
                 settings.setSmsProvider(defaultSmsProvider);
                 settings.setEskizEmail(defaultEskizEmail);
                 settings.setEskizPassword(defaultEskizPassword);
