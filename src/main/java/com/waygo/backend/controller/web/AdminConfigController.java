@@ -201,15 +201,36 @@ public class AdminConfigController {
     }
 
     @PostMapping("/cars/colors/add")
-    public String addCarColor(@ModelAttribute CarColor color) {
+    public String addCarColor(@ModelAttribute CarColor color,
+                              @RequestParam(value = "imageFile", required = false) org.springframework.web.multipart.MultipartFile imageFile) {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                String fileName = fileService.saveFile(imageFile);
+                color.setImageUrl("/uploads/" + fileName);
+            } catch (java.io.IOException e) {
+                // Log and ignore
+            }
+        }
         carColorRepository.save(color);
         return "redirect:/admin/config/cars?success";
     }
 
     @PostMapping("/cars/colors/edit/{id}")
-    public String editCarColor(@PathVariable Long id, @ModelAttribute CarColor color) {
-        color.setId(id);
-        carColorRepository.save(color);
+    public String editCarColor(@PathVariable Long id, @ModelAttribute CarColor color,
+                               @RequestParam(value = "imageFile", required = false) org.springframework.web.multipart.MultipartFile imageFile) {
+        carColorRepository.findById(id).ifPresent(existing -> {
+            existing.setName(color.getName());
+            existing.setHexCode(color.getHexCode());
+            if (imageFile != null && !imageFile.isEmpty()) {
+                try {
+                    String fileName = fileService.saveFile(imageFile);
+                    existing.setImageUrl("/uploads/" + fileName);
+                } catch (java.io.IOException e) {
+                    // Log
+                }
+            }
+            carColorRepository.save(existing);
+        });
         return "redirect:/admin/config/cars?updated";
     }
 

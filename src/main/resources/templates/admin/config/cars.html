@@ -79,6 +79,7 @@
                               th:data-id="${c.id}"
                               th:data-name="${c.name}"
                               th:data-hex="${c.hexCode}"
+                              th:data-image="${c.imageUrl}"
                               onclick="openEditColorModal(this)"
                               style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: border-color 0.2s;"
                               onmouseover="this.style.borderColor='#ffc107'"
@@ -237,7 +238,7 @@
                     <i class="ph ph-x" style="font-size: 1.25rem;"></i>
                 </button>
             </div>
-            <form th:action="@{/admin/config/cars/colors/add}" method="post">
+            <form th:action="@{/admin/config/cars/colors/add}" method="post" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label">Rang Nomi</label>
@@ -249,6 +250,10 @@
                             <input type="color" name="hexCode" value="#ffffff" required style="width: 50px; height: 44px; padding: 0; border: none; border-radius: 0.5rem; cursor: pointer; background: transparent;">
                             <span style="color: var(--text-dim); font-size: 0.875rem;">HEX rang kodi</span>
                         </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">Mashina rasmi (PNG)</label>
+                        <input type="file" name="imageFile" accept="image/png" class="form-control">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -268,7 +273,7 @@
                     <i class="ph ph-x" style="font-size: 1.25rem;"></i>
                 </button>
             </div>
-            <form id="editColorForm" method="post">
+            <form id="editColorForm" method="post" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label">Rang Nomi</label>
@@ -280,6 +285,14 @@
                             <input type="color" id="editColorHex" name="hexCode" required style="width: 50px; height: 44px; padding: 0; border: none; border-radius: 0.5rem; cursor: pointer; background: transparent;">
                             <span style="color: var(--text-dim); font-size: 0.875rem;">HEX rang kodi</span>
                         </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label class="form-label">Mashina rasmi (PNG)</label>
+                        <div id="editColorImagePreview" style="margin-bottom: 0.5rem; display: none;">
+                            <img src="" id="editColorImg" style="max-width: 100px; max-height: 100px; border-radius: 4px; border: 1px solid var(--border);">
+                        </div>
+                        <input type="file" name="imageFile" accept="image/png" class="form-control">
+                        <small style="color: var(--text-dim); display: block; margin-top: 0.25rem;">Yangi rasm yuklasangiz, oldingisi o'zgaradi</small>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -315,6 +328,17 @@
             document.getElementById('editColorForm').action = '/admin/config/cars/colors/edit/' + el.dataset.id;
             document.getElementById('editColorName').value = el.dataset.name;
             document.getElementById('editColorHex').value = el.dataset.hex;
+            
+            const imgPreview = document.getElementById('editColorImagePreview');
+            const imgEl = document.getElementById('editColorImg');
+            if (el.dataset.image && el.dataset.image !== "null" && el.dataset.image.trim() !== "") {
+                imgEl.src = el.dataset.image;
+                imgPreview.style.display = 'block';
+            } else {
+                imgEl.src = '';
+                imgPreview.style.display = 'none';
+            }
+            
             openModal('editColorModal');
         }
 

@@ -20,5 +20,7 @@ public class CarColor {
     
     private String hexCode;
     
+    private String imageUrl;
+    
     private boolean isActive;
 }
