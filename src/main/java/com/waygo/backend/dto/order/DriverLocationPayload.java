@@ -22,5 +22,6 @@ public class DriverLocationPayload {
     private String carModel;
     private String carColor;
     private String carNumber;
+    private String carImageUrl;
     private String imageUrl;
 }

@@ -38,6 +38,7 @@ public class DriverLocationController {
                 payload.setCarModel(user.getCarModel());
                 payload.setCarColor(user.getCarColor());
                 payload.setCarNumber(user.getCarNumber());
+                payload.setCarImageUrl(user.getCarImageUrl());
                 payload.setImageUrl(user.getImageUrl());
             });
 
