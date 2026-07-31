@@ -1760,6 +1760,15 @@ public class OrderService {
     }
 
     @Transactional
+    public void notifyPassengerTurn(Long bookingId) {
+        User driver = securityUtils.getCurrentUser();
+        com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        Order order = booking.getOrder();
+        sendNextPassengerTurnNotification(booking, driver != null ? driver : order.getDriver(), order.getId());
+    }
+
+    @Transactional
     public Order uncollectBooking(Long bookingId) {
         User driver = securityUtils.getCurrentUser();
         if (driver == null || driver.getRole() != User.Role.DRIVER) {

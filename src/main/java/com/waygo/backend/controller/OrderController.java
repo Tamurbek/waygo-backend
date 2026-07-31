@@ -201,6 +201,13 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Booking marked as collected successfully"));
     }
 
+    @PostMapping("/bookings/{bookingId}/notify-pickup")
+    @Operation(summary = "Driver notifies a passenger that it is their turn for pickup")
+    public ResponseEntity<ApiResponse<Void>> notifyPickup(@PathVariable("bookingId") Long bookingId) {
+        orderService.notifyPassengerTurn(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Pickup notification sent successfully"));
+    }
+
     @PostMapping("/bookings/{bookingId}/uncollect")
     @Operation(summary = "Driver marks a collected passenger booking back to accepted (uncollected)")
     public ResponseEntity<ApiResponse<Order>> uncollectBooking(@PathVariable("bookingId") Long bookingId) {
