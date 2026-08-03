@@ -923,6 +923,15 @@ public class OrderService {
             }
         }
 
+        // When the driver actually starts the trip (after every passenger on the
+        // route has already been collected), push a distinct "trip started"
+        // notification to every passenger on the route. By this point all their
+        // bookings are COLLECTED, so the "next uncollected passenger" loop above
+        // finds nobody and nobody would otherwise get an FCM push for this event.
+        if (status == Order.OrderStatus.STARTED) {
+            notificationService.notifyTripStarted(savedOrder);
+        }
+
         return savedOrder;
     }
 

@@ -315,6 +315,68 @@ public class NotificationService {
         sendFcmNotification(nextPassenger, "Navbat sizga keldi! 🚖", msg, "NEXT_PASSENGER_TURN");
     }
 
+    /**
+     * Notifies every booked passenger on a driver's route announcement that the
+     * trip has actually started (fired once, from the "SAFARNI BOSHLASH" action,
+     * when all pickups are done and the driver begins driving to the final
+     * destination). By that point every {@link RideBooking} on the order is
+     * already COLLECTED, so {@link #notifyNextPassengerTurn} — which only ever
+     * targets the first non-collected booking in sequence — finds no one left
+     * to notify. This method closes that gap by pushing to the whole route,
+     * not just the next passenger in a still-in-progress pickup sequence.
+     */
+    public void notifyTripStarted(Order order) {
+        if (order == null || order.getBookings() == null) {
+            return;
+        }
+
+        String fromLoc = order.getFromAddress() != null ? order.getFromAddress() : "";
+        String toLoc = order.getToAddress() != null ? order.getToAddress() : "";
+        String msg = "Haydovchi safarni boshladi! Qatnov: " + fromLoc + " -> " + toLoc
+                + ". Ilovada real vaqtda kuzatishingiz mumkin.";
+
+        for (RideBooking b : order.getBookings()) {
+            if (b == null || b.getPassenger() == null) {
+                continue;
+            }
+            String status = b.getStatus();
+            boolean isActivePassenger = "ACCEPTED".equalsIgnoreCase(status) || "COLLECTED".equalsIgnoreCase(status);
+            if (!isActivePassenger) {
+                continue;
+            }
+
+            User passenger = b.getPassenger();
+
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("type", "TRIP_STARTED");
+            payload.put("message", msg);
+            payload.put("orderId", order.getId());
+            if (order.getDriver() != null) {
+                payload.put("driverId", order.getDriver().getId());
+            }
+
+            messagingTemplate.convertAndSend(
+                    "/topic/notifications/" + passenger.getId(),
+                    payload
+            );
+
+            if (passenger.getPhone() != null) {
+                messagingTemplate.convertAndSendToUser(
+                        passenger.getPhone(),
+                        "/queue/notifications",
+                        payload
+                );
+            }
+
+            java.util.Map<String, String> extraData = new java.util.HashMap<>();
+            extraData.put("orderId", String.valueOf(order.getId()));
+            if (order.getDriver() != null) {
+                extraData.put("driverId", String.valueOf(order.getDriver().getId()));
+            }
+            sendFcmNotification(passenger, "Safar boshlandi! 🚖", msg, "TRIP_STARTED", extraData);
+        }
+    }
+
     public void notifyBalanceUpdate(User user, java.math.BigDecimal amount) {
         if (user == null || user.getPhone() == null) {
             return;
@@ -406,11 +468,15 @@ public class NotificationService {
     }
 
     private void sendFcmNotification(User user, String title, String body, String type) {
+        sendFcmNotification(user, title, body, type, null);
+    }
+
+    private void sendFcmNotification(User user, String title, String body, String type, java.util.Map<String, String> extraData) {
         if (user == null || user.getFcmToken() == null || user.getFcmToken().isEmpty()) {
             return;
         }
         try {
-            com.google.firebase.messaging.Message message = com.google.firebase.messaging.Message.builder()
+            com.google.firebase.messaging.Message.Builder builder = com.google.firebase.messaging.Message.builder()
                     .setToken(user.getFcmToken())
                     .setNotification(com.google.firebase.messaging.Notification.builder()
                             .setTitle(title)
@@ -422,10 +488,15 @@ public class NotificationService {
                                     .setChannelId("high_importance_channel")
                                     .build())
                             .build())
-                    .putData("type", type)
-                    .build();
+                    .putData("type", type);
 
-            com.google.firebase.messaging.FirebaseMessaging.getInstance().send(message);
+            if (extraData != null) {
+                for (java.util.Map.Entry<String, String> entry : extraData.entrySet()) {
+                    builder.putData(entry.getKey(), entry.getValue());
+                }
+            }
+
+            com.google.firebase.messaging.FirebaseMessaging.getInstance().send(builder.build());
         } catch (Exception e) {
             System.err.println("Failed to send FCM notification to user " + user.getId() + ": " + e.getMessage());
         }
