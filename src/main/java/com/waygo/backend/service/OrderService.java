@@ -782,7 +782,7 @@ public class OrderService {
                 // Release/Cancel passenger bookings and orders!
                 if (order.getBookings() != null) {
                     for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
-                        boolean isConfirmed = "ACCEPTED".equals(booking.getStatus());
+                        boolean isConfirmed = "ACCEPTED".equals(booking.getStatus()) || "COLLECTED".equals(booking.getStatus());
                         booking.setStatus("REJECTED"); // Cancel booking
                         try {
                             if (booking.getPassengerOrderId() != null) {
@@ -879,38 +879,18 @@ public class OrderService {
         }
 
         // Synchronize passenger request orders status if this is a driver announcement
-        if (order.getPassenger() == null && (status == Order.OrderStatus.ARRIVED || status == Order.OrderStatus.STARTED)) {
-            if (order.getBookings() != null) {
-                for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
-                    if ("ACCEPTED".equalsIgnoreCase(booking.getStatus())) {
-                        try {
-                            if (booking.getPassengerOrderId() != null) {
-                                orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
-                                    if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
-                                        pOrder.setStatus(status);
-                                        orderRepository.save(pOrder);
-                                        notificationService.notifyOrderStatusUpdate(pOrder);
-                                    }
-                                });
-                            } else {
-                                List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
-                                for (Order pOrder : passengerOrders) {
-                                    if (pOrder.getPassenger() != null &&
-                                        pOrder.getDriver() != null &&
-                                        pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
-                                        pOrder.getStatus() != Order.OrderStatus.COMPLETED &&
-                                        pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
-                                        pOrder.setStatus(status);
-                                        orderRepository.save(pOrder);
-                                        notificationService.notifyOrderStatusUpdate(pOrder);
-                                    }
-                                }
-                            }
-                        } catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                }
+        if (order.getPassenger() == null) {
+            if (status == Order.OrderStatus.ARRIVED || status == Order.OrderStatus.STARTED) {
+                syncPassengerOrdersToStatus(order, status, java.util.Set.of("ACCEPTED"));
+            } else if (status == Order.OrderStatus.COMPLETED) {
+                // By the time the trip is completed, an on-route passenger's booking
+                // has usually progressed to COLLECTED (picked up during the ride);
+                // ACCEPTED is kept too in case a booking never went through an
+                // explicit collection step. Without this, each passenger's own
+                // request order is left stuck at STARTED/ARRIVED, so it never shows
+                // as completed in their trip history and the rating prompt never
+                // fires for them.
+                syncPassengerOrdersToStatus(order, status, java.util.Set.of("ACCEPTED", "COLLECTED"));
             }
         }
 
@@ -954,6 +934,48 @@ public class OrderService {
         }
 
         return savedOrder;
+    }
+
+    /**
+     * Propagates a driver announcement's status to each booked passenger's own
+     * request order, for bookings currently in one of {@code eligibleBookingStatuses}.
+     * Leaves any passenger order already COMPLETED or CANCELLED untouched.
+     */
+    private void syncPassengerOrdersToStatus(Order order, Order.OrderStatus status, java.util.Set<String> eligibleBookingStatuses) {
+        if (order.getBookings() == null) {
+            return;
+        }
+        for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
+            if (booking.getStatus() == null || !eligibleBookingStatuses.contains(booking.getStatus().toUpperCase())) {
+                continue;
+            }
+            try {
+                if (booking.getPassengerOrderId() != null) {
+                    orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
+                        if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                            pOrder.setStatus(status);
+                            orderRepository.save(pOrder);
+                            notificationService.notifyOrderStatusUpdate(pOrder);
+                        }
+                    });
+                } else {
+                    List<Order> passengerOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(booking.getPassenger().getId());
+                    for (Order pOrder : passengerOrders) {
+                        if (pOrder.getPassenger() != null &&
+                            pOrder.getDriver() != null &&
+                            pOrder.getDriver().getId().equals(order.getDriver().getId()) &&
+                            pOrder.getStatus() != Order.OrderStatus.COMPLETED &&
+                            pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
+                            pOrder.setStatus(status);
+                            orderRepository.save(pOrder);
+                            notificationService.notifyOrderStatusUpdate(pOrder);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     private void sendNextPassengerTurnNotification(com.waygo.backend.entity.RideBooking b, User driver, Long orderId) {
