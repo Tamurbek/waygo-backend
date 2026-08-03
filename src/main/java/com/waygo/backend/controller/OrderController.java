@@ -142,8 +142,9 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Order>> rate(
             @PathVariable("orderId") Long orderId,
             @RequestParam Double rating,
-            @RequestParam(value = "comment", required = false) String comment) {
-        Order order = orderService.rateDriver(orderId, rating, comment);
+            @RequestParam(value = "comment", required = false) String comment,
+            @RequestParam(value = "tags", required = false) List<String> tags) {
+        Order order = orderService.rateDriver(orderId, rating, comment, tags);
         return ResponseEntity.ok(ApiResponse.success(order, "Driver rated successfully"));
     }
 

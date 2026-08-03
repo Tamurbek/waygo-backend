@@ -83,6 +83,13 @@ public class Order {
     private Double rating;
     private String comment;
 
+    @ElementCollection
+    @CollectionTable(name = "order_feedback_tags", joinColumns = @JoinColumn(name = "order_id"))
+    @Column(name = "tag")
+    @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
+    private java.util.List<String> feedbackTags = new java.util.ArrayList<>();
+
     private Long lockedByDriverId;
     private LocalDateTime lockExpirationTime;
 

@@ -670,7 +670,7 @@ public class OrderService {
     }
 
     @Transactional
-    public Order rateDriver(Long orderId, Double rating, String comment) {
+    public Order rateDriver(Long orderId, Double rating, String comment, List<String> tags) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
         User driver = order.getDriver();
@@ -692,6 +692,9 @@ public class OrderService {
 
         order.setRating(rating);
         order.setComment(comment);
+        if (tags != null) {
+            order.setFeedbackTags(tags);
+        }
         Order savedOrder = orderRepository.save(order);
 
         notificationService.notifyOrderStatusUpdate(savedOrder);
