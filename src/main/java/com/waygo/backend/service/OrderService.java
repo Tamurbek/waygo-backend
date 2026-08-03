@@ -705,6 +705,7 @@ public class OrderService {
     public Order updateStatus(Long orderId, Order.OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+        Order.OrderStatus previousStatus = order.getStatus();
 
         User currentUser = securityUtils.getCurrentUser();
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
@@ -715,6 +716,12 @@ public class OrderService {
 
         if (!isPassenger && !isDriver) {
             throw new UnauthorizedAccessException("You are not part of this order");
+        }
+
+        // Driver un-starting a trip they started by mistake: only the assigned
+        // driver may revert STARTED back to ACCEPTED.
+        if (previousStatus == Order.OrderStatus.STARTED && status == Order.OrderStatus.ACCEPTED && !isDriver) {
+            throw new UnauthorizedAccessException("Faqat haydovchi safarni boshlanishini bekor qila oladi");
         }
 
         if (status == Order.OrderStatus.CANCELLED && isPassenger) {
@@ -930,6 +937,15 @@ public class OrderService {
         // finds nobody and nobody would otherwise get an FCM push for this event.
         if (status == Order.OrderStatus.STARTED) {
             notificationService.notifyTripStarted(savedOrder);
+        }
+
+        // Driver reverted a trip they had just started back to ACCEPTED — let
+        // every passenger on the route know the trip is not actually underway
+        // yet, since some of them may already have received the "trip started"
+        // push above and could start acting on it (e.g. heading to a meeting
+        // point) before the driver changed their mind.
+        if (previousStatus == Order.OrderStatus.STARTED && status == Order.OrderStatus.ACCEPTED) {
+            notificationService.notifyTripStartCancelled(savedOrder);
         }
 
         return savedOrder;

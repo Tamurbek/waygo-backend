@@ -377,6 +377,63 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Notifies every booked passenger on a driver's route announcement that
+     * the driver un-started the trip (reverted STARTED back to ACCEPTED),
+     * mirroring {@link #notifyTripStarted}. Passengers who already received
+     * the "trip started" push may be acting on it (heading to a meeting
+     * point, etc.), so they need an explicit heads-up that it isn't underway
+     * yet after all.
+     */
+    public void notifyTripStartCancelled(Order order) {
+        if (order == null || order.getBookings() == null) {
+            return;
+        }
+
+        String msg = "Haydovchi safarni boshlashni bekor qildi. Safar hali boshlanmadi, iltimos kuting.";
+
+        for (RideBooking b : order.getBookings()) {
+            if (b == null || b.getPassenger() == null) {
+                continue;
+            }
+            String status = b.getStatus();
+            boolean isActivePassenger = "ACCEPTED".equalsIgnoreCase(status) || "COLLECTED".equalsIgnoreCase(status);
+            if (!isActivePassenger) {
+                continue;
+            }
+
+            User passenger = b.getPassenger();
+
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("type", "TRIP_START_CANCELLED");
+            payload.put("message", msg);
+            payload.put("orderId", order.getId());
+            if (order.getDriver() != null) {
+                payload.put("driverId", order.getDriver().getId());
+            }
+
+            messagingTemplate.convertAndSend(
+                    "/topic/notifications/" + passenger.getId(),
+                    payload
+            );
+
+            if (passenger.getPhone() != null) {
+                messagingTemplate.convertAndSendToUser(
+                        passenger.getPhone(),
+                        "/queue/notifications",
+                        payload
+                );
+            }
+
+            java.util.Map<String, String> extraData = new java.util.HashMap<>();
+            extraData.put("orderId", String.valueOf(order.getId()));
+            if (order.getDriver() != null) {
+                extraData.put("driverId", String.valueOf(order.getDriver().getId()));
+            }
+            sendFcmNotification(passenger, "Safar boshlanishi bekor qilindi", msg, "TRIP_START_CANCELLED", extraData);
+        }
+    }
+
     public void notifyBalanceUpdate(User user, java.math.BigDecimal amount) {
         if (user == null || user.getPhone() == null) {
             return;
