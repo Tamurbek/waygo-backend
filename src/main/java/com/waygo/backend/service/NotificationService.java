@@ -379,6 +379,59 @@ public class NotificationService {
 
     /**
      * Notifies every booked passenger on a driver's route announcement that
+     * the trip has fully completed, mirroring {@link #notifyTripStarted}.
+     * {@link #notifyOrderStatusUpdate} already fires for every status change
+     * including COMPLETED, but — same gap found and fixed for STARTED — it
+     * only sends an actual FCM push to the single primary passenger
+     * (order.getPassenger()), not to route-booking passengers, who'd
+     * otherwise only find out the trip ended if their app happens to be
+     * open and connected to the WebSocket at that exact moment.
+     */
+    public void notifyTripCompleted(Order order) {
+        if (order == null || order.getBookings() == null) {
+            return;
+        }
+
+        String msg = "Safar yakunlandi! Haydovchini baholashni unutmang.";
+
+        for (RideBooking b : order.getBookings()) {
+            if (b == null || b.getPassenger() == null) {
+                continue;
+            }
+            String status = b.getStatus();
+            boolean isActivePassenger = "ACCEPTED".equalsIgnoreCase(status) || "COLLECTED".equalsIgnoreCase(status);
+            if (!isActivePassenger) {
+                continue;
+            }
+
+            User passenger = b.getPassenger();
+
+            java.util.Map<String, Object> payload = new java.util.HashMap<>();
+            payload.put("type", "TRIP_COMPLETED");
+            payload.put("message", msg);
+            payload.put("orderId", order.getId());
+
+            messagingTemplate.convertAndSend(
+                    "/topic/notifications/" + passenger.getId(),
+                    payload
+            );
+
+            if (passenger.getPhone() != null) {
+                messagingTemplate.convertAndSendToUser(
+                        passenger.getPhone(),
+                        "/queue/notifications",
+                        payload
+                );
+            }
+
+            java.util.Map<String, String> extraData = new java.util.HashMap<>();
+            extraData.put("orderId", String.valueOf(order.getId()));
+            sendFcmNotification(passenger, "Safar yakunlandi! 🏁", msg, "TRIP_COMPLETED", extraData);
+        }
+    }
+
+    /**
+     * Notifies every booked passenger on a driver's route announcement that
      * the driver un-started the trip (reverted STARTED back to ACCEPTED),
      * mirroring {@link #notifyTripStarted}. Passengers who already received
      * the "trip started" push may be acting on it (heading to a meeting

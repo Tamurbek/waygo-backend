@@ -666,6 +666,7 @@ public class OrderService {
         order.setStatus(Order.OrderStatus.COMPLETED);
         Order savedOrder = orderRepository.save(order);
         notificationService.notifyOrderStatusUpdate(savedOrder);
+        notificationService.notifyTripCompleted(savedOrder);
         return savedOrder;
     }
 
@@ -946,6 +947,10 @@ public class OrderService {
         // point) before the driver changed their mind.
         if (previousStatus == Order.OrderStatus.STARTED && status == Order.OrderStatus.ACCEPTED) {
             notificationService.notifyTripStartCancelled(savedOrder);
+        }
+
+        if (status == Order.OrderStatus.COMPLETED) {
+            notificationService.notifyTripCompleted(savedOrder);
         }
 
         return savedOrder;
