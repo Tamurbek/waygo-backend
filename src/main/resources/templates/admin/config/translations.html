@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+
+    <div th:replace="~{admin/fragments :: sidebar('config_translations')}"></div>
+
+    <style>
+        .tr-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .tr-tab { padding: 0.5rem 1.25rem; border-radius: 2rem; text-decoration: none; font-weight: 600; font-size: 0.9rem; color: var(--text-dim); border: 1px solid var(--border); }
+        .tr-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .tr-table-wrap { overflow-x: auto; max-width: 100%; }
+        .tr-table { width: max-content; min-width: 100%; }
+        .tr-table th, .tr-table td { border-bottom: 1px solid var(--border); padding: 0.6rem 0.75rem; vertical-align: top; }
+        .tr-table th.tr-sticky, .tr-table td.tr-sticky { position: sticky; left: 0; background: var(--surface); z-index: 2; min-width: 220px; max-width: 260px; }
+        .tr-table th { background: var(--surface); z-index: 1; }
+        .tr-table td.tr-sticky { z-index: 3; }
+        .tr-key-code { font-weight: 600; font-family: monospace; font-size: 0.85rem; }
+        .tr-key-desc { color: var(--text-dim); font-size: 0.75rem; margin-top: 0.15rem; }
+        .tr-lang-head { min-width: 220px; }
+        .tr-lang-head .tr-lang-name { font-weight: 600; display: flex; align-items: center; gap: 0.4rem; }
+        .tr-lang-head .tr-lang-code { color: var(--text-dim); font-size: 0.7rem; font-family: monospace; }
+        .tr-lang-actions { display: flex; gap: 0.4rem; margin-top: 0.4rem; }
+        .tr-lang-actions a, .tr-lang-actions button { color: var(--text-dim); background: none; border: none; cursor: pointer; padding: 0.15rem; font-size: 1rem; line-height: 1; }
+        .tr-lang-actions a:hover, .tr-lang-actions button:hover { color: var(--primary); }
+        .tr-cell { width: 260px; min-width: 220px; resize: vertical; border: 1px solid transparent; background: transparent; color: var(--text); font-family: inherit; font-size: 0.9rem; padding: 0.35rem; border-radius: 0.35rem; }
+        .tr-cell:focus { outline: none; border-color: var(--primary); background: var(--input-bg); }
+        .tr-cell.tr-dirty { border-color: var(--primary); }
+        .tr-delete-form { display: inline; }
+        .tr-delete-btn { background: none; border: none; color: var(--error); cursor: pointer; padding: 0.25rem; }
+    </style>
+
+    <div class="main-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <h1 th:text="${title}" style="margin: 0;">Tarjimalar</h1>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-outline" onclick="openModal('importModal')">
+                    <i class="ph ph-upload-simple"></i> JSON import
+                </button>
+                <button class="btn btn-outline" onclick="openModal('addLanguageModal')">
+                    <i class="ph ph-flag"></i> Til qo'shish
+                </button>
+                <button class="btn btn-primary" onclick="openModal('addKeyModal')">
+                    <i class="ph ph-plus-circle"></i> Kalit qo'shish
+                </button>
+            </div>
+        </div>
+
+        <div class="tr-tabs">
+            <a th:href="@{/admin/config/translations(app='user')}" class="tr-tab" th:classappend="${app == 'user' ? 'active' : ''}">User ilova</a>
+            <a th:href="@{/admin/config/translations(app='driver')}" class="tr-tab" th:classappend="${app == 'driver' ? 'active' : ''}">Driver ilova</a>
+            <a th:href="@{/admin/config/translations(app='shared')}" class="tr-tab" th:classappend="${app == 'shared' ? 'active' : ''}">Umumiy</a>
+        </div>
+
+        <div th:if="${param.success}" class="card" style="background: rgba(25, 135, 84, 0.1); border-color: var(--success); margin-bottom: 1.5rem;">
+            <div style="color: var(--success); font-weight: 600;"><i class="ph ph-check-circle"></i> Muvaffaqiyatli saqlandi!</div>
+        </div>
+        <div th:if="${param.updated}" class="card" style="background: rgba(13, 110, 253, 0.1); border-color: var(--primary); margin-bottom: 1.5rem;">
+            <div style="color: var(--primary); font-weight: 600;"><i class="ph ph-check-circle"></i> Muvaffaqiyatli yangilandi!</div>
+        </div>
+        <div th:if="${param.deleted}" class="card" style="background: rgba(13, 110, 253, 0.1); border-color: var(--primary); margin-bottom: 1.5rem;">
+            <div style="color: var(--primary); font-weight: 600;"><i class="ph ph-check-circle"></i> O'chirildi!</div>
+        </div>
+        <div th:if="${param.imported}" class="card" style="background: rgba(25, 135, 84, 0.1); border-color: var(--success); margin-bottom: 1.5rem;">
+            <div style="color: var(--success); font-weight: 600;"><i class="ph ph-check-circle"></i> <span th:text="${param.imported[0]}"></span> ta kalit import qilindi!</div>
+        </div>
+        <div th:if="${param.error}" class="card" style="background: rgba(220, 53, 69, 0.1); border-color: var(--error); margin-bottom: 1.5rem;">
+            <div style="color: var(--error); font-weight: 600;"><i class="ph ph-warning-circle"></i> <span th:text="${param.error[0]}"></span></div>
+        </div>
+
+        <div class="card">
+            <div class="tr-table-wrap">
+                <table class="tr-table">
+                    <thead>
+                        <tr>
+                            <th class="tr-sticky">Kalit</th>
+                            <th th:each="lang : ${languages}" class="tr-lang-head">
+                                <div class="tr-lang-name">
+                                    <span th:text="${lang.flagEmoji}"></span>
+                                    <span th:text="${lang.name}"></span>
+                                </div>
+                                <div class="tr-lang-code" th:text="${lang.code + (lang.active ? '' : ' (nofaol)')}"></div>
+                                <div class="tr-lang-actions">
+                                    <a th:href="@{/admin/config/translations/export(app=${app},lang=${lang.code})}" title="Eksport">
+                                        <i class="ph ph-download-simple"></i>
+                                    </a>
+                                    <button type="button" title="Tahrirlash"
+                                            th:data-id="${lang.id}" th:data-code="${lang.code}" th:data-name="${lang.name}"
+                                            th:data-flag="${lang.flagEmoji}" th:data-base="${lang.baseLanguageCode}"
+                                            th:data-sort="${lang.sortOrder}"
+                                            onclick="openEditLanguageModal(this)">
+                                        <i class="ph ph-pencil-simple"></i>
+                                    </button>
+                                    <button type="button" title="Faol/nofaol" th:data-id="${lang.id}" onclick="toggleLanguageActive(this.dataset.id)">
+                                        <i class="ph" th:classappend="${lang.active ? 'ph-eye' : 'ph-eye-slash'}"></i>
+                                    </button>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="row : ${rows}">
+                            <td class="tr-sticky">
+                                <div class="tr-key-code" th:text="${row.keyCode}"></div>
+                                <div class="tr-key-desc" th:if="${row.description}" th:text="${row.description}"></div>
+                                <form class="tr-delete-form" method="post" th:action="@{'/admin/config/translations/keys/delete/' + ${row.keyId}}" onsubmit="return confirm('Kalitni o\'chirishni tasdiqlaysizmi?');">
+                                    <button type="submit" class="tr-delete-btn"><i class="ph ph-trash"></i></button>
+                                </form>
+                            </td>
+                            <td th:each="lang : ${languages}">
+                                <textarea class="tr-cell" rows="1"
+                                          th:data-key-id="${row.keyId}"
+                                          th:data-lang="${lang.code}"
+                                          th:attr="data-original=${row.valuesByLang.get(lang.code) ?: ''}"
+                                          th:text="${row.valuesByLang.get(lang.code) ?: ''}"></textarea>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(rows)}">
+                            <td th:attr="colspan=${#lists.size(languages) + 1}" style="text-align: center; color: var(--text-dim); padding: 3rem 1rem;">
+                                <i class="ph ph-translate" style="font-size: 3rem; opacity: 0.5;"></i><br>Hozircha kalitlar yo'q
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Key Modal -->
+    <div id="addKeyModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Kalit Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addKeyModal')"><i class="ph ph-x"></i></button>
+            </div>
+            <form th:action="@{/admin/config/translations/keys/add}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Kalit kodi</label>
+                        <input type="text" name="keyCode" required class="form-control" placeholder="masalan: welcome">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ilova</label>
+                        <select name="appTarget" class="form-control" th:value="${app}">
+                            <option value="USER" th:selected="${app == 'user'}">User ilova</option>
+                            <option value="DRIVER" th:selected="${app == 'driver'}">Driver ilova</option>
+                            <option value="SHARED" th:selected="${app == 'shared'}">Umumiy</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Izoh (ixtiyoriy)</label>
+                        <input type="text" name="description" class="form-control" placeholder="Bu matn qayerda ishlatiladi">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addKeyModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Language Modal -->
+    <div id="addLanguageModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Yangi Til Qo'shish</h3>
+                <button type="button" class="modal-close" onclick="closeModal('addLanguageModal')"><i class="ph ph-x"></i></button>
+            </div>
+            <form th:action="@{/admin/config/translations/languages/add}" method="post">
+                <input type="hidden" name="app" th:value="${app}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Til kodi</label>
+                        <input type="text" name="code" required class="form-control" placeholder="masalan: uz_cyrl">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nomi</label>
+                        <input type="text" name="name" required class="form-control" placeholder="masalan: Ўзбекча (кирилл)">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Bayroq (emoji)</label>
+                            <input type="text" name="flagEmoji" class="form-control" placeholder="🇺🇿">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tartib raqami</label>
+                            <input type="number" name="sortOrder" class="form-control" placeholder="10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Asos til (fallback, ixtiyoriy)</label>
+                        <select name="baseLanguageCode" class="form-control">
+                            <option value="">— Yo'q —</option>
+                            <option th:each="lang : ${languages}" th:value="${lang.code}" th:text="${lang.name} + ' (' + ${lang.code} + ')'"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('addLanguageModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-plus-circle"></i> Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Language Modal -->
+    <div id="editLanguageModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Tilni Tahrirlash</h3>
+                <button type="button" class="modal-close" onclick="closeModal('editLanguageModal')"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="editLanguageForm" method="post">
+                <input type="hidden" name="app" th:value="${app}">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Nomi</label>
+                        <input type="text" id="editLanguageName" name="name" required class="form-control">
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Bayroq (emoji)</label>
+                            <input type="text" id="editLanguageFlag" name="flagEmoji" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tartib raqami</label>
+                            <input type="number" id="editLanguageSort" name="sortOrder" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Asos til (fallback, ixtiyoriy)</label>
+                        <select id="editLanguageBase" name="baseLanguageCode" class="form-control">
+                            <option value="">— Yo'q —</option>
+                            <option th:each="lang : ${languages}" th:value="${lang.code}" th:text="${lang.name} + ' (' + ${lang.code} + ')'"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('editLanguageModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="importModal" class="modal-overlay">
+        <div class="modal" style="max-width: 640px;">
+            <div class="modal-header">
+                <h3 class="modal-title">JSON Import</h3>
+                <button type="button" class="modal-close" onclick="closeModal('importModal')"><i class="ph ph-x"></i></button>
+            </div>
+            <form th:action="@{/admin/config/translations/import}" method="post">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Ilova</label>
+                        <select name="app" class="form-control">
+                            <option value="user" th:selected="${app == 'user'}">User ilova</option>
+                            <option value="driver" th:selected="${app == 'driver'}">Driver ilova</option>
+                            <option value="shared" th:selected="${app == 'shared'}">Umumiy</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Til</label>
+                        <select name="lang" class="form-control">
+                            <option th:each="lang : ${languages}" th:value="${lang.code}" th:text="${lang.name} + ' (' + ${lang.code} + ')'"></option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">JSON matni</label>
+                        <textarea name="jsonText" required class="form-control" rows="10" style="font-family: monospace;" placeholder='{"welcome": "Xush kelibsiz", "save": "Saqlash"}'></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('importModal')">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary"><i class="ph ph-upload-simple"></i> Import qilish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function openEditLanguageModal(btn) {
+            document.getElementById('editLanguageForm').action = '/admin/config/translations/languages/edit/' + btn.dataset.id;
+            document.getElementById('editLanguageName').value = btn.dataset.name || '';
+            document.getElementById('editLanguageFlag').value = btn.dataset.flag || '';
+            document.getElementById('editLanguageSort').value = btn.dataset.sort || '';
+            document.getElementById('editLanguageBase').value = btn.dataset.base || '';
+            openModal('editLanguageModal');
+        }
+
+        function toggleLanguageActive(id) {
+            fetch('/admin/config/translations/languages/toggle-active/' + id, { method: 'POST' })
+                .then(response => { if (response.ok) location.reload(); else alert('Xatolik yuz berdi'); });
+        }
+
+        document.querySelectorAll('.tr-cell').forEach(function (el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+            el.addEventListener('input', function () {
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+                el.classList.toggle('tr-dirty', el.value !== el.dataset.original);
+            });
+            el.addEventListener('blur', function () {
+                if (el.value === el.dataset.original) return;
+                const params = new URLSearchParams();
+                params.set('keyId', el.dataset.keyId);
+                params.set('langCode', el.dataset.lang);
+                params.set('value', el.value);
+                fetch('/admin/config/translations/cell', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+                    .then(function (response) {
+                        if (response.ok) {
+                            el.dataset.original = el.value;
+                            el.classList.remove('tr-dirty');
+                        } else {
+                            el.value = el.dataset.original;
+                            el.classList.remove('tr-dirty');
+                            alert('Xatolik yuz berdi');
+                        }
+                    })
+                    .catch(function () {
+                        el.value = el.dataset.original;
+                        el.classList.remove('tr-dirty');
+                        alert('Xatolik yuz berdi');
+                    });
+            });
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
+        });
+    </script>
+<script th:replace="~{admin/fragments :: scripts}"></script>
+</body>
+</html>
