@@ -142,6 +142,11 @@ public class OrderService {
             throw new IllegalStateException("Order is no longer pending");
         }
 
+        if (order.getLockedByDriverId() != null && !order.getLockedByDriverId().equals(driver.getId())
+                && order.getLockExpirationTime() != null && order.getLockExpirationTime().isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException("Buyurtma ayni paytda boshqa haydovchi tomonidan ko'rib chiqilmoqda");
+        }
+
         // Find if this driver already made an offer on this order
         DriverOffer offer = order.getDriverOffers().stream()
                 .filter(o -> o.getDriver().getId().equals(driver.getId()))
@@ -594,6 +599,10 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
+        if (order.getDriver() == null) {
+            throw new IllegalStateException("Order has no assigned driver");
+        }
+
         User currentUser = securityUtils.getCurrentUser();
         if (currentUser == null || (!currentUser.getId().equals(order.getDriver().getId()) && currentUser.getRole() != User.Role.ADMIN)) {
             throw new UnauthorizedAccessException("Only the assigned driver or admin can complete the trip");
@@ -674,6 +683,16 @@ public class OrderService {
     public Order rateDriver(Long orderId, Double rating, String comment, List<String> tags) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null || order.getPassenger() == null || !currentUser.getId().equals(order.getPassenger().getId())) {
+            throw new UnauthorizedAccessException("You can only rate the driver of your own order");
+        }
+
+        if (order.getStatus() != Order.OrderStatus.COMPLETED) {
+            throw new IllegalStateException("You can only rate the driver after the trip is completed");
+        }
+
         User driver = order.getDriver();
         if (driver == null) {
             throw new IllegalStateException("No driver is assigned to this order");
@@ -708,6 +727,10 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         Order.OrderStatus previousStatus = order.getStatus();
 
+        if (status == Order.OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Use the complete-trip endpoint to complete an order");
+        }
+
         User currentUser = securityUtils.getCurrentUser();
         if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
             checkDriverBilling(currentUser);
@@ -723,6 +746,10 @@ public class OrderService {
         // driver may revert STARTED back to ACCEPTED.
         if (previousStatus == Order.OrderStatus.STARTED && status == Order.OrderStatus.ACCEPTED && !isDriver) {
             throw new UnauthorizedAccessException("Faqat haydovchi safarni boshlanishini bekor qila oladi");
+        }
+
+        if ((status == Order.OrderStatus.ACCEPTED || status == Order.OrderStatus.ARRIVED || status == Order.OrderStatus.STARTED) && !isDriver) {
+            throw new UnauthorizedAccessException("Only the assigned driver can set this status");
         }
 
         if (status == Order.OrderStatus.CANCELLED && isPassenger) {
@@ -997,6 +1024,14 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
+        User currentUser = securityUtils.getCurrentUser();
+        boolean isPassenger = currentUser != null && order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId());
+        boolean isDriver = currentUser != null && order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId());
+        boolean isAdmin = currentUser != null && currentUser.getRole() == User.Role.ADMIN;
+        if (!isPassenger && !isDriver && !isAdmin) {
+            throw new UnauthorizedAccessException("You are not authorized to view this order");
+        }
+
         if (order.getBookings() != null) {
             for (com.waygo.backend.entity.RideBooking b : order.getBookings()) {
                 if (b != null && b.getPassengerOrderId() != null) {
@@ -1133,9 +1168,12 @@ public class OrderService {
             throw new UnauthorizedAccessException("User not authenticated");
         }
 
-        // Check if the order status allows editing (not completed, or cancelled)
-        if (order.getStatus() == Order.OrderStatus.COMPLETED || 
-            order.getStatus() == Order.OrderStatus.CANCELLED) {
+        // Check if the order status allows editing (only while still pending)
+        if (order.getStatus() == Order.OrderStatus.COMPLETED ||
+            order.getStatus() == Order.OrderStatus.CANCELLED ||
+            order.getStatus() == Order.OrderStatus.ACCEPTED ||
+            order.getStatus() == Order.OrderStatus.ARRIVED ||
+            order.getStatus() == Order.OrderStatus.STARTED) {
             throw new IllegalStateException("You cannot edit this order after the trip has started or ended");
         }
 
@@ -1862,6 +1900,10 @@ public class OrderService {
         Order order = booking.getOrder();
         if (!order.getDriver().getId().equals(driver.getId())) {
             throw new UnauthorizedAccessException("You are not the driver of this ride offer");
+        }
+
+        if (order.getStatus() == Order.OrderStatus.STARTED || order.getStatus() == Order.OrderStatus.ARRIVED || order.getStatus() == Order.OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Safar boshlanganligi sababli bronni bekor qila olmaysiz.");
         }
 
         boolean wasAccepted = "ACCEPTED".equals(booking.getStatus());
