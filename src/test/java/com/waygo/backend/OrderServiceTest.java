@@ -6,6 +6,7 @@ import com.waygo.backend.entity.RideBooking;
 import com.waygo.backend.entity.User;
 import com.waygo.backend.entity.DriverOffer;
 import com.waygo.backend.exception.ResourceNotFoundException;
+import com.waygo.backend.exception.UnauthorizedAccessException;
 import com.waygo.backend.repository.DriverProfileRepository;
 import com.waygo.backend.repository.OrderRepository;
 import com.waygo.backend.repository.RideBookingRepository;
@@ -696,12 +697,21 @@ class OrderServiceTest {
                 .thenReturn(Arrays.asList(announcement, passengerRequest));
         when(orderRepository.findByAcceptedOfferDriverId(driver.getId()))
                 .thenReturn(new ArrayList<>());
+        when(securityUtils.getCurrentUser()).thenReturn(driver);
 
         List<Order> history = orderService.getDriverHistory(driver.getId());
 
         // Deduplication should filter out passengerRequest because announcement is active on same route & date
         assertEquals(1, history.size());
         assertEquals(101L, history.get(0).getId());
+    }
+
+    @Test
+    void testGetDriverHistory_RejectsOtherUsers() {
+        when(securityUtils.getCurrentUser()).thenReturn(passenger);
+
+        assertThrows(UnauthorizedAccessException.class,
+                () -> orderService.getDriverHistory(driver.getId()));
     }
 
     @Test
@@ -745,6 +755,52 @@ class OrderServiceTest {
         // Verify payment is processed (25000 * 2 = 50000)
         verify(transactionService).processPayment(passenger.getId(), driver.getId(), BigDecimal.valueOf(50000));
         // Verify the linked passenger request order is also completed
+        assertEquals(Order.OrderStatus.COMPLETED, passengerRequest.getStatus());
+    }
+
+    @Test
+    void testCompleteTrip_CollectedBooking_StillProcessesPaymentAndPassengerOrder() {
+        // Regression test: by the time a driver taps "complete", a picked-up
+        // passenger's booking has moved from ACCEPTED to COLLECTED (via
+        // collectBooking). Payment and the passenger's own order status must
+        // still be processed for COLLECTED bookings, not just ACCEPTED ones.
+        when(securityUtils.getCurrentUser()).thenReturn(driver);
+
+        Order announcement = Order.builder()
+                .id(101L)
+                .driver(driver)
+                .passenger(null)
+                .price(BigDecimal.valueOf(25000))
+                .status(Order.OrderStatus.STARTED)
+                .bookings(new ArrayList<>())
+                .build();
+
+        RideBooking booking = RideBooking.builder()
+                .id(55L)
+                .order(announcement)
+                .passenger(passenger)
+                .selectedSeats(Arrays.asList("1", "2"))
+                .status("COLLECTED")
+                .build();
+        announcement.getBookings().add(booking);
+
+        Order passengerRequest = Order.builder()
+                .id(102L)
+                .driver(driver)
+                .passenger(passenger)
+                .status(Order.OrderStatus.STARTED)
+                .build();
+
+        when(orderRepository.findById(101L)).thenReturn(Optional.of(announcement));
+        when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(orderRepository.findByPassengerIdOrderByCreatedAtDesc(passenger.getId()))
+                .thenReturn(Arrays.asList(passengerRequest));
+
+        Order completed = orderService.completeTrip(101L);
+
+        assertNotNull(completed);
+        assertEquals(Order.OrderStatus.COMPLETED, completed.getStatus());
+        verify(transactionService).processPayment(passenger.getId(), driver.getId(), BigDecimal.valueOf(50000));
         assertEquals(Order.OrderStatus.COMPLETED, passengerRequest.getStatus());
     }
 
@@ -975,12 +1031,21 @@ class OrderServiceTest {
 
         when(orderRepository.findByPassengerIdOrderByCreatedAtDesc(passenger.getId()))
                 .thenReturn(Arrays.asList(passengerRequest, driverAnnouncement));
+        when(securityUtils.getCurrentUser()).thenReturn(passenger);
 
         List<Order> result = orderService.getPassengerHistory(passenger.getId());
 
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(10L, result.get(0).getId()); // Only passenger request order is returned
+    }
+
+    @Test
+    void testGetPassengerHistory_RejectsOtherUsers() {
+        when(securityUtils.getCurrentUser()).thenReturn(driver);
+
+        assertThrows(UnauthorizedAccessException.class,
+                () -> orderService.getPassengerHistory(passenger.getId()));
     }
 }
 

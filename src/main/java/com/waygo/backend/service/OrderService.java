@@ -590,6 +590,7 @@ public class OrderService {
         return savedOrder;
     }
 
+    @Transactional
     public Order joinOrder(Long orderId) {
         User passenger = securityUtils.getCurrentUser();
         if (passenger == null || (passenger.getRole() != User.Role.PASSENGER && passenger.getRole() != User.Role.DRIVER)) {
@@ -637,9 +638,14 @@ public class OrderService {
             transactionService.processPayment(order.getPassenger().getId(), order.getDriver().getId(), order.getPrice());
             // referralService.rewardInviterIfFirstTripCompleted(order.getPassenger());
         } else if (order.getBookings() != null) {
-            // Also process payments for all accepted bookings on this driver announcement
+            // Also process payments for all accepted/collected bookings on this driver
+            // announcement. By the time the trip is completed, an on-route passenger's
+            // booking has usually progressed to COLLECTED (picked up during the ride);
+            // ACCEPTED is kept too in case a booking never went through an explicit
+            // collection step.
             for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
-                if ("ACCEPTED".equalsIgnoreCase(booking.getStatus())) {
+                if (booking.getStatus() != null &&
+                    ("ACCEPTED".equalsIgnoreCase(booking.getStatus()) || "COLLECTED".equalsIgnoreCase(booking.getStatus()))) {
                     // Process payment for this booking
                     int seatsCount = booking.getSelectedSeats().size();
                     java.math.BigDecimal totalBookingPrice = order.getPrice().multiply(java.math.BigDecimal.valueOf(seatsCount));
@@ -923,19 +929,9 @@ public class OrderService {
         }
 
         // Synchronize passenger request orders status if this is a driver announcement
-        if (order.getPassenger() == null) {
-            if (status == Order.OrderStatus.ARRIVED || status == Order.OrderStatus.STARTED) {
-                syncPassengerOrdersToStatus(order, status, java.util.Set.of("ACCEPTED"));
-            } else if (status == Order.OrderStatus.COMPLETED) {
-                // By the time the trip is completed, an on-route passenger's booking
-                // has usually progressed to COLLECTED (picked up during the ride);
-                // ACCEPTED is kept too in case a booking never went through an
-                // explicit collection step. Without this, each passenger's own
-                // request order is left stuck at STARTED/ARRIVED, so it never shows
-                // as completed in their trip history and the rating prompt never
-                // fires for them.
-                syncPassengerOrdersToStatus(order, status, java.util.Set.of("ACCEPTED", "COLLECTED"));
-            }
+        // (COMPLETED is handled by completeTrip, which updateStatus no longer accepts)
+        if (order.getPassenger() == null && (status == Order.OrderStatus.ARRIVED || status == Order.OrderStatus.STARTED)) {
+            syncPassengerOrdersToStatus(order, status, java.util.Set.of("ACCEPTED"));
         }
 
         order.setStatus(status);
@@ -1072,6 +1068,11 @@ public class OrderService {
     }
 
     public List<Order> getPassengerHistory(Long passengerId) {
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null || (!currentUser.getId().equals(passengerId) && currentUser.getRole() != User.Role.ADMIN)) {
+            throw new UnauthorizedAccessException("You are not authorized to view this passenger's history");
+        }
+
         List<Order> rawOrders = orderRepository.findByPassengerIdOrderByCreatedAtDesc(passengerId);
 
         // Find all passenger request order IDs owned by this passenger
@@ -1138,6 +1139,11 @@ public class OrderService {
     }
 
     public List<Order> getDriverHistory(Long driverId) {
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null || (!currentUser.getId().equals(driverId) && currentUser.getRole() != User.Role.ADMIN)) {
+            throw new UnauthorizedAccessException("You are not authorized to view this driver's history");
+        }
+
         // Get orders where this driver is assigned (both driver's own ride announcements
         // AND passenger requests where driver's offer was accepted)
         List<Order> byDriver = orderRepository.findByDriverIdOrderByCreatedAtDesc(driverId);
