@@ -1538,10 +1538,26 @@ public class OrderService {
                 rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(orderId, passenger.getId(), "ACCEPTED");
         if (pendingBooking.isPresent()) {
             com.waygo.backend.entity.RideBooking b = pendingBooking.get();
-            // Merge seats
+
+            // Merge seats — only the ones not already on this booking are "new"
+            // and need to be validated/deducted against the order's real availability.
+            List<String> newSeats = new java.util.ArrayList<>();
             for (String seat : seatsToBook) {
                 if (!b.getSelectedSeats().contains(seat)) {
+                    newSeats.add(seat);
+                }
+            }
+            if (!newSeats.isEmpty()) {
+                List<String> orderAvailableSeats = order.getAvailableSeats();
+                for (String seat : newSeats) {
+                    String mappedSeat = mapSeatIndexToLabel(seat);
+                    if (orderAvailableSeats == null || !orderAvailableSeats.contains(mappedSeat)) {
+                        throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
+                    }
+                }
+                for (String seat : newSeats) {
                     b.getSelectedSeats().add(seat);
+                    orderAvailableSeats.remove(mapSeatIndexToLabel(seat));
                 }
             }
             if (!pickup.isEmpty()) {
@@ -1567,39 +1583,50 @@ public class OrderService {
 
             // Sync with driver's active announcement if present
             if (order.getPassenger() != null && order.getDriver() != null) {
-                try {
-                    User driver = order.getDriver();
-                    Order activeAnnouncement = findActiveAnnouncementForRoute(
-                        driver.getId(),
-                        order.getDepartureDate(),
-                        order.getFromAddress(),
-                        order.getToAddress()
-                    );
-                    if (activeAnnouncement != null) {
-                        java.util.Optional<com.waygo.backend.entity.RideBooking> driverPending =
-                            rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(activeAnnouncement.getId(), passenger.getId(), "ACCEPTED");
-                        if (driverPending.isPresent()) {
-                            com.waygo.backend.entity.RideBooking db = driverPending.get();
-                            for (String seat : seatsToBook) {
-                                if (!db.getSelectedSeats().contains(seat)) {
-                                    db.getSelectedSeats().add(seat);
+                User driver = order.getDriver();
+                Order activeAnnouncement = findActiveAnnouncementForRoute(
+                    driver.getId(),
+                    order.getDepartureDate(),
+                    order.getFromAddress(),
+                    order.getToAddress()
+                );
+                if (activeAnnouncement != null) {
+                    java.util.Optional<com.waygo.backend.entity.RideBooking> driverPending =
+                        rideBookingRepository.findFirstByOrderIdAndPassengerIdAndStatus(activeAnnouncement.getId(), passenger.getId(), "ACCEPTED");
+                    if (driverPending.isPresent()) {
+                        com.waygo.backend.entity.RideBooking db = driverPending.get();
+                        List<String> dbNewSeats = new java.util.ArrayList<>();
+                        for (String seat : seatsToBook) {
+                            if (!db.getSelectedSeats().contains(seat)) {
+                                dbNewSeats.add(seat);
+                            }
+                        }
+                        if (!dbNewSeats.isEmpty()) {
+                            List<String> announcementSeats = activeAnnouncement.getAvailableSeats();
+                            for (String seat : dbNewSeats) {
+                                String mappedSeat = mapSeatIndexToLabel(seat);
+                                if (announcementSeats == null || !announcementSeats.contains(mappedSeat)) {
+                                    throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
                                 }
                             }
-                            if (!pickup.isEmpty()) {
-                                db.setPickupAddress(pickup);
+                            for (String seat : dbNewSeats) {
+                                db.getSelectedSeats().add(seat);
+                                announcementSeats.remove(mapSeatIndexToLabel(seat));
                             }
-                            if (reqLat != null) db.setFromLat(reqLat);
-                            if (reqLon != null) db.setFromLon(reqLon);
-                            if (!notes.isEmpty()) {
-                                db.setNotes(notes);
-                            }
-                            rideBookingRepository.save(db);
-                            notificationService.notifyOrderStatusUpdate(activeAnnouncement);
-                            notificationService.notifySeatBookedByPassenger(activeAnnouncement, passenger);
                         }
+                        if (!pickup.isEmpty()) {
+                            db.setPickupAddress(pickup);
+                        }
+                        if (reqLat != null) db.setFromLat(reqLat);
+                        if (reqLon != null) db.setFromLon(reqLon);
+                        if (!notes.isEmpty()) {
+                            db.setNotes(notes);
+                        }
+                        rideBookingRepository.save(db);
+                        orderRepository.save(activeAnnouncement);
+                        notificationService.notifyOrderStatusUpdate(activeAnnouncement);
+                        notificationService.notifySeatBookedByPassenger(activeAnnouncement, passenger);
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
             }
 
@@ -1675,53 +1702,55 @@ public class OrderService {
 
         // Sync with driver's active announcement if present
         if (order.getPassenger() != null && order.getDriver() != null) {
-            try {
-                User driver = order.getDriver();
-                Order activeAnnouncement = findActiveAnnouncementForRoute(
-                    driver.getId(),
-                    order.getDepartureDate(),
-                    order.getFromAddress(),
-                    order.getToAddress()
-                );
-                if (activeAnnouncement != null) {
-                    boolean alreadyBooked = activeAnnouncement.getBookings().stream()
-                        .anyMatch(b -> b.getPassenger().getId().equals(passenger.getId())
-                                    && !"REJECTED".equals(b.getStatus())
-                                    && b.getSelectedSeats().equals(seatsToBook));
-                    if (!alreadyBooked) {
-                        com.waygo.backend.entity.RideBooking autoBooking = com.waygo.backend.entity.RideBooking.builder()
-                                .order(activeAnnouncement)
-                                .passenger(passenger)
-                                .selectedSeats(new java.util.ArrayList<>(seatsToBook))
-                                .status("ACCEPTED")
-                                .passengerOrderId(order.getId())
-                                .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
-                                .fromLat(fromLat)
-                                .fromLon(fromLon)
-                                .toLat(toLat)
-                                .toLon(toLon)
-                                .notes(notes)
-                                .createdAt(java.time.LocalDateTime.now())
-                                .build();
-
-                        rideBookingRepository.save(autoBooking);
-
-                        // Auto-occupy seats for the active announcement immediately
-                        if (activeAnnouncement.getAvailableSeats() != null) {
-                            for (String seat : seatsToBook) {
-                                String mappedSeat = mapSeatIndexToLabel(seat);
-                                activeAnnouncement.getAvailableSeats().remove(mappedSeat);
-                            }
+            User driver = order.getDriver();
+            Order activeAnnouncement = findActiveAnnouncementForRoute(
+                driver.getId(),
+                order.getDepartureDate(),
+                order.getFromAddress(),
+                order.getToAddress()
+            );
+            if (activeAnnouncement != null) {
+                boolean alreadyBooked = activeAnnouncement.getBookings().stream()
+                    .anyMatch(b -> b.getPassenger().getId().equals(passenger.getId())
+                                && !"REJECTED".equals(b.getStatus())
+                                && b.getSelectedSeats().equals(seatsToBook));
+                if (!alreadyBooked) {
+                    List<String> announcementSeats = activeAnnouncement.getAvailableSeats();
+                    for (String seat : seatsToBook) {
+                        String mappedSeat = mapSeatIndexToLabel(seat);
+                        if (announcementSeats == null || !announcementSeats.contains(mappedSeat)) {
+                            throw new IllegalStateException("Tanlangan o'rindiqlardan biri yoki bir nechtasi mavjud emas yoki band qilingan.");
                         }
-
-                        activeAnnouncement.getBookings().add(autoBooking);
-                        orderRepository.save(activeAnnouncement);
-                        notificationService.notifyOrderStatusUpdate(activeAnnouncement);
-                        notificationService.notifySeatBookedByPassenger(activeAnnouncement, passenger);
                     }
+
+                    com.waygo.backend.entity.RideBooking autoBooking = com.waygo.backend.entity.RideBooking.builder()
+                            .order(activeAnnouncement)
+                            .passenger(passenger)
+                            .selectedSeats(new java.util.ArrayList<>(seatsToBook))
+                            .status("ACCEPTED")
+                            .passengerOrderId(order.getId())
+                            .pickupAddress(resolvePickupAddress(matchingRequest != null ? matchingRequest : order, pickup))
+                            .fromLat(fromLat)
+                            .fromLon(fromLon)
+                            .toLat(toLat)
+                            .toLon(toLon)
+                            .notes(notes)
+                            .createdAt(java.time.LocalDateTime.now())
+                            .build();
+
+                    rideBookingRepository.save(autoBooking);
+
+                    // Auto-occupy seats for the active announcement immediately
+                    for (String seat : seatsToBook) {
+                        String mappedSeat = mapSeatIndexToLabel(seat);
+                        announcementSeats.remove(mappedSeat);
+                    }
+
+                    activeAnnouncement.getBookings().add(autoBooking);
+                    orderRepository.save(activeAnnouncement);
+                    notificationService.notifyOrderStatusUpdate(activeAnnouncement);
+                    notificationService.notifySeatBookedByPassenger(activeAnnouncement, passenger);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
 
