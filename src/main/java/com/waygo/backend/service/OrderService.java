@@ -177,9 +177,8 @@ public class OrderService {
                 if (otherOrder.getStatus() != Order.OrderStatus.CANCELLED &&
                     otherOrder.getStatus() != Order.OrderStatus.COMPLETED &&
                     order.getDepartureDate().equals(otherOrder.getDepartureDate()) &&
-                    (order.getFromAddress() == null || otherOrder.getFromAddress() == null ||
-                     order.getFromAddress().substring(0, Math.min(order.getFromAddress().length(), 4))
-                     .equalsIgnoreCase(otherOrder.getFromAddress().substring(0, Math.min(otherOrder.getFromAddress().length(), 4))))) {
+                    isRouteMatching(order.getFromAddress(), otherOrder.getFromAddress()) &&
+                    isRouteMatching(order.getToAddress(), otherOrder.getToAddress())) {
 
                     // Exclude seats that are already booked in this overlapping trip
                     for (com.waygo.backend.entity.RideBooking booking : otherOrder.getBookings()) {
@@ -387,15 +386,33 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
 
         // --- Auto-create or Update driver's ride announcement ---
-        try {
-            User driver = chosenOffer.getDriver();
-            Order activeAnnouncement = findActiveAnnouncementForRoute(
-                driver.getId(),
-                order.getDepartureDate(),
-                order.getFromAddress(),
-                order.getToAddress()
-            );
+        User driver = chosenOffer.getDriver();
+        Order activeAnnouncement = findActiveAnnouncementForRoute(
+            driver.getId(),
+            order.getDepartureDate(),
+            order.getFromAddress(),
+            order.getToAddress()
+        );
 
+        if (activeAnnouncement != null) {
+            // Someone may have booked these exact seats directly on the driver's
+            // announcement (or via another offer) between the time this offer's
+            // seat count was calculated and this confirmation, so re-check
+            // availability against the announcement's current state before merging.
+            java.util.List<String> currentSeats = activeAnnouncement.getAvailableSeats();
+            for (String seatNum : seatsToBook) {
+                String seatLabel = seatNum.equals("1") ? "FRONT"
+                        : seatNum.equals("2") ? "BACK_LEFT"
+                        : seatNum.equals("3") ? "BACK_CENTER"
+                        : seatNum.equals("4") ? "BACK_RIGHT"
+                        : "";
+                if (!seatLabel.isEmpty() && (currentSeats == null || !currentSeats.contains(seatLabel))) {
+                    throw new IllegalStateException("Tanlangan o'rindiq boshqa yo'lovchi tomonidan band qilingan. Iltimos, boshqa o'rindiq tanlang.");
+                }
+            }
+        }
+
+        try {
             if (activeAnnouncement == null) {
                 Order.OrderBuilder builder = Order.builder()
                         .driver(driver)
