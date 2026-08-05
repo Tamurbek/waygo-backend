@@ -26,8 +26,17 @@ public class NotificationService {
     }
 
     public void notifyNewOrder(Order order) {
-        // Notify all drivers about a new pending order
-        messagingTemplate.convertAndSend("/topic/orders/new", order);
+        // A fresh PENDING order is either a passenger's ride request (relevant to
+        // drivers deciding whether to bid) or a driver's own announcement (relevant
+        // to passengers browsing rides to book) — never both at once. Route each to
+        // the audience that actually needs it, instead of broadcasting every order's
+        // full details (name, phone, pickup/dropoff) to every connected client
+        // regardless of role.
+        if (order.getPassenger() != null) {
+            messagingTemplate.convertAndSend("/topic/orders/new-for-drivers", order);
+        } else {
+            messagingTemplate.convertAndSend("/topic/orders/new-for-passengers", order);
+        }
     }
 
     public void notifyOrderStatusUpdate(Order order) {
