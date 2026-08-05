@@ -1907,10 +1907,18 @@ public class OrderService {
     @Transactional
     public void notifyPassengerTurn(Long bookingId) {
         User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can send pickup-turn notifications");
+        }
+
         com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
         Order order = booking.getOrder();
-        sendNextPassengerTurnNotification(booking, driver != null ? driver : order.getDriver(), order.getId());
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new UnauthorizedAccessException("You are not the driver of this ride offer");
+        }
+
+        sendNextPassengerTurnNotification(booking, driver, order.getId());
     }
 
     @Transactional
