@@ -104,8 +104,6 @@ public class NotificationService {
             }
         }
 
-        // Broadcast updated order globally so both user and driver apps receive it in real-time
-        messagingTemplate.convertAndSend("/topic/orders/update", order);
     }
 
     public void notifySeatCancelled(User passenger, String seatName, Order order) {
@@ -191,8 +189,7 @@ public class NotificationService {
                 "/queue/order-status",
                 passengerOrder
         );
-        messagingTemplate.convertAndSend("/topic/orders/update", passengerOrder);
-        
+
         sendFcmNotification(passengerOrder.getPassenger(), "Buyurtma bekor qilindi", msg, "ORDER_UPDATE");
     }
 
@@ -214,8 +211,7 @@ public class NotificationService {
                 "/queue/order-status",
                 passengerOrder
         );
-        messagingTemplate.convertAndSend("/topic/orders/update", passengerOrder);
-        
+
         sendFcmNotification(passengerOrder.getDriver(), "Buyurtma bekor qilindi", msg, "ORDER_UPDATE");
     }
 
@@ -306,11 +302,6 @@ public class NotificationService {
                     payload
             );
         }
-
-        messagingTemplate.convertAndSend(
-                "/topic/orders/update",
-                payload
-        );
 
         sendFcmNotification(nextPassenger, "Navbat sizga keldi! 🚖", msg, "NEXT_PASSENGER_TURN");
     }
