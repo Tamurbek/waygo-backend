@@ -406,24 +406,15 @@ public class NotificationService {
 
             User passenger = b.getPassenger();
 
-            java.util.Map<String, Object> payload = new java.util.HashMap<>();
-            payload.put("type", "TRIP_COMPLETED");
-            payload.put("message", msg);
-            payload.put("orderId", order.getId());
-
-            messagingTemplate.convertAndSend(
-                    "/topic/notifications/" + passenger.getId(),
-                    payload
-            );
-
-            if (passenger.getPhone() != null) {
-                messagingTemplate.convertAndSendToUser(
-                        passenger.getPhone(),
-                        "/queue/notifications",
-                        payload
-                );
-            }
-
+            // No STOMP/WebSocket send here (unlike notifyOrderStatusUpdate) —
+            // the waygo_user client never handled a TRIP_COMPLETED case in its
+            // notification listener, so that message was received and
+            // silently dropped every time. The passenger-facing completion
+            // UX (live-tracking screen reaction + rating prompt) is already
+            // fully driven by notifyOrderStatusUpdate's own ORDER_UPDATE
+            // message. Only the FCM push below is real, unique work this
+            // method does — see the class doc comment above for why it's
+            // still needed per-route-passenger.
             java.util.Map<String, String> extraData = new java.util.HashMap<>();
             extraData.put("orderId", String.valueOf(order.getId()));
             sendFcmNotification(passenger, "Safar yakunlandi! 🏁", msg, "TRIP_COMPLETED", extraData);
