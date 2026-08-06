@@ -51,6 +51,22 @@ public class RideBooking {
 
     private String notes;
 
+    // A booking is how a passenger participates in a shared driver-
+    // announcement Order (Order.passenger is null on those — see
+    // OrderService.rateDriver). Rating/comment must live here, not on the
+    // shared Order, since several different passengers can each rate the
+    // same order independently and a single Order-level field would let
+    // them overwrite one another.
+    private Double rating;
+    private String comment;
+
+    @ElementCollection
+    @CollectionTable(name = "booking_feedback_tags", joinColumns = @JoinColumn(name = "booking_id"))
+    @Column(name = "tag")
+    @Builder.Default
+    @Fetch(FetchMode.SUBSELECT)
+    private java.util.List<String> feedbackTags = new java.util.ArrayList<>();
+
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }

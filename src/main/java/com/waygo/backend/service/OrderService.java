@@ -711,7 +711,32 @@ public class OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         User currentUser = securityUtils.getCurrentUser();
-        if (currentUser == null || order.getPassenger() == null || !currentUser.getId().equals(order.getPassenger().getId())) {
+        if (currentUser == null) {
+            throw new UnauthorizedAccessException("You can only rate the driver of your own order");
+        }
+
+        // Two distinct ways a user can legitimately be "the passenger" on
+        // this order: directly via order.getPassenger() (a solo,
+        // passenger-created order), or via a RideBooking (a shared
+        // driver-announcement order — order.getPassenger() is null on
+        // those, see getPassengerHistory/completeTrip; each seat-booker is
+        // tracked as their own RideBooking instead of their own Order).
+        // Rating must be recorded against whichever of those two actually
+        // identifies this caller, since several different passengers can
+        // share one driver-announcement order and each needs to rate (and
+        // be blocked from re-rating) independently.
+        boolean isDirectPassenger = order.getPassenger() != null
+                && currentUser.getId().equals(order.getPassenger().getId());
+        com.waygo.backend.entity.RideBooking myBooking = null;
+        if (!isDirectPassenger && order.getBookings() != null) {
+            for (com.waygo.backend.entity.RideBooking b : order.getBookings()) {
+                if (b.getPassenger() != null && currentUser.getId().equals(b.getPassenger().getId())) {
+                    myBooking = b;
+                    break;
+                }
+            }
+        }
+        if (!isDirectPassenger && myBooking == null) {
             throw new UnauthorizedAccessException("You can only rate the driver of your own order");
         }
 
@@ -719,7 +744,8 @@ public class OrderService {
             throw new IllegalStateException("You can only rate the driver after the trip is completed");
         }
 
-        if (order.getRating() != null) {
+        boolean alreadyRated = isDirectPassenger ? order.getRating() != null : myBooking.getRating() != null;
+        if (alreadyRated) {
             throw new IllegalStateException("This order has already been rated");
         }
 
@@ -731,12 +757,11 @@ public class OrderService {
         // Denominator is ratingCount (how many ratings have actually landed
         // on `driver.rating`), not tripsCount (how many trips this driver
         // has completed). They diverge on a multi-passenger route trip: one
-        // completed trip, but each route passenger has their own Order and
-        // rates it separately here — each such call is a genuinely new data
-        // point that must count once, regardless of how tripsCount moved.
-        // The order.getRating() != null guard above additionally stops the
-        // same order's rating from being counted twice if this endpoint is
-        // called again for it.
+        // completed trip, but each route passenger rates separately here —
+        // each such call is a genuinely new data point that must count
+        // once, regardless of how tripsCount moved. The alreadyRated guard
+        // above additionally stops the same passenger from being counted
+        // twice if this endpoint is called again for their order/booking.
         double currentRating = driver.getRating() != null ? driver.getRating() : 5.0;
         int currentRatingCount = driver.getRatingCount() != null ? driver.getRatingCount() : 0;
         int newRatingCount = currentRatingCount + 1;
@@ -748,15 +773,24 @@ public class OrderService {
         driver.setRatingCount(newRatingCount);
         userRepository.save(driver);
 
-        order.setRating(rating);
-        order.setComment(comment);
-        if (tags != null) {
-            order.setFeedbackTags(tags);
+        if (isDirectPassenger) {
+            order.setRating(rating);
+            order.setComment(comment);
+            if (tags != null) {
+                order.setFeedbackTags(tags);
+            }
+            orderRepository.save(order);
+        } else {
+            myBooking.setRating(rating);
+            myBooking.setComment(comment);
+            if (tags != null) {
+                myBooking.setFeedbackTags(tags);
+            }
+            rideBookingRepository.save(myBooking);
         }
-        Order savedOrder = orderRepository.save(order);
 
-        notificationService.notifyOrderStatusUpdate(savedOrder);
-        return savedOrder;
+        notificationService.notifyOrderStatusUpdate(order);
+        return order;
     }
 
     @Transactional
