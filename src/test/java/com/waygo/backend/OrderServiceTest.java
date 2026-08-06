@@ -622,7 +622,10 @@ class OrderServiceTest {
 
         assertNotNull(completed);
         assertEquals(Order.OrderStatus.COMPLETED, completed.getStatus());
-        verify(transactionService).processPayment(passenger.getId(), driver.getId(), order.getPrice());
+        // Fares are settled outside the app (cash) — completeTrip must not
+        // move any money through the app's wallet balance. See
+        // waygo_backend_completeTrip_fare_transfer_removed memory.
+        verify(transactionService, never()).processPayment(any(Long.class), any(Long.class), any(BigDecimal.class));
         verify(notificationService).notifyOrderStatusUpdate(any(Order.class));
     }
 
@@ -715,7 +718,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void testCompleteTrip_DriverAnnouncement_ProcessesPaymentsAndPassengerOrders() {
+    void testCompleteTrip_DriverAnnouncement_MarksPassengerOrdersCompletedWithoutPayment() {
         when(securityUtils.getCurrentUser()).thenReturn(driver);
 
         Order announcement = Order.builder()
@@ -752,18 +755,18 @@ class OrderServiceTest {
 
         assertNotNull(completed);
         assertEquals(Order.OrderStatus.COMPLETED, completed.getStatus());
-        // Verify payment is processed (25000 * 2 = 50000)
-        verify(transactionService).processPayment(passenger.getId(), driver.getId(), BigDecimal.valueOf(50000));
-        // Verify the linked passenger request order is also completed
+        // No in-app payment — fares are settled outside the app.
+        verify(transactionService, never()).processPayment(any(Long.class), any(Long.class), any(BigDecimal.class));
+        // Verify the linked passenger request order is still completed
         assertEquals(Order.OrderStatus.COMPLETED, passengerRequest.getStatus());
     }
 
     @Test
-    void testCompleteTrip_CollectedBooking_StillProcessesPaymentAndPassengerOrder() {
+    void testCompleteTrip_CollectedBooking_StillMarksPassengerOrderCompleted() {
         // Regression test: by the time a driver taps "complete", a picked-up
         // passenger's booking has moved from ACCEPTED to COLLECTED (via
-        // collectBooking). Payment and the passenger's own order status must
-        // still be processed for COLLECTED bookings, not just ACCEPTED ones.
+        // collectBooking). The passenger's own order status must still be
+        // marked completed for COLLECTED bookings, not just ACCEPTED ones.
         when(securityUtils.getCurrentUser()).thenReturn(driver);
 
         Order announcement = Order.builder()
@@ -800,7 +803,7 @@ class OrderServiceTest {
 
         assertNotNull(completed);
         assertEquals(Order.OrderStatus.COMPLETED, completed.getStatus());
-        verify(transactionService).processPayment(passenger.getId(), driver.getId(), BigDecimal.valueOf(50000));
+        verify(transactionService, never()).processPayment(any(Long.class), any(Long.class), any(BigDecimal.class));
         assertEquals(Order.OrderStatus.COMPLETED, passengerRequest.getStatus());
     }
 
