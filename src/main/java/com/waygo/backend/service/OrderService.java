@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final TransactionService transactionService;
     private final SecurityUtils securityUtils;
     private final NotificationService notificationService;
     private final DriverProfileRepository driverProfileRepository;
@@ -633,25 +632,29 @@ public class OrderService {
             throw new IllegalStateException("Trip must be accepted or started to be completed");
         }
 
-        // Process final payment automatically if passenger exists
-        if (order.getPassenger() != null) {
-            transactionService.processPayment(order.getPassenger().getId(), order.getDriver().getId(), order.getPrice());
-            // referralService.rewardInviterIfFirstTripCompleted(order.getPassenger());
-        } else if (order.getBookings() != null) {
-            // Also process payments for all accepted/collected bookings on this driver
-            // announcement. By the time the trip is completed, an on-route passenger's
-            // booking has usually progressed to COLLECTED (picked up during the ride);
-            // ACCEPTED is kept too in case a booking never went through an explicit
-            // collection step.
+        // Fares are settled directly between driver and passenger outside the
+        // app (cash) — this app's wallet balance is only ever used by
+        // drivers to buy a tariff plan (see checkDriverBilling above). A
+        // previous version of this method also ran an in-app fare transfer
+        // here via transactionService.processPayment(passenger -> driver),
+        // which required the PASSENGER to have a sufficient app balance;
+        // since passengers never top up or pay through the app in this
+        // product, that check failed on effectively every completion and
+        // blocked trip completion outright (surfaced client-side as a
+        // misleading "haydovchining hisobida yetarli mablag' yo'q" error,
+        // which was also mislabeled — it was actually the passenger's
+        // balance being checked). Removed; trip completion no longer moves
+        // any money through the app.
+        if (order.getBookings() != null) {
+            // Mark route-booking passengers' completion for all
+            // accepted/collected bookings on this driver announcement. By
+            // the time the trip is completed, an on-route passenger's
+            // booking has usually progressed to COLLECTED (picked up during
+            // the ride); ACCEPTED is kept too in case a booking never went
+            // through an explicit collection step.
             for (com.waygo.backend.entity.RideBooking booking : order.getBookings()) {
                 if (booking.getStatus() != null &&
                     ("ACCEPTED".equalsIgnoreCase(booking.getStatus()) || "COLLECTED".equalsIgnoreCase(booking.getStatus()))) {
-                    // Process payment for this booking
-                    int seatsCount = booking.getSelectedSeats().size();
-                    java.math.BigDecimal totalBookingPrice = order.getPrice().multiply(java.math.BigDecimal.valueOf(seatsCount));
-                    transactionService.processPayment(booking.getPassenger().getId(), order.getDriver().getId(), totalBookingPrice);
-                    // referralService.rewardInviterIfFirstTripCompleted(booking.getPassenger());
-
                     // Try to find the corresponding passenger request order and mark it as COMPLETED too
                     try {
                         if (booking.getPassengerOrderId() != null) {
@@ -716,21 +719,33 @@ public class OrderService {
             throw new IllegalStateException("You can only rate the driver after the trip is completed");
         }
 
+        if (order.getRating() != null) {
+            throw new IllegalStateException("This order has already been rated");
+        }
+
         User driver = order.getDriver();
         if (driver == null) {
             throw new IllegalStateException("No driver is assigned to this order");
         }
 
+        // Denominator is ratingCount (how many ratings have actually landed
+        // on `driver.rating`), not tripsCount (how many trips this driver
+        // has completed). They diverge on a multi-passenger route trip: one
+        // completed trip, but each route passenger has their own Order and
+        // rates it separately here — each such call is a genuinely new data
+        // point that must count once, regardless of how tripsCount moved.
+        // The order.getRating() != null guard above additionally stops the
+        // same order's rating from being counted twice if this endpoint is
+        // called again for it.
         double currentRating = driver.getRating() != null ? driver.getRating() : 5.0;
-        int currentTrips = driver.getTripsCount() != null ? driver.getTripsCount() : 0;
-        if (currentTrips == 0) {
-            currentTrips = 1;
-        }
+        int currentRatingCount = driver.getRatingCount() != null ? driver.getRatingCount() : 0;
+        int newRatingCount = currentRatingCount + 1;
 
-        double updatedRating = ((currentRating * (currentTrips - 1)) + rating) / currentTrips;
+        double updatedRating = ((currentRating * currentRatingCount) + rating) / newRatingCount;
         updatedRating = Math.max(1.0, Math.min(5.0, updatedRating));
 
         driver.setRating(updatedRating);
+        driver.setRatingCount(newRatingCount);
         userRepository.save(driver);
 
         order.setRating(rating);

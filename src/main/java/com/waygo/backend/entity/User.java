@@ -65,6 +65,16 @@ public class User implements UserDetails {
     @Builder.Default
     private Double rating = 5.0;
 
+    // How many individual ratings have actually been folded into `rating` —
+    // deliberately separate from tripsCount, which counts completed trips
+    // (one per driver announcement, regardless of passenger count) and is
+    // incremented at a different time (trip completion, not rating). Using
+    // tripsCount as the averaging denominator broke on multi-passenger route
+    // trips, where several passengers each rate the same trip separately —
+    // see OrderService.rateDriver.
+    @Builder.Default
+    private Integer ratingCount = 0;
+
     @Builder.Default
     private Integer tripsCount = 0;
 
