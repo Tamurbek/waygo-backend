@@ -49,6 +49,7 @@
                         <th>Yo'nalish</th>
                         <th>Narxi</th>
                         <th>Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -62,13 +63,20 @@
                         </td>
                         <td style="font-weight: 600;" th:text="${#numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT')} + ' UZS'">25,000 UZS</td>
                         <td>
-                            <span class="status-badge" 
+                            <span class="status-badge"
                                   th:classappend="${'status-' + #strings.toLowerCase(order.status)}"
                                   th:text="${order.status}">Tugallangan</span>
                         </td>
+                        <td style="text-align: right;">
+                            <a th:href="@{/admin/orders/{id}(id=${order.id})}" class="btn-icon"
+                               style="color: var(--text-dim); background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 0.5rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;"
+                               title="Batafsil">
+                                <i class="ph ph-eye"></i>
+                            </a>
+                        </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(latestOrders)}">
-                        <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 3rem;">Hozircha buyurtmalar mavjud emas</td>
+                        <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 3rem;">Hozircha buyurtmalar mavjud emas</td>
                     </tr>
                 </tbody>
             </table>

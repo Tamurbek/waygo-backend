@@ -219,6 +219,18 @@ public class AdminController {
         return "admin/orders";
     }
 
+    @GetMapping("/orders/{id}")
+    public String orderDetail(@org.springframework.web.bind.annotation.PathVariable Long id, Model model) {
+        Order order = orderRepository.findById(id).orElse(null);
+        if (order == null) {
+            return "redirect:/admin/orders";
+        }
+        model.addAttribute("title", "Buyurtma #" + order.getId());
+        model.addAttribute("order", order);
+        model.addAttribute("activeItem", "orders");
+        return "admin/order-detail";
+    }
+
     @org.springframework.web.bind.annotation.PostMapping("/settings")
     public String updateSettings(@org.springframework.web.bind.annotation.ModelAttribute com.waygo.backend.entity.SystemSettings settings) {
         settingsService.updateSettings(settings);

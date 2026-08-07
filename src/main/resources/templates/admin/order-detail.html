@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+    <div th:replace="~{admin/fragments :: sidebar('orders')}"></div>
+
+    <div class="main-content">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+            <a th:href="@{/admin/orders}" class="btn-icon"
+               style="color: var(--text-dim); background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 0.5rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;">
+                <i class="ph ph-arrow-left"></i>
+            </a>
+            <h1 th:text="'Buyurtma #' + ${order.id}">Buyurtma #101</h1>
+            <span class="status-badge"
+                  th:classappend="${'status-' + #strings.toLowerCase(order.status)}"
+                  th:text="${order.status}">COMPLETED</span>
+        </div>
+        <div style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1.5rem;"
+             th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">Sana</div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+
+            <!-- Passenger card -->
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 1rem;">Yo'lovchi (buyurtma egasi)</div>
+                <div th:if="${order.passenger != null}" style="display: flex; align-items: center; gap: 1rem;">
+                    <th:block th:if="${!#strings.isEmpty(order.passenger.imageUrl)}">
+                        <img th:src="${order.passenger.imageUrl}" class="avatar" style="width:52px;height:52px;"
+                             th:onerror="'this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';'">
+                        <div th:text="${order.passenger.initials}"
+                             style="display:none;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;align-items:center;justify-content:center;"></div>
+                    </th:block>
+                    <div th:if="${#strings.isEmpty(order.passenger.imageUrl)}" th:text="${order.passenger.initials}"
+                         style="display:flex;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;align-items:center;justify-content:center;"></div>
+                    <div>
+                        <div style="font-weight: 600;" th:text="${order.passenger.fullName != null ? order.passenger.fullName : 'Kiritilmagan'}">Ism</div>
+                        <div style="color: var(--text-dim); font-size: 0.85rem;" th:text="${order.passenger.phone}">+998...</div>
+                    </div>
+                </div>
+                <div th:if="${order.passenger == null}" style="color: var(--text-dim); font-style: italic;">
+                    Yakka yo'lovchi yo'q — bu guruh (jamoaviy) buyurtma, quyidagi baholash bo'limida har bir yo'lovchi alohida ko'rsatilgan.
+                </div>
+            </div>
+
+            <!-- Driver card -->
+            <div class="card">
+                <div class="card-title" style="margin-bottom: 1rem;">Haydovchi</div>
+                <div th:if="${order.driver != null}" style="display: flex; align-items: center; gap: 1rem;">
+                    <th:block th:if="${!#strings.isEmpty(order.driver.imageUrl)}">
+                        <img th:src="${order.driver.imageUrl}" class="avatar" style="width:52px;height:52px;"
+                             th:onerror="'this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';'">
+                        <div th:text="${order.driver.initials}"
+                             style="display:none;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;align-items:center;justify-content:center;"></div>
+                    </th:block>
+                    <div th:if="${#strings.isEmpty(order.driver.imageUrl)}" th:text="${order.driver.initials}"
+                         style="display:flex;width:52px;height:52px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;align-items:center;justify-content:center;"></div>
+                    <div>
+                        <div style="font-weight: 600;" th:text="${order.driver.fullName != null ? order.driver.fullName : 'Kiritilmagan'}">Ism</div>
+                        <div style="color: var(--text-dim); font-size: 0.85rem;" th:text="${order.driver.phone}">+998...</div>
+                        <div style="color: var(--text-dim); font-size: 0.8rem; margin-top: 0.25rem;"
+                             th:text="${(order.driver.carBrand != null ? order.driver.carBrand + ' ' : '') + (order.driver.carModel != null ? order.driver.carModel : '') + (order.driver.carNumber != null ? ' • ' + order.driver.carNumber : '')}">
+                            Mashina
+                        </div>
+                        <div style="margin-top: 0.4rem; display: inline-flex; align-items: center; gap: 0.3rem; color: var(--pending); font-size: 0.85rem; font-weight: 600;">
+                            <i class="ph ph-star-fill"></i>
+                            <span th:text="${#numbers.formatDecimal(order.driver.rating, 1, 1)}">5.0</span>
+                            <span style="color: var(--text-dim); font-weight: 400;"
+                                  th:text="'(' + ${order.driver.ratingCount != null ? order.driver.ratingCount : 0} + ' ta baho, jami ' + ${order.driver.tripsCount != null ? order.driver.tripsCount : 0} + ' safar)'">
+                                (0 ta baho)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div th:if="${order.driver == null}" style="color: var(--pending); font-style: italic;">
+                    Haydovchi biriktirilmagan
+                </div>
+            </div>
+
+            <!-- Route card -->
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-title" style="margin-bottom: 1rem;">Yo'nalish</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div style="display: flex; gap: 0.75rem;">
+                        <i class="ph ph-map-pin" style="color: var(--success); font-size: 1.25rem; margin-top: 0.1rem;"></i>
+                        <div>
+                            <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Qayerdan</div>
+                            <div style="font-weight: 500;" th:text="${order.fromAddress}">Chilonzor</div>
+                            <div th:if="${order.fromLat != null}" style="color: var(--text-dim); font-size: 0.75rem; margin-top: 0.15rem;"
+                                 th:text="${order.fromLat} + ', ' + ${order.fromLon}">41.0, 69.0</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <i class="ph ph-flag-checkered" style="color: var(--error); font-size: 1.25rem; margin-top: 0.1rem;"></i>
+                        <div>
+                            <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Qayerga</div>
+                            <div style="font-weight: 500;" th:text="${order.toAddress}">Yunusobod</div>
+                            <div th:if="${order.toLat != null}" style="color: var(--text-dim); font-size: 0.75rem; margin-top: 0.15rem;"
+                                 th:text="${order.toLat} + ', ' + ${order.toLon}">41.0, 69.0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trip details card -->
+            <div class="card" style="grid-column: span 2;">
+                <div class="card-title" style="margin-bottom: 1rem;">Buyurtma tafsilotlari</div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem;">
+                    <div>
+                        <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Narxi</div>
+                        <div style="font-weight: 600; font-size: 1.05rem;"
+                             th:text="${order.price != null ? #numbers.formatDecimal(order.price, 0, 'COMMA', 0, 'POINT') + ' UZS' : '-'}">15 000 UZS</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Yo'lovchilar soni</div>
+                        <div style="font-weight: 600; font-size: 1.05rem;" th:text="${order.passengerCount != null ? order.passengerCount : '-'}">1</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Jo'nash sanasi</div>
+                        <div style="font-weight: 600; font-size: 1.05rem;" th:text="${order.departureDate != null ? order.departureDate : '-'}">-</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Jo'nash vaqti</div>
+                        <div style="font-weight: 600; font-size: 1.05rem;" th:text="${order.departureTime != null ? order.departureTime : '-'}">-</div>
+                    </div>
+                </div>
+                <div th:if="${!#lists.isEmpty(order.selectedServices)}" style="margin-top: 1.25rem;">
+                    <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.5rem;">Qo'shimcha xizmatlar</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <span th:each="service : ${order.selectedServices}" th:text="${service}"
+                              style="background: var(--overlay-light); border: 1px solid var(--border); padding: 0.3rem 0.75rem; border-radius: 1rem; font-size: 0.8rem;">Xizmat</span>
+                    </div>
+                </div>
+                <div th:if="${!#strings.isEmpty(order.notes)}" style="margin-top: 1.25rem;">
+                    <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.3rem;">Izoh</div>
+                    <div th:text="${order.notes}">-</div>
+                </div>
+                <div th:if="${!#strings.isEmpty(order.baggageDescription)}" style="margin-top: 1rem;">
+                    <div style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 0.3rem;">Yuk tavsifi</div>
+                    <div th:text="${order.baggageDescription}">-</div>
+                </div>
+            </div>
+
+            <!-- Rating: solo order (order.passenger != null) -->
+            <div class="card" style="grid-column: span 2;" th:if="${order.passenger != null}">
+                <div class="card-title" style="margin-bottom: 1rem;">Yo'lovchi bahosi</div>
+                <div th:if="${order.rating == null}" style="color: var(--text-dim); font-style: italic;">Hali baholanmagan</div>
+                <div th:if="${order.rating != null}">
+                    <div style="display: flex; align-items: center; gap: 0.25rem; margin-bottom: 0.75rem;">
+                        <i th:each="i : ${#numbers.sequence(1, 5)}"
+                           th:class="${i <= order.rating ? 'ph ph-star-fill' : 'ph ph-star'}"
+                           style="color: var(--pending); font-size: 1.3rem;"></i>
+                        <span style="margin-left: 0.5rem; font-weight: 600;" th:text="${#numbers.formatDecimal(order.rating, 1, 1)} + ' / 5'">5.0 / 5</span>
+                    </div>
+                    <div th:if="${!#strings.isEmpty(order.comment)}" style="background: var(--input-bg); border-radius: 0.5rem; padding: 0.75rem 1rem; margin-bottom: 0.75rem; font-style: italic;"
+                         th:text="'&quot;' + ${order.comment} + '&quot;'">"Izoh"</div>
+                    <div th:if="${!#lists.isEmpty(order.feedbackTags)}" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <span th:each="tag : ${order.feedbackTags}" th:text="${tag}"
+                              style="background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.3rem 0.75rem; border-radius: 1rem; font-size: 0.8rem; font-weight: 500;">Tag</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rating: group order (per-passenger, via bookings) -->
+            <div class="card" style="grid-column: span 2;" th:if="${!#lists.isEmpty(order.bookings)}">
+                <div class="card-title" style="margin-bottom: 1rem;">Yo'lovchilar va baholari (guruh buyurtmasi)</div>
+                <div th:each="booking, iter : ${order.bookings}"
+                     th:style="${!iter.first ? 'padding: 1rem 0; border-top: 1px solid var(--border);' : 'padding: 1rem 0;'}">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <div style="font-weight: 600;"
+                                 th:text="${booking.passenger != null ? (booking.passenger.fullName != null ? booking.passenger.fullName : 'Kiritilmagan') : 'Noma''lum yo''lovchi'}">Ism</div>
+                            <div style="color: var(--text-dim); font-size: 0.8rem;" th:text="${booking.passenger != null ? booking.passenger.phone : '-'}">+998...</div>
+                            <div style="color: var(--text-dim); font-size: 0.75rem; margin-top: 0.15rem;" th:text="'Holati: ' + ${booking.status}">Holati: COLLECTED</div>
+                        </div>
+                        <div>
+                            <div th:if="${booking.rating == null}" style="color: var(--text-dim); font-style: italic; font-size: 0.85rem;">Hali baholanmagan</div>
+                            <div th:if="${booking.rating != null}" style="display: flex; align-items: center; gap: 0.15rem;">
+                                <i th:each="i : ${#numbers.sequence(1, 5)}"
+                                   th:class="${i <= booking.rating ? 'ph ph-star-fill' : 'ph ph-star'}"
+                                   style="color: var(--pending); font-size: 1.1rem;"></i>
+                                <span style="margin-left: 0.4rem; font-weight: 600; font-size: 0.9rem;" th:text="${#numbers.formatDecimal(booking.rating, 1, 1)}">5.0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div th:if="${!#strings.isEmpty(booking.comment)}" style="background: var(--input-bg); border-radius: 0.5rem; padding: 0.6rem 0.9rem; margin-top: 0.6rem; font-style: italic; font-size: 0.9rem;"
+                         th:text="'&quot;' + ${booking.comment} + '&quot;'">"Izoh"</div>
+                    <div th:if="${!#lists.isEmpty(booking.feedbackTags)}" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem;">
+                        <span th:each="tag : ${booking.feedbackTags}" th:text="${tag}"
+                              style="background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.25rem 0.65rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 500;">Tag</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+<script th:replace="~{admin/fragments :: scripts}"></script>
+</body>
+</html>
