@@ -147,6 +147,34 @@
                         </div>
                     </div>
 
+                    <h4 style="color: var(--text-dim); margin-top: 1rem; font-size: 0.9rem;">Traffic ranglari (tirbandlik darajalari, faqat Driver ilovasi)</h4>
+                    <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: -0.5rem;">
+                        Marshrutda tirbandlik ma'lumoti mavjud bo'lganda, yuqoridagi "Marshrut chizig'i rangi" o'rniga shu ranglar segment-bo'yicha ishlatiladi.
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Erkin (Free)</label>
+                            <input type="color" th:field="*{trafficColorFreeHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Yengil tirbandlik (Light)</label>
+                            <input type="color" th:field="*{trafficColorLightHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Qattiq tirbandlik (Hard)</label>
+                            <input type="color" th:field="*{trafficColorHardHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Juda qattiq tirbandlik (VeryHard)</label>
+                            <input type="color" th:field="*{trafficColorVeryHardHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Noma'lum (Unknown)</label>
+                            <input type="color" th:field="*{trafficColorUnknownHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                    </div>
+
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">⏱ Yangilanish intervallari</h3>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">

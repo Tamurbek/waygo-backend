@@ -51,6 +51,11 @@ public class MapSettingsService {
         existing.setRouteOutlineWidth(newSettings.getRouteOutlineWidth());
         existing.setDefaultPolylineColorHex(newSettings.getDefaultPolylineColorHex());
         existing.setDefaultPolylineWidth(newSettings.getDefaultPolylineWidth());
+        existing.setTrafficColorFreeHex(newSettings.getTrafficColorFreeHex());
+        existing.setTrafficColorLightHex(newSettings.getTrafficColorLightHex());
+        existing.setTrafficColorHardHex(newSettings.getTrafficColorHardHex());
+        existing.setTrafficColorVeryHardHex(newSettings.getTrafficColorVeryHardHex());
+        existing.setTrafficColorUnknownHex(newSettings.getTrafficColorUnknownHex());
 
         existing.setDriverLocationPollingSeconds(newSettings.getDriverLocationPollingSeconds());
         existing.setRouteDrawAnimationMs(newSettings.getRouteDrawAnimationMs());

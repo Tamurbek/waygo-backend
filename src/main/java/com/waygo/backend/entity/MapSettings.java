@@ -77,6 +77,19 @@ public class MapSettings {
     private String defaultPolylineColorHex = "#000000";
     @Builder.Default
     private Double defaultPolylineWidth = 10.0;
+    // Traffic (tirbandlik) darajalari bo'yicha marshrut rangi — driver ilovasi
+    // yo'lovchi olib ketish xaritasida native palitra indeksiga (0-4) mos
+    // keladi (yandex_mapkit forkidagi PolylineMapObjectController).
+    @Builder.Default
+    private String trafficColorFreeHex = "#00C853";
+    @Builder.Default
+    private String trafficColorLightHex = "#FFC107";
+    @Builder.Default
+    private String trafficColorHardHex = "#FF5722";
+    @Builder.Default
+    private String trafficColorVeryHardHex = "#D50000";
+    @Builder.Default
+    private String trafficColorUnknownHex = "#9E9E9E";
 
     // --- Yangilanish intervallari ---
     @Builder.Default
