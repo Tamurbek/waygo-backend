@@ -30,6 +30,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final SystemSettingsService settingsService;
+    private final com.waygo.backend.service.MapSettingsService mapSettingsService;
     private final BackupService backupService;
     private final TransactionRepository transactionRepository;
     private final com.waygo.backend.service.TransactionService transactionService;
@@ -141,6 +142,20 @@ public class AdminController {
         model.addAttribute("backups", backupService.listBackups());
         model.addAttribute("activeItem", "settings");
         return "admin/settings";
+    }
+
+    @GetMapping("/map-settings")
+    public String mapSettings(Model model) {
+        model.addAttribute("title", "Xarita Sozlamalari (Yandex Map)");
+        model.addAttribute("settings", mapSettingsService.getSettings());
+        model.addAttribute("activeItem", "map_settings");
+        return "admin/map-settings";
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/map-settings")
+    public String updateMapSettings(@org.springframework.web.bind.annotation.ModelAttribute com.waygo.backend.entity.MapSettings settings) {
+        mapSettingsService.updateSettings(settings);
+        return "redirect:/admin/map-settings?success";
     }
 
     @GetMapping("/backup/download")

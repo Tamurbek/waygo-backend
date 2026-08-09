@@ -178,6 +178,9 @@
             <a th:href="@{/admin/settings}" class="nav-item" th:classappend="${activeItem == 'settings' ? 'active' : ''}">
                 <i class="ph ph-gear"></i> Sozlamalar
             </a>
+            <a th:href="@{/admin/map-settings}" class="nav-item" th:classappend="${activeItem == 'map_settings' ? 'active' : ''}">
+                <i class="ph ph-map-trifold"></i> Xarita Sozlamalari
+            </a>
 
             <div class="nav-dropdown">
                 <div class="nav-item dropdown-toggle" onclick="toggleDropdown(this)" th:classappend="${activeItem.startsWith('config_') ? 'open' : ''}">

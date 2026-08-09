@@ -1,7 +1,9 @@
 package com.waygo.backend.controller.config;
 
+import com.waygo.backend.entity.MapSettings;
 import com.waygo.backend.entity.config.*;
 import com.waygo.backend.service.config.ConfigService;
+import com.waygo.backend.service.MapSettingsService;
 import com.waygo.backend.service.SystemSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ public class ConfigController {
 
     private final ConfigService configService;
     private final SystemSettingsService settingsService;
+    private final MapSettingsService mapSettingsService;
 
     @GetMapping("/tariffs")
     public ResponseEntity<List<TariffPlan>> getTariffs() {
@@ -74,6 +77,16 @@ public class ConfigController {
             @RequestParam(defaultValue = "USER") String appType) {
         String version = settingsService.getAppVersion(appType);
         return ResponseEntity.ok(Map.of("latestVersion", version));
+    }
+
+    /**
+     * Flutter ilovalari (waygo_user, waygo_driver) ilova ochilganda chaqiradi.
+     * Yandex Map kamera/zoom, road-snap, look-ahead, vizual va interval sozlamalarini qaytaradi —
+     * admin panelda /admin/map-settings orqali tahrirlanadi.
+     */
+    @GetMapping("/map-settings")
+    public ResponseEntity<MapSettings> getMapSettings() {
+        return ResponseEntity.ok(mapSettingsService.getSettings());
     }
 
     /**

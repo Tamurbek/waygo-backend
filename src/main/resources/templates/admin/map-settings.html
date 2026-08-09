@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{admin/fragments :: head(${title})}"></head>
+<body>
+    <div th:replace="~{admin/fragments :: sidebar('map_settings')}"></div>
+
+    <div class="main-content">
+        <h1 th:text="${title}">Xarita Sozlamalari</h1>
+
+        <div th:if="${param.success}" class="status-badge status-active" style="width: 100%; padding: 1rem; margin-bottom: 2rem; border-radius: 0.5rem; text-align: center; background: rgba(0, 255, 128, 0.2);">
+            ✓ Xarita sozlamalari saqlandi! Ilovalar keyingi ochilishda yangi qiymatlarni oladi.
+        </div>
+
+        <p style="color: var(--text-dim); font-size: 0.875rem; margin-bottom: 1.5rem; max-width: 800px;">
+            Bu qiymatlar waygo_user va waygo_driver ilovalari tomonidan ochilganda backenddan olinadi.
+            O'zgartirish uchun ilovani qayta build qilish shart emas — faqat ilovani qayta ishga tushirish yetarli.
+        </p>
+
+        <div class="card" style="max-width: 800px;">
+            <form th:action="@{/admin/map-settings}" th:object="${settings}" method="post">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">📷 Kamera / Zoom</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Driver: bazaviy zoom</label>
+                            <input type="number" step="0.1" th:field="*{driverBaseZoomLevel}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Driver: tezlikda zoom-out koeffitsienti</label>
+                            <input type="number" step="0.1" th:field="*{driverSpeedZoomOutAmount}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Driver: sheet ochilganda zoom-out koeffitsienti</label>
+                            <input type="number" step="0.1" th:field="*{driverSheetZoomOutAmount}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Driver: default zoom (navigatsiya xaritasi)</label>
+                            <input type="number" step="0.1" th:field="*{driverDefaultZoom}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Driver: default tilt (burchak)</label>
+                            <input type="number" step="0.1" th:field="*{driverDefaultTilt}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">User: default zoom (navigatsiya xaritasi)</label>
+                            <input type="number" step="0.1" th:field="*{userDefaultZoom}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">User: default tilt (burchak)</label>
+                            <input type="number" step="0.1" th:field="*{userDefaultTilt}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">User: haydovchi kuzatuv — boshlang'ich zoom</label>
+                            <input type="number" step="0.1" th:field="*{userTrackingInitialZoom}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">User: umumiy default zoom (compat)</label>
+                            <input type="number" step="0.1" th:field="*{userCompatDefaultZoom}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">🛣 Road-snap / Look-ahead (faqat Driver ilovasi)</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">To'xtab turgan holatdagi GPS drift chegarasi (metr)</label>
+                            <input type="number" step="0.1" th:field="*{stationaryDriftMeters}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">GPS course ishonch tezligi (m/s)</label>
+                            <input type="number" step="0.1" th:field="*{gpsCourseTrustSpeedMps}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">GPS course minimal siljish (metr)</label>
+                            <input type="number" step="0.1" th:field="*{gpsCourseMinDisplacementMeters}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Kamera yangilanish intervali (ms)</label>
+                            <input type="number" th:field="*{cameraUpdateIntervalMs}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut trim intervali (ms)</label>
+                            <input type="number" th:field="*{routeTrimIntervalMs}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Road-snap maksimal masofa (metr)</label>
+                            <input type="number" step="0.1" th:field="*{routeSnapMaxMeters}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Look-ahead vaqti (soniya)</label>
+                            <input type="number" step="0.1" th:field="*{lookAheadSeconds}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Look-ahead maksimal masofa (metr)</label>
+                            <input type="number" step="0.1" th:field="*{maxLookAheadMeters}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Look-ahead minimal tezlik (m/s)</label>
+                            <input type="number" step="0.1" th:field="*{lookAheadMinSpeedMps}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Yetib kelish radiusi (metr)</label>
+                            <input type="number" step="0.1" th:field="*{arrivalThresholdMeters}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Joylashuv oqimi: distanceFilter (metr)</label>
+                            <input type="number" step="0.1" th:field="*{locationDistanceFilterMeters}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Joylashuv oqimi: interval (ms)</label>
+                            <input type="number" th:field="*{locationIntervalMs}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">🎨 Vizual (ranglar / chiziqlar)</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut chizig'i rangi</label>
+                            <input type="color" th:field="*{routeStrokeColorHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut chizig'i qalinligi</label>
+                            <input type="number" step="0.1" th:field="*{routeStrokeWidth}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut kontur rangi</label>
+                            <input type="color" th:field="*{routeOutlineColorHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut kontur shaffofligi (0-1)</label>
+                            <input type="number" step="0.05" min="0" max="1" th:field="*{routeOutlineOpacity}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut kontur qalinligi</label>
+                            <input type="number" step="0.1" th:field="*{routeOutlineWidth}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Standart polyline rangi</label>
+                            <input type="color" th:field="*{defaultPolylineColorHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Standart polyline qalinligi</label>
+                            <input type="number" step="0.1" th:field="*{defaultPolylineWidth}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">⏱ Yangilanish intervallari</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">User: haydovchi joylashuvini so'rash (soniya)</label>
+                            <input type="number" th:field="*{driverLocationPollingSeconds}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut chizilish animatsiyasi (ms)</label>
+                            <input type="number" th:field="*{routeDrawAnimationMs}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut cross-fade animatsiyasi (ms)</label>
+                            <input type="number" th:field="*{routeCrossfadeAnimationMs}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sozlamalarni saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+<script th:replace="~{admin/fragments :: scripts}"></script>
+</body>
+</html>
