@@ -1,6 +1,7 @@
 package com.waygo.backend.service;
 
 import com.waygo.backend.entity.DriverOffer;
+import com.waygo.backend.entity.MapSettings;
 import com.waygo.backend.entity.Order;
 import com.waygo.backend.entity.RideBooking;
 import com.waygo.backend.entity.User;
@@ -566,6 +567,19 @@ public class NotificationService {
         } else {
             sendNotification.run();
         }
+    }
+
+    /**
+     * Admin panelda Xarita Sozlamalari saqlanganda barcha ulangan
+     * waygo_user/waygo_driver mijozlariga yuboriladi — ular ilovani qayta
+     * ochmasdan yangi qiymatlarni darhol qo'llash uchun. Boshqa notify*
+     * metodlaridan farqli o'laroq "type" bilan o'ralmaydi: /topic/map-settings
+     * yagona maqsadli topic, shuning uchun payload REST
+     * /api/v1/config/map-settings bilan bir xil shaklda — klient tomonidagi
+     * mavjud JSON parserni o'zgarishsiz qayta ishlatish uchun.
+     */
+    public void notifyMapSettingsUpdated(MapSettings settings) {
+        messagingTemplate.convertAndSend("/topic/map-settings", settings);
     }
 
     private void sendFcmNotification(User user, String title, String body, String type) {
