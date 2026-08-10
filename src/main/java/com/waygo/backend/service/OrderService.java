@@ -862,8 +862,52 @@ public class OrderService {
 
         if (status == Order.OrderStatus.CANCELLED && isDriver) {
             if (order.getPassenger() != null) {
-                // Driver is cancelling their acceptance of a passenger's order!
-                // We release it back to PENDING so another driver can accept it.
+                // This order may have been assigned via confirmDriverOffer(), which
+                // mirrors the passenger's seats into a *separate* driver-owned
+                // announcement Order (see the "Auto-create or Update driver's ride
+                // announcement" block above) linked back by RideBooking.passengerOrderId.
+                // The old code below (release to PENDING) ignored that mirror
+                // entirely: the driver's own announcement was left behind, still
+                // PENDING with its booking stuck ACCEPTED forever — orphaned and
+                // never cancellable from the driver's side, which is exactly what
+                // was reported. Passenger-initiated cancel already cleans this up
+                // correctly (see the isPassenger branch above); mirror that here.
+                List<com.waygo.backend.entity.RideBooking> mirroredBookings =
+                        rideBookingRepository.findByPassengerOrderId(order.getId());
+                if (!mirroredBookings.isEmpty()) {
+                    for (com.waygo.backend.entity.RideBooking booking : mirroredBookings) {
+                        Order driverOrder = booking.getOrder();
+                        if (driverOrder != null) {
+                            if ("ACCEPTED".equals(booking.getStatus()) && driverOrder.getAvailableSeats() != null) {
+                                for (String seat : booking.getSelectedSeats()) {
+                                    String mappedSeat = mapSeatIndexToLabel(seat);
+                                    if (!driverOrder.getAvailableSeats().contains(mappedSeat)) {
+                                        driverOrder.getAvailableSeats().add(mappedSeat);
+                                    }
+                                }
+                            }
+                            driverOrder.getBookings().remove(booking);
+                            orderRepository.save(driverOrder);
+                            notificationService.notifyOrderStatusUpdate(driverOrder);
+                        }
+                        rideBookingRepository.delete(booking);
+                    }
+
+                    order.setStatus(Order.OrderStatus.CANCELLED);
+                    order.setDriver(null);
+                    order.setPassengerConfirmed(false);
+                    order.setLockedByDriverId(null);
+                    order.setLockExpirationTime(null);
+
+                    Order savedOrder = orderRepository.save(order);
+                    notificationService.notifyPassengerOrderCancelledByDriver(savedOrder, savedOrder);
+                    notificationService.notifyOrderStatusUpdate(savedOrder);
+                    return savedOrder;
+                }
+
+                // No mirrored booking — this is a plain direct-assign order (no
+                // driver bidding/offer involved). Release it back to PENDING so
+                // another driver can pick it up, same as before.
                 order.setStatus(Order.OrderStatus.PENDING);
                 order.setDriver(null);
                 order.setLockedByDriverId(null);
