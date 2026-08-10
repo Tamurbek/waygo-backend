@@ -22,6 +22,13 @@
 
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">📷 Kamera / Zoom</h3>
 
+                    <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem;">
+                        <input type="checkbox" th:field="*{tilt3DEnabled}" id="tilt3DEnabledCheckbox" style="width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: var(--primary);">
+                        <label for="tilt3DEnabledCheckbox" style="color: var(--text-dim); font-size: 0.9rem; cursor: pointer; user-select: none;">
+                            3D burchakni (tilt) yoqish — o'chirilganda ikki barmoq bilan tortib xaritani egib bo'lmaydi (ikkala ilovada ham)
+                        </label>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
                             <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Driver: bazaviy zoom</label>

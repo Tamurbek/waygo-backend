@@ -57,6 +57,8 @@ public class MapSettingsService {
         existing.setTrafficColorVeryHardHex(newSettings.getTrafficColorVeryHardHex());
         existing.setTrafficColorUnknownHex(newSettings.getTrafficColorUnknownHex());
 
+        existing.setTilt3DEnabled(newSettings.isTilt3DEnabled());
+
         existing.setDriverLocationPollingSeconds(newSettings.getDriverLocationPollingSeconds());
         existing.setRouteDrawAnimationMs(newSettings.getRouteDrawAnimationMs());
         existing.setRouteCrossfadeAnimationMs(newSettings.getRouteCrossfadeAnimationMs());

@@ -91,6 +91,15 @@ public class MapSettings {
     @Builder.Default
     private String trafficColorUnknownHex = "#9E9E9E";
 
+    // Xaritada 3D burchak (tilt gesture) yoqilganmi — ikkala ilovada ham
+    // default o'chirilgan (2D-only).
+    @Builder.Default
+    private Boolean tilt3DEnabled = false;
+
+    public boolean isTilt3DEnabled() {
+        return Boolean.TRUE.equals(this.tilt3DEnabled);
+    }
+
     // --- Yangilanish intervallari ---
     @Builder.Default
     private Integer driverLocationPollingSeconds = 10;
