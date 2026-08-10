@@ -34,6 +34,12 @@ public class SystemSettings {
     @Builder.Default
     private Integer freeTrialDays = 14;
 
+    // Haydovchiga ko'rsatiladigan yo'lovchi buyurtmalarining maksimal masofasi
+    // (km). 0 yoki null = cheklovsiz (hammasi ko'rsatiladi, faqat masofa
+    // bo'yicha saralanadi).
+    @Builder.Default
+    private Integer orderVisibilityRadiusKm = 0;
+
     private String telegramBotToken;
     private String telegramChatId;
 
@@ -58,5 +64,9 @@ public class SystemSettings {
 
     public Integer getFreeTrialDays() {
         return this.freeTrialDays != null ? this.freeTrialDays : 14;
+    }
+
+    public Integer getOrderVisibilityRadiusKm() {
+        return this.orderVisibilityRadiusKm != null ? this.orderVisibilityRadiusKm : 0;
     }
 }

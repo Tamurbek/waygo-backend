@@ -1542,6 +1542,23 @@ public class OrderService {
             if (driverLoc != null && driverLoc.getLatitude() != null && driverLoc.getLongitude() != null) {
                 double driverLat = driverLoc.getLatitude();
                 double driverLon = driverLoc.getLongitude();
+
+                // Admin-configurable cutoff (SystemSettings.orderVisibilityRadiusKm,
+                // 0 = no limit). Applied before sorting so a huge order list isn't
+                // sorted needlessly, and so an order missing fromLat/fromLon (which
+                // distanceKm treats as "infinitely far") is correctly excluded
+                // rather than kept because it couldn't be measured.
+                int radiusKm = com.waygo.backend.service.SystemSettingsService.getOrderVisibilityRadiusKmConfig();
+                if (radiusKm > 0) {
+                    List<Order> withinRadius = new java.util.ArrayList<>();
+                    for (Order o : result) {
+                        if (distanceKm(driverLat, driverLon, o.getFromLat(), o.getFromLon()) <= radiusKm) {
+                            withinRadius.add(o);
+                        }
+                    }
+                    result = withinRadius;
+                }
+
                 List<Order> sorted = new java.util.ArrayList<>(result);
                 sorted.sort(java.util.Comparator.comparingDouble(o -> distanceKm(driverLat, driverLon, o.getFromLat(), o.getFromLon())));
                 result = sorted;

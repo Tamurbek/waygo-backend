@@ -14,6 +14,7 @@ public class SystemSettingsService {
     private static volatile boolean globalBillingEnabled = false;
     private static volatile boolean vipTariffEnabled = true;
     private static volatile int freeTrialDays = 14;
+    private static volatile int orderVisibilityRadiusKm = 0;
 
     @org.springframework.beans.factory.annotation.Value("${waygo.sms.provider:eskiz}")
     private String defaultSmsProvider;
@@ -37,6 +38,10 @@ public class SystemSettingsService {
 
     public static int getFreeTrialDaysConfig() {
         return freeTrialDays;
+    }
+
+    public static int getOrderVisibilityRadiusKmConfig() {
+        return orderVisibilityRadiusKm;
     }
 
     @jakarta.annotation.PostConstruct
@@ -66,6 +71,7 @@ public class SystemSettingsService {
             globalBillingEnabled = settings.isBillingEnabled();
             vipTariffEnabled = settings.isVipTariffEnabled();
             freeTrialDays = settings.getFreeTrialDays();
+            orderVisibilityRadiusKm = settings.getOrderVisibilityRadiusKm();
         } catch (Exception e) {
             globalBillingEnabled = false;
             vipTariffEnabled = true;
@@ -83,6 +89,7 @@ public class SystemSettingsService {
         globalBillingEnabled = settings.isBillingEnabled();
         vipTariffEnabled = settings.isVipTariffEnabled();
         freeTrialDays = settings.getFreeTrialDays();
+        orderVisibilityRadiusKm = settings.getOrderVisibilityRadiusKm();
         return settings;
     }
 
@@ -99,6 +106,7 @@ public class SystemSettingsService {
         if (newSettings.getFreeTrialDays() != null) {
             existing.setFreeTrialDays(newSettings.getFreeTrialDays());
         }
+        existing.setOrderVisibilityRadiusKm(newSettings.getOrderVisibilityRadiusKm());
         existing.setTelegramBotToken(newSettings.getTelegramBotToken());
         existing.setTelegramChatId(newSettings.getTelegramChatId());
         // App versiyalarini saqlash
@@ -112,6 +120,7 @@ public class SystemSettingsService {
         globalBillingEnabled = saved.isBillingEnabled();
         vipTariffEnabled = saved.isVipTariffEnabled();
         freeTrialDays = saved.getFreeTrialDays();
+        orderVisibilityRadiusKm = saved.getOrderVisibilityRadiusKm();
         return saved;
     }
 
