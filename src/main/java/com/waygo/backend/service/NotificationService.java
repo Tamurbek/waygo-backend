@@ -588,6 +588,9 @@ public class NotificationService {
 
     private void sendFcmNotification(User user, String title, String body, String type, java.util.Map<String, String> extraData) {
         if (user == null || user.getFcmToken() == null || user.getFcmToken().isEmpty()) {
+            if (user != null) {
+                System.out.println("[FCM] Skipped: user " + user.getId() + " (" + user.getPhone() + ") has no fcmToken stored");
+            }
             return;
         }
         try {
@@ -611,9 +614,10 @@ public class NotificationService {
                 }
             }
 
-            com.google.firebase.messaging.FirebaseMessaging.getInstance().send(builder.build());
+            String messageId = com.google.firebase.messaging.FirebaseMessaging.getInstance().send(builder.build());
+            System.out.println("[FCM] Sent to user " + user.getId() + " (" + user.getPhone() + "), messageId=" + messageId);
         } catch (Exception e) {
-            System.err.println("Failed to send FCM notification to user " + user.getId() + ": " + e.getMessage());
+            System.err.println("[FCM] Failed to send to user " + user.getId() + " (" + user.getPhone() + "): " + e.getMessage());
         }
     }
 }

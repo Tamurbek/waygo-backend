@@ -62,6 +62,12 @@
                                                 <th:block th:if="${driver.carNumber != null}">· <span th:text="${driver.carNumber}"></span></th:block>
                                             </span>
                                         </th:block>
+                                        <span th:if="${driver.fcmToken != null and !driver.fcmToken.isEmpty()}" style="font-size: 0.72rem; color: var(--success); display: flex; align-items: center; gap: 0.25rem;">
+                                            <i class="ph ph-bell" style="font-size:0.8rem;"></i> Push: bor
+                                        </span>
+                                        <span th:if="${driver.fcmToken == null or driver.fcmToken.isEmpty()}" style="font-size: 0.72rem; color: var(--error); display: flex; align-items: center; gap: 0.25rem;">
+                                            <i class="ph ph-bell-slash" style="font-size:0.8rem;"></i> Push: yo'q
+                                        </span>
                                     </div>
                                 </div>
                             </td>
