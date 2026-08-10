@@ -60,6 +60,9 @@ class OrderServiceTest {
     @Mock
     private com.waygo.backend.service.ReferralService referralService;
 
+    @Mock
+    private com.waygo.backend.service.DriverLocationCache driverLocationCache;
+
     @InjectMocks
     private OrderService orderService;
 
