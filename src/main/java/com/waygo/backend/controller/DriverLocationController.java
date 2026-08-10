@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.waygo.backend.repository.UserRepository;
+import com.waygo.backend.service.DriverLocationCache;
 
 @Controller
 @RequiredArgsConstructor
@@ -22,12 +22,7 @@ public class DriverLocationController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
-    
-    // In-memory cache for driver locations: orderId -> Location
-    private final ConcurrentHashMap<Long, DriverLocationPayload> locationCache = new ConcurrentHashMap<>();
-    
-    // In-memory cache for global driver locations: driverId -> Location
-    private final ConcurrentHashMap<Long, DriverLocationPayload> driverGlobalLocationCache = new ConcurrentHashMap<>();
+    private final DriverLocationCache locationCacheStore;
 
     @MessageMapping("/driver/location")
     public void handleDriverLocation(DriverLocationPayload payload) {
@@ -43,13 +38,13 @@ public class DriverLocationController {
             });
 
             // Global tracking by driverId
-            driverGlobalLocationCache.put(payload.getDriverId(), payload);
+            locationCacheStore.putByDriverId(payload.getDriverId(), payload);
             messagingTemplate.convertAndSend("/topic/drivers/" + payload.getDriverId() + "/location", payload);
         }
 
         // Active trip tracking by orderId
         if (payload.getOrderId() != null && payload.getOrderId() != 0) {
-            locationCache.put(payload.getOrderId(), payload);
+            locationCacheStore.putByOrderId(payload.getOrderId(), payload);
             messagingTemplate.convertAndSend("/topic/orders/" + payload.getOrderId() + "/location", payload);
         }
     }
@@ -58,7 +53,7 @@ public class DriverLocationController {
     @GetMapping("/api/v1/orders/{orderId}/driver-location")
     @ResponseBody
     public ResponseEntity<ApiResponse<DriverLocationPayload>> getDriverLocation(@PathVariable("orderId") Long orderId) {
-        DriverLocationPayload cached = locationCache.get(orderId);
+        DriverLocationPayload cached = locationCacheStore.getByOrderId(orderId);
         if (cached == null) {
             return ResponseEntity.ok(ApiResponse.success(null, "No location cached yet"));
         }
@@ -69,7 +64,7 @@ public class DriverLocationController {
     @GetMapping("/api/v1/drivers/{driverId}/location")
     @ResponseBody
     public ResponseEntity<ApiResponse<DriverLocationPayload>> getGlobalDriverLocation(@PathVariable("driverId") Long driverId) {
-        DriverLocationPayload cached = driverGlobalLocationCache.get(driverId);
+        DriverLocationPayload cached = locationCacheStore.getByDriverId(driverId);
         if (cached == null) {
             return ResponseEntity.ok(ApiResponse.success(null, "No global location cached yet"));
         }

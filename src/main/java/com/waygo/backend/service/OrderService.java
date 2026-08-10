@@ -27,6 +27,7 @@ public class OrderService {
     private final com.waygo.backend.repository.RideBookingRepository rideBookingRepository;
     private final com.waygo.backend.repository.UserRepository userRepository;
     private final com.waygo.backend.service.ReferralService referralService;
+    private final DriverLocationCache driverLocationCache;
 
     @Transactional
     public Order createOrder(OrderCreateDTO dto) {
@@ -1518,18 +1519,51 @@ public class OrderService {
         }
 
         // Filter by region if provided
+        List<Order> result = orders;
         if (region != null && !region.trim().isEmpty() && !"Barchasi".equalsIgnoreCase(region.trim())) {
             List<Order> filtered = new java.util.ArrayList<>();
-            for (Order order : orders) {
+            for (Order order : result) {
                 if (order.getFromAddress() != null &&
                     order.getFromAddress().toLowerCase().contains(region.toLowerCase().trim())) {
                     filtered.add(order);
                 }
             }
-            return filtered;
+            result = filtered;
         }
 
-        return orders;
+        // Nearest-first for drivers, using their last known live location —
+        // continuously reported to DriverLocationCache while "Ish rejimi"
+        // (online) is on, independent of any active trip. If we don't have a
+        // live fix yet for this driver (e.g. just went online, no GPS sample
+        // reported yet), leave the list in its existing order rather than
+        // guessing.
+        if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
+            com.waygo.backend.dto.order.DriverLocationPayload driverLoc = driverLocationCache.getByDriverId(currentUser.getId());
+            if (driverLoc != null && driverLoc.getLatitude() != null && driverLoc.getLongitude() != null) {
+                double driverLat = driverLoc.getLatitude();
+                double driverLon = driverLoc.getLongitude();
+                List<Order> sorted = new java.util.ArrayList<>(result);
+                sorted.sort(java.util.Comparator.comparingDouble(o -> distanceKm(driverLat, driverLon, o.getFromLat(), o.getFromLon())));
+                result = sorted;
+            }
+        }
+
+        return result;
+    }
+
+    /** Haversine distance in km. Orders with a missing pickup point sort last. */
+    private static double distanceKm(double lat1, double lon1, Double lat2, Double lon2) {
+        if (lat2 == null || lon2 == null) {
+            return Double.MAX_VALUE;
+        }
+        final double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     @Transactional
