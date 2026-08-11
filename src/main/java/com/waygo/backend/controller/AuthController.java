@@ -32,8 +32,12 @@ public class AuthController {
         System.out.println("DEBUG (request-otp): Incoming request body phone=" + request.getPhone());
         try {
             String code = otpService.sendVerificationCode(request.getPhone());
+            // Only ever echo the code back for the fixed demo phones (used for App Store/Play
+            // Store review logins). For real numbers the code must stay SMS-only, otherwise
+            // anyone could read it straight from this response and skip verification entirely.
+            String responseCode = otpService.isDemoPhone(request.getPhone()) ? code : "";
             return ResponseEntity.ok(ApiResponse.success(
-                    java.util.Map.of("code", code),
+                    java.util.Map.of("code", responseCode),
                     "Verification code sent to " + request.getPhone()));
         } catch (Exception e) {
             System.err.println("ERROR (request-otp): Failed for phone=" + request.getPhone() + ": " + e.getMessage());

@@ -25,6 +25,11 @@ public class OtpService {
     private static final String DEMO_OTP = "1111";
     private static final String FALLBACK_TEMPLATE = "WayGo tasdiqlash kodi: %s";
 
+    /** Demo phones are the only case where returning the code to the caller is safe (fixed, non-secret code, not tied to a real user). */
+    public boolean isDemoPhone(String phone) {
+        return DEMO_PHONES.contains(phone);
+    }
+
     public String sendVerificationCode(String phone) {
         // Demo/Test bypass logic
         if (DEMO_PHONES.contains(phone)) {
