@@ -142,6 +142,26 @@ public class AdminTranslationController {
                 .body(json);
     }
 
+    /**
+     * For starting a brand-new language: unlike {@link #export}, which only contains values
+     * already stored for that exact language (empty for a language nobody has translated yet),
+     * this returns every key for the app resolved through sourceLang's own fallback chain — i.e.
+     * the full key set with real text to translate offline, then re-upload via {@link #importJson}
+     * under the new language's code.
+     */
+    @GetMapping("/export-template")
+    public ResponseEntity<byte[]> exportTemplate(@RequestParam String app, @RequestParam(defaultValue = "uz") String sourceLang) throws Exception {
+        AppTarget appTarget = parseAppTarget(app);
+        Map<String, String> data = translationService.resolveForApp(appTarget, sourceLang);
+        byte[] json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(data);
+
+        String filename = app.toLowerCase() + "_" + sourceLang + "_shablon.json";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(json);
+    }
+
     @PostMapping("/import")
     public String importJson(@RequestParam String app, @RequestParam String lang, @RequestParam String jsonText) {
         AppTarget appTarget = parseAppTarget(app);
