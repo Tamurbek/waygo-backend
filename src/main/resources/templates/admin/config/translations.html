@@ -271,7 +271,7 @@
                     <div class="form-group">
                         <label class="form-label">Manba til (qaysi tildan tarjima qilasiz)</label>
                         <select name="sourceLang" class="form-control">
-                            <option th:each="lang : ${languages}" th:value="${lang.code}" th:selected="${lang.code == 'uz'}" th:text="${lang.name} + ' (' + ${lang.code} + ')'"></option>
+                            <option th:each="lang : ${languages}" th:value="${lang.code}" th:selected="${lang.code == 'uz' or lang.code == 'uz_lotin'}" th:text="${lang.name} + ' (' + ${lang.code} + ')'"></option>
                         </select>
                     </div>
                 </div>
