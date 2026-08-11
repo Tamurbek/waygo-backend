@@ -15,4 +15,6 @@ public interface TranslationKeyRepository extends JpaRepository<TranslationKey, 
     Optional<TranslationKey> findByKeyCodeAndAppTarget(String keyCode, AppTarget appTarget);
 
     boolean existsByKeyCodeAndAppTarget(String keyCode, AppTarget appTarget);
+
+    boolean existsByAppTarget(AppTarget appTarget);
 }
