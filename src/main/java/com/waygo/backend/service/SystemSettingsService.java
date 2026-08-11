@@ -50,9 +50,12 @@ public class SystemSettingsService {
             SystemSettings settings = getSettings();
             boolean needsSave = false;
             if (!"eskiz".equalsIgnoreCase(settings.getSmsProvider()) ||
-                settings.getEskizEmail() == null || 
-                "test@test.com".equals(settings.getEskizEmail()) || 
-                "password".equals(settings.getEskizPassword()) || 
+                settings.getEskizEmail() == null ||
+                settings.getEskizEmail().isBlank() ||
+                settings.getEskizPassword() == null ||
+                settings.getEskizPassword().isBlank() ||
+                "test@test.com".equals(settings.getEskizEmail()) ||
+                "password".equals(settings.getEskizPassword()) ||
                 "temuryoldoshev10@gmail.com".equals(settings.getEskizEmail())) {
                 settings.setSmsProvider(defaultSmsProvider);
                 settings.setEskizEmail(defaultEskizEmail);
@@ -98,7 +101,13 @@ public class SystemSettingsService {
         SystemSettings existing = getSettings();
         existing.setSmsProvider(newSettings.getSmsProvider());
         existing.setEskizEmail(newSettings.getEskizEmail());
-        existing.setEskizPassword(newSettings.getEskizPassword());
+        // Browsers don't reliably re-populate password-type inputs from the server-rendered
+        // value, so a save made without retyping it would otherwise submit blank and silently
+        // wipe out a working credential (this is what actually broke SMS sending). Only
+        // overwrite when a new, non-blank password was actually submitted.
+        if (newSettings.getEskizPassword() != null && !newSettings.getEskizPassword().isBlank()) {
+            existing.setEskizPassword(newSettings.getEskizPassword());
+        }
         existing.setEskizFrom(newSettings.getEskizFrom());
         existing.setOtpMessageTemplate(newSettings.getOtpMessageTemplate());
         existing.setBillingEnabled(newSettings.isBillingEnabled());
