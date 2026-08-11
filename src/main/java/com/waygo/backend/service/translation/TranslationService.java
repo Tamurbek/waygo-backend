@@ -144,15 +144,33 @@ public class TranslationService {
     }
 
     @Transactional
-    public void editLanguage(Long id, String name, String flagEmoji, String baseLanguageCode, Integer sortOrder) {
+    public void editLanguage(Long id, String code, String name, String flagEmoji, String baseLanguageCode, Integer sortOrder) {
         Language language = languageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Til topilmadi: " + id));
-        validateNoCycle(language.getCode(), baseLanguageCode);
+        String oldCode = language.getCode();
+        String newCode = (code == null || code.isBlank()) ? oldCode : code.trim();
+        if (!newCode.equals(oldCode) && languageRepository.existsByCode(newCode)) {
+            throw new IllegalArgumentException("Bu til kodi allaqachon mavjud: " + newCode);
+        }
+        validateNoCycle(newCode, baseLanguageCode);
+        language.setCode(newCode);
         language.setName(name);
         language.setFlagEmoji(flagEmoji);
         language.setBaseLanguageCode(baseLanguageCode);
         language.setSortOrder(sortOrder);
         languageRepository.save(language);
+
+        // TranslationValue rows reference the language by id, not code, so no cascade needed
+        // there — but other languages' baseLanguageCode is a loose string reference and would
+        // dangle if we didn't repoint it.
+        if (!newCode.equals(oldCode)) {
+            for (Language other : languageRepository.findAll()) {
+                if (oldCode.equals(other.getBaseLanguageCode())) {
+                    other.setBaseLanguageCode(newCode);
+                    languageRepository.save(other);
+                }
+            }
+        }
     }
 
     @Transactional

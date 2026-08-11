@@ -218,6 +218,13 @@
                 <input type="hidden" name="app" th:value="${app}">
                 <div class="modal-body">
                     <div class="form-group">
+                        <label class="form-label">Til kodi</label>
+                        <input type="text" id="editLanguageCode" name="code" required class="form-control" placeholder="masalan: uz_kril">
+                        <div style="color: var(--text-dim); font-size: 0.75rem; margin-top: 0.25rem;">
+                            Ehtiyot bo'ling: kodni o'zgartirish shu tilga bog'liq bo'lgan ilova so'rovlariga ta'sir qiladi.
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Nomi</label>
                         <input type="text" id="editLanguageName" name="name" required class="form-control">
                     </div>
@@ -325,6 +332,7 @@
 
         function openEditLanguageModal(btn) {
             document.getElementById('editLanguageForm').action = '/admin/config/translations/languages/edit/' + btn.dataset.id;
+            document.getElementById('editLanguageCode').value = btn.dataset.code || '';
             document.getElementById('editLanguageName').value = btn.dataset.name || '';
             document.getElementById('editLanguageFlag').value = btn.dataset.flag || '';
             document.getElementById('editLanguageSort').value = btn.dataset.sort || '';

@@ -109,13 +109,14 @@ public class AdminTranslationController {
     }
 
     @PostMapping("/languages/edit/{id}")
-    public String editLanguage(@PathVariable Long id, @RequestParam String name,
+    public String editLanguage(@PathVariable Long id, @RequestParam(required = false) String code,
+                                @RequestParam String name,
                                 @RequestParam(required = false) String flagEmoji,
                                 @RequestParam(required = false) String baseLanguageCode,
                                 @RequestParam(required = false) String sortOrder,
                                 @RequestParam(defaultValue = "user") String app) {
         try {
-            translationService.editLanguage(id, name.trim(), flagEmoji, emptyToNull(baseLanguageCode), parseIntOrNull(sortOrder));
+            translationService.editLanguage(id, emptyToNull(code), name.trim(), flagEmoji, emptyToNull(baseLanguageCode), parseIntOrNull(sortOrder));
             return "redirect:/admin/config/translations?app=" + app + "&updated";
         } catch (IllegalArgumentException e) {
             return "redirect:/admin/config/translations?app=" + app + "&error=" + encode(e.getMessage());
