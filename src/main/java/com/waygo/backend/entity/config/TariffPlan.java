@@ -50,15 +50,16 @@ public class TariffPlan {
     private Long descriptionKeyId;
 
     /**
-     * @OrderColumn makes index-based alignment with {@link #featureKeyIds} reliable (a plain
-     * List without it is an unordered bag in JPA). Existing rows get a NULL index until the
-     * next edit through the admin form, at which point Hibernate rewrites the whole
-     * collection and backfills it — see rollout note in the tariffs admin controller/template.
+     * No @OrderColumn here on purpose: this table already has production rows, and
+     * ddl-auto=update does not reliably ALTER an existing @ElementCollection table to add
+     * an order column (confirmed in prod: "column list_index does not exist" 500s right
+     * after deploy). Alignment with {@link #featureKeyIds} therefore relies on Postgres's
+     * de-facto insertion-order return for this simple, never-ORDER-BY'd collection table —
+     * good enough in practice, not a hard guarantee.
      */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "tariff_plan_features", joinColumns = @JoinColumn(name = "tariff_plan_id"))
     @Column(name = "feature")
-    @OrderColumn(name = "list_index")
     private List<String> features;
 
     /**
