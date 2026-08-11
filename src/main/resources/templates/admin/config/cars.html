@@ -60,6 +60,11 @@
                                         onclick="openEditBrandModal(this)">
                                         <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
                                     </button>
+                                    <span style="display:none;" th:id="'brandTr-' + ${b.id}">
+                                        <span th:each="lang : ${activeLanguages}" class="t"
+                                              th:data-lang="${lang.code}"
+                                              th:data-value="${brandTranslations.get(b.id) != null ? brandTranslations.get(b.id).get(lang.code) : ''}"></span>
+                                    </span>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(brands)}">
@@ -110,6 +115,11 @@
                               onmouseout="this.style.borderColor='var(--border)'">
                             <span th:text="${m.name}"></span>
                             <i class="ph ph-pencil-simple" style="color: var(--text-dim); font-size: 0.8rem;"></i>
+                            <span style="display:none;" th:id="'modelTr-' + ${m.id}">
+                                <span th:each="lang : ${activeLanguages}" class="t"
+                                      th:data-lang="${lang.code}"
+                                      th:data-value="${modelTranslations.get(m.id) != null ? modelTranslations.get(m.id).get(lang.code) : ''}"></span>
+                            </span>
                         </span>
                     </div>
                 </div>
@@ -135,6 +145,10 @@
                         <label class="form-label">Brend Nomi</label>
                         <input type="text" name="name" required class="form-control" placeholder="Masalan: Chevrolet">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('addBrandModal')">Bekor qilish</button>
@@ -158,6 +172,10 @@
                     <div class="form-group">
                         <label class="form-label">Brend Nomi</label>
                         <input type="text" id="editBrandName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -190,6 +208,10 @@
                         <label class="form-label">Model Nomi</label>
                         <input type="text" name="name" required class="form-control" placeholder="Masalan: Cobalt">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeModal('addModelModal')">Bekor qilish</button>
@@ -219,6 +241,10 @@
                     <div class="form-group">
                         <label class="form-label">Model Nomi</label>
                         <input type="text" id="editModelName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -311,9 +337,21 @@
             document.getElementById(id).classList.remove('active');
         }
 
+        // Fills the *[name^="xTranslations"] inputs inside `modalEl` from the hidden
+        // per-row <span data-lang data-value> store rendered next to the clicked item.
+        function fillTranslationInputs(modalEl, storeId) {
+            const store = document.getElementById(storeId);
+            modalEl.querySelectorAll('[name^="nameTranslations"]').forEach(function (input) {
+                const lang = input.name.match(/\[(.+)\]/)[1];
+                const span = store ? store.querySelector('[data-lang="' + lang + '"]') : null;
+                input.value = span ? span.dataset.value : '';
+            });
+        }
+
         function openEditBrandModal(btn) {
             document.getElementById('editBrandForm').action = '/admin/config/cars/brands/edit/' + btn.dataset.id;
             document.getElementById('editBrandName').value = btn.dataset.name;
+            fillTranslationInputs(document.getElementById('editBrandModal'), 'brandTr-' + btn.dataset.id);
             openModal('editBrandModal');
         }
 
@@ -321,6 +359,7 @@
             document.getElementById('editModelForm').action = '/admin/config/cars/models/edit/' + el.dataset.id;
             document.getElementById('editModelName').value = el.dataset.name;
             document.getElementById('editModelBrandId').value = el.dataset.brandId;
+            fillTranslationInputs(document.getElementById('editModelModal'), 'modelTr-' + el.dataset.id);
             openModal('editModelModal');
         }
 

@@ -227,6 +227,24 @@
         </div>
     </div>
     
+    <!--
+        Reusable multi-language input group for reference-data forms (car brands/models,
+        services, tariffs, regions, top-up steps). Renders one text input per active
+        language, pre-filled from `values` (langCode -> text) when editing.
+        fieldPrefix must match a Map<String,String> property on the bound form object,
+        e.g. "nameTranslations" -> generates name="nameTranslations[uz]" inputs.
+    -->
+    <div th:fragment="translationInputs(fieldPrefix, activeLanguages, values)" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+        <div th:each="lang : ${activeLanguages}" style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="width: 5.5rem; flex-shrink: 0; font-size: 0.8rem; color: var(--text-dim);"
+                  th:text="${lang.flagEmoji + ' ' + lang.code}"></span>
+            <input type="text" class="form-control"
+                   th:name="${fieldPrefix + '[' + lang.code + ']'}"
+                   th:value="${values != null and values.get(lang.code) != null ? values.get(lang.code) : ''}"
+                   th:placeholder="${lang.name}" />
+        </div>
+    </div>
+
     <script th:fragment="scripts">
         // Theme Toggler
         function updateThemeUI() {

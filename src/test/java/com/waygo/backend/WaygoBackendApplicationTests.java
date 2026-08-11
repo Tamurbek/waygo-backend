@@ -92,7 +92,7 @@ class WaygoBackendApplicationTests {
     @Test
     void testConfigTariffs() {
         try {
-            System.out.println(configController.getTariffs().getBody());
+            System.out.println(configController.getTariffs(null).getBody());
         } catch (Exception e) {
             e.printStackTrace();
             throw e;

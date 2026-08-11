@@ -73,6 +73,11 @@
                                     onclick="openEditServiceModal(this)">
                                     <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
                                 </button>
+                                <span style="display:none;" th:id="'serviceTr-' + ${s.id}">
+                                    <span th:each="lang : ${activeLanguages}" class="t"
+                                          th:data-lang="${lang.code}"
+                                          th:data-value="${serviceTranslations.get(s.id) != null ? serviceTranslations.get(s.id).get(lang.code) : ''}"></span>
+                                </span>
                                 <form th:action="@{/admin/config/services/delete/{id}(id=${s.id})}" method="post"
                                       onsubmit="return confirm('Rostdan ham o\'chirmoqchimisiz?');" style="display: inline;">
                                     <button type="submit" class="btn-icon btn-icon-delete" title="O'chirish">
@@ -190,6 +195,10 @@
                         <input type="text" name="name" required class="form-control" placeholder="Masalan: Konditsioner">
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Ikonka Kaliti (Phosphor Icons)</label>
                         <input type="text" id="addIconKey" name="iconKey" required class="form-control" placeholder="ph-wind"
                                oninput="onIconKeyInput('add', this.value)">
@@ -247,6 +256,10 @@
                     <div class="form-group">
                         <label class="form-label">Xizmat Nomi</label>
                         <input type="text" id="editName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Ikonka Kaliti (Phosphor Icons)</label>
@@ -403,6 +416,14 @@
             document.getElementById('editType').value = btn.dataset.type;
             document.getElementById('editActive').checked = (btn.dataset.active === 'true');
             updatePreview('edit', btn.dataset.icon);
+
+            const store = document.getElementById('serviceTr-' + btn.dataset.id);
+            document.querySelectorAll('#editModal [name^="nameTranslations"]').forEach(function (input) {
+                const lang = input.name.match(/\[(.+)\]/)[1];
+                const span = store ? store.querySelector('[data-lang="' + lang + '"]') : null;
+                input.value = span ? span.dataset.value : '';
+            });
+
             openModal('editModal');
         }
 

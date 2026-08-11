@@ -19,9 +19,17 @@ public class CarBrand {
     private Long id;
     
     private String name;
-    
+
     private boolean isActive;
-    
+
+    /** FK to translation_keys; null until an admin adds a translation for {@link #name}. */
+    private Long nameKeyId;
+
     @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<CarModel> models;
+
+    /** Form-binding only, not persisted: language code -> translated name, submitted by the admin form. */
+    @Transient
+    @Builder.Default
+    private java.util.Map<String, String> nameTranslations = new java.util.HashMap<>();
 }

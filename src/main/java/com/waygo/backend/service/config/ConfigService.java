@@ -2,6 +2,7 @@ package com.waygo.backend.service.config;
 
 import com.waygo.backend.entity.config.*;
 import com.waygo.backend.repository.config.*;
+import com.waygo.backend.service.translation.EntityTranslationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +13,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class ConfigService {
-    
+
     private final TariffPlanRepository tariffPlanRepository;
     private final RegionRepository regionRepository;
     private final DistrictRepository districtRepository;
@@ -21,45 +22,93 @@ public class ConfigService {
     private final CarColorRepository carColorRepository;
     private final ServiceOptionRepository serviceOptionRepository;
     private final TopUpStepRepository topUpStepRepository;
+    private final EntityTranslationService entityTranslationService;
 
-    public List<TopUpStep> getTopUpSteps() {
-        return topUpStepRepository.findAllByOrderByStepNumberAsc();
+    public List<TopUpStep> getTopUpSteps(String locale) {
+        List<TopUpStep> steps = topUpStepRepository.findAllByOrderByStepNumberAsc();
+        for (TopUpStep step : steps) {
+            step.setTitle(entityTranslationService.resolve(step.getTitleKeyId(), locale, step.getTitle()));
+            step.setDescription(entityTranslationService.resolve(step.getDescriptionKeyId(), locale, step.getDescription()));
+        }
+        return steps;
     }
 
-    public List<TariffPlan> getActiveTariffPlans() {
-        return tariffPlanRepository.findAllByIsActiveTrue();
+    public List<TariffPlan> getActiveTariffPlans(String locale) {
+        List<TariffPlan> plans = tariffPlanRepository.findAllByIsActiveTrue();
+        for (TariffPlan plan : plans) {
+            plan.setDuration(entityTranslationService.resolve(plan.getDurationKeyId(), locale, plan.getDuration()));
+            plan.setDescription(entityTranslationService.resolve(plan.getDescriptionKeyId(), locale, plan.getDescription()));
+            resolveFeatures(plan, locale);
+        }
+        return plans;
     }
 
-    public List<Region> getActiveRegions() {
-        return regionRepository.findAllByIsActiveTrue();
+    private void resolveFeatures(TariffPlan plan, String locale) {
+        List<String> features = plan.getFeatures();
+        List<Long> keyIds = plan.getFeatureKeyIds();
+        if (features == null || keyIds == null || locale == null || locale.isBlank()) {
+            return;
+        }
+        for (int i = 0; i < features.size() && i < keyIds.size(); i++) {
+            features.set(i, entityTranslationService.resolve(keyIds.get(i), locale, features.get(i)));
+        }
+    }
+
+    public List<Region> getActiveRegions(String locale) {
+        List<Region> regions = regionRepository.findAllByIsActiveTrue();
+        for (Region region : regions) {
+            region.setName(entityTranslationService.resolve(region.getNameKeyId(), locale, region.getName()));
+        }
+        return regions;
     }
 
     public List<District> getActiveDistrictsByRegion(Long regionId) {
         return districtRepository.findAllByRegionIdAndIsActiveTrue(regionId);
     }
-    
+
     public List<District> getAllActiveDistricts() {
         return districtRepository.findAllByIsActiveTrue();
     }
 
-    public List<CarBrand> getActiveCarBrands() {
-        return carBrandRepository.findAllByIsActiveTrue();
+    public List<CarBrand> getActiveCarBrands(String locale) {
+        List<CarBrand> brands = carBrandRepository.findAllByIsActiveTrue();
+        for (CarBrand brand : brands) {
+            brand.setName(entityTranslationService.resolve(brand.getNameKeyId(), locale, brand.getName()));
+            if (brand.getModels() != null) {
+                for (CarModel model : brand.getModels()) {
+                    model.setName(entityTranslationService.resolve(model.getNameKeyId(), locale, model.getName()));
+                }
+            }
+        }
+        return brands;
     }
 
-    public List<CarModel> getActiveCarModelsByBrand(Long brandId) {
-        return carModelRepository.findAllByBrandIdAndIsActiveTrue(brandId);
+    public List<CarModel> getActiveCarModelsByBrand(Long brandId, String locale) {
+        List<CarModel> models = carModelRepository.findAllByBrandIdAndIsActiveTrue(brandId);
+        for (CarModel model : models) {
+            model.setName(entityTranslationService.resolve(model.getNameKeyId(), locale, model.getName()));
+        }
+        return models;
     }
 
-    public List<CarModel> getAllActiveCarModels() {
-        return carModelRepository.findAllByIsActiveTrue();
+    public List<CarModel> getAllActiveCarModels(String locale) {
+        List<CarModel> models = carModelRepository.findAllByIsActiveTrue();
+        for (CarModel model : models) {
+            model.setName(entityTranslationService.resolve(model.getNameKeyId(), locale, model.getName()));
+        }
+        return models;
     }
 
     public List<CarColor> getActiveCarColors() {
         return carColorRepository.findAllByIsActiveTrue();
     }
-    
-    public List<ServiceOption> getActiveServiceOptions() {
-        return serviceOptionRepository.findAllByIsActiveTrue();
+
+    public List<ServiceOption> getActiveServiceOptions(String locale) {
+        List<ServiceOption> options = serviceOptionRepository.findAllByIsActiveTrue();
+        for (ServiceOption option : options) {
+            option.setName(entityTranslationService.resolve(option.getNameKeyId(), locale, option.getName()));
+        }
+        return options;
     }
 
     @Transactional

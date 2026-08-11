@@ -54,6 +54,45 @@ public class TranslationService {
         return result;
     }
 
+    /**
+     * Resolves a single TranslationKey's value for the requested locale, walking the
+     * language fallback chain (same rule as {@link #resolveForApp}). Used to translate
+     * reference-data fields (car brand/model names, service names, etc.) that are linked
+     * to a TranslationKey via a plain keyId column rather than a UI keyCode.
+     *
+     * @param keyId the TranslationKey id, or null if the field has no translations yet
+     * @param requestedLocale the language code to resolve for
+     * @return the resolved value, or empty if keyId is null or no value exists anywhere in the chain
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> resolveKeyValue(Long keyId, String requestedLocale) {
+        if (keyId == null || requestedLocale == null || requestedLocale.isBlank()) {
+            return Optional.empty();
+        }
+        Map<String, String> baseOf = new HashMap<>();
+        for (Language l : languageRepository.findAll()) {
+            baseOf.put(l.getCode(), l.getBaseLanguageCode());
+        }
+        Map<String, String> perLang = new HashMap<>();
+        for (TranslationValue v : translationValueRepository.findAllByTranslationKeyId(keyId)) {
+            perLang.put(v.getLanguage().getCode(), v.getValue());
+        }
+        return Optional.ofNullable(resolveChain(perLang, baseOf, requestedLocale));
+    }
+
+    /** Returns every language code -> value currently stored for a key. Empty map if keyId is null. */
+    @Transactional(readOnly = true)
+    public Map<String, String> valuesForKey(Long keyId) {
+        Map<String, String> result = new HashMap<>();
+        if (keyId == null) {
+            return result;
+        }
+        for (TranslationValue v : translationValueRepository.findAllByTranslationKeyId(keyId)) {
+            result.put(v.getLanguage().getCode(), v.getValue());
+        }
+        return result;
+    }
+
     private String resolveChain(Map<String, String> perLang, Map<String, String> baseOf, String startLocale) {
         String lang = startLocale;
         Set<String> visited = new HashSet<>();

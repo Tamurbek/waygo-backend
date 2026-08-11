@@ -18,11 +18,19 @@ public class CarModel {
     private Long id;
     
     private String name;
-    
+
+    /** FK to translation_keys; null until an admin adds a translation for {@link #name}. */
+    private Long nameKeyId;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "brand_id")
     @JsonIgnoreProperties("models")
     private CarBrand brand;
-    
+
     private boolean isActive;
+
+    /** Form-binding only, not persisted: language code -> translated name, submitted by the admin form. */
+    @Transient
+    @Builder.Default
+    private java.util.Map<String, String> nameTranslations = new java.util.HashMap<>();
 }

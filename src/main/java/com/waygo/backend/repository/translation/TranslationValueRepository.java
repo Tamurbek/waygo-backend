@@ -21,6 +21,9 @@ public interface TranslationValueRepository extends JpaRepository<TranslationVal
 
     Optional<TranslationValue> findByTranslationKeyIdAndLanguage_Code(Long translationKeyId, String languageCode);
 
+    @Query("SELECT v FROM TranslationValue v JOIN FETCH v.language WHERE v.translationKey.id = :translationKeyId")
+    List<TranslationValue> findAllByTranslationKeyId(Long translationKeyId);
+
     List<TranslationValue> findAllByLanguage_CodeAndTranslationKey_AppTargetIn(String languageCode, List<AppTarget> appTargets);
 
     @Transactional

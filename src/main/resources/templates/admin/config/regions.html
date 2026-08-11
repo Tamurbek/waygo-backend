@@ -68,6 +68,11 @@
                                     onclick="openEditRegionModal(this)">
                                     <i class="ph ph-pencil-simple" style="font-size: 1.25rem;"></i>
                                 </button>
+                                <span style="display:none;" th:id="'regionTr-' + ${r.id}">
+                                    <span th:each="lang : ${activeLanguages}" class="t"
+                                          th:data-lang="${lang.code}"
+                                          th:data-value="${regionTranslations.get(r.id) != null ? regionTranslations.get(r.id).get(lang.code) : ''}"></span>
+                                </span>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(regions)}">
@@ -126,6 +131,10 @@
                         <label class="form-label">Viloyat Nomi</label>
                         <input type="text" name="name" required class="form-control" placeholder="Masalan: Toshkent sh.">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
+                    </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                         <div class="form-group">
                             <label class="form-label">Kenglik (latitude)</label>
@@ -159,6 +168,10 @@
                     <div class="form-group">
                         <label class="form-label">Viloyat Nomi</label>
                         <input type="text" id="editRegionName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                         <div class="form-group">
@@ -286,6 +299,14 @@
             document.getElementById('editRegionLat').value = btn.dataset.lat || '';
             document.getElementById('editRegionLon').value = btn.dataset.lon || '';
             document.getElementById('editRegionActive').checked = (btn.dataset.active === 'true');
+
+            const store = document.getElementById('regionTr-' + btn.dataset.id);
+            document.querySelectorAll('#editRegionModal [name^="nameTranslations"]').forEach(function (input) {
+                const lang = input.name.match(/\[(.+)\]/)[1];
+                const span = store ? store.querySelector('[data-lang="' + lang + '"]') : null;
+                input.value = span ? span.dataset.value : '';
+            });
+
             openModal('editRegionModal');
         }
 

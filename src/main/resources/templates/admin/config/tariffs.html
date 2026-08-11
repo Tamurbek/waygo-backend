@@ -94,29 +94,50 @@
                         <label class="form-label">Muddati nomi (masalan, "1 kunlik", "1 oy")</label>
                         <input type="text" name="duration" required class="form-control" placeholder="1 kunlik">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Muddati tarjimalari</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('durationTranslations', ${activeLanguages}, null)}"></div>
+                    </div>
 
                     <div class="form-group">
                         <label class="form-label">Amal qilish muddati (Kunlarda)</label>
                         <input type="number" name="durationDays" min="1" required class="form-control" placeholder="Masalan: 1, 7, 30">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Narxi (UZS)</label>
                         <input type="number" step="0.01" name="price" required class="form-control" placeholder="Masalan: 12000">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Eski Narxi (Ixtiyoriy, UZS)</label>
                         <input type="number" step="0.01" name="oldPrice" class="form-control" placeholder="Masalan: 15000">
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label class="form-label">Tavsif (Ixtiyoriy)</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tavsif tarjimalari</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('descriptionTranslations', ${activeLanguages}, null)}"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tarif imkoniyatlari</label>
+                        <div id="addFeaturesList"></div>
+                        <button type="button" class="btn btn-outline" onclick="addFeatureRow('addFeaturesList')" style="margin-top: 0.5rem;">
+                            <i class="ph ph-plus"></i> Imkoniyat qo'shish
+                        </button>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-check">
                             <input type="checkbox" name="isPopular" value="true" class="form-check-input">
                             <span class="form-check-label">Ommabop (Popular) belgisi</span>
                         </label>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-check">
                             <input type="checkbox" name="active" value="true" checked class="form-check-input">
@@ -145,7 +166,11 @@
                         <label class="form-label">Muddati nomi (masalan, "1 kunlik", "1 oy")</label>
                         <input type="text" name="duration" th:value="${editItem.duration}" required class="form-control" placeholder="1 kunlik">
                     </div>
-                    
+                    <div class="form-group">
+                        <label class="form-label">Muddati tarjimalari</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('durationTranslations', ${activeLanguages}, ${editDurationTranslations})}"></div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Amal qilish muddati (Kunlarda)</label>
                         <input type="number" name="durationDays" th:value="${editItem.durationDays}" min="1" required class="form-control" placeholder="Masalan: 1, 7, 30">
@@ -154,19 +179,46 @@
                         <label class="form-label">Narxi (UZS)</label>
                         <input type="number" step="0.01" name="price" th:value="${editItem.price}" required class="form-control" placeholder="Masalan: 12000">
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Eski Narxi (Ixtiyoriy, UZS)</label>
                         <input type="number" step="0.01" name="oldPrice" th:value="${editItem.oldPrice}" class="form-control" placeholder="Masalan: 15000">
                     </div>
-                    
+
+                    <div class="form-group">
+                        <label class="form-label">Tavsif (Ixtiyoriy)</label>
+                        <textarea name="description" th:text="${editItem.description}" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tavsif tarjimalari</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('descriptionTranslations', ${activeLanguages}, ${editDescriptionTranslations})}"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Tarif imkoniyatlari</label>
+                        <div id="editFeaturesList">
+                            <div class="feature-row" th:each="f, iter : ${editItem.features}" style="border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.75rem;">
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <input type="text" th:name="'features[' + ${iter.index} + ']'" th:value="${f}" class="form-control" placeholder="Masalan: Cheksiz qo'ng'iroq">
+                                    <button type="button" class="btn-icon btn-icon-delete" onclick="this.closest('.feature-row').remove(); reindexFeatureRows('editFeaturesList')">
+                                        <i class="ph ph-trash"></i>
+                                    </button>
+                                </div>
+                                <div th:replace="~{admin/fragments :: translationInputs('featureTranslations[' + ${iter.index} + ']', ${activeLanguages}, ${editFeatureTranslations != null and editFeatureTranslations.size() > iter.index ? editFeatureTranslations[iter.index] : null})}"></div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline" onclick="addFeatureRow('editFeaturesList')" style="margin-top: 0.5rem;">
+                            <i class="ph ph-plus"></i> Imkoniyat qo'shish
+                        </button>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-check">
                             <input type="checkbox" name="isPopular" value="true" th:checked="${editItem.popular}" class="form-check-input">
                             <span class="form-check-label">Ommabop (Popular) belgisi</span>
                         </label>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-check">
                             <input type="checkbox" name="active" value="true" th:checked="${editItem.active}" class="form-check-input">
@@ -182,12 +234,56 @@
         </div>
     </div>
 
-    <script>
+    <script th:inline="javascript">
+        const ACTIVE_LANGUAGES = /*[[${activeLanguages}]]*/ [];
+
         function toggleActive(id) {
             fetch('/admin/config/tariffs/toggle-active/' + id, { method: 'POST' })
                 .then(response => {
                     if(!response.ok) alert('Xatolik yuz berdi');
                 });
+        }
+
+        // Appends a new (empty) feature row with one input per active language, matching
+        // the server-rendered rows' markup/naming so reindexFeatureRows can treat them uniformly.
+        function addFeatureRow(containerId) {
+            const container = document.getElementById(containerId);
+            const index = container.children.length;
+            const row = document.createElement('div');
+            row.className = 'feature-row';
+            row.style.cssText = 'border: 1px solid var(--border); border-radius: 0.5rem; padding: 0.75rem; margin-bottom: 0.75rem;';
+
+            let translationsHtml = '';
+            ACTIVE_LANGUAGES.forEach(function (lang) {
+                translationsHtml += '<div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.5rem;">' +
+                    '<span style="width:5.5rem; flex-shrink:0; font-size:0.8rem; color:var(--text-dim);">' +
+                    (lang.flagEmoji || '') + ' ' + lang.code + '</span>' +
+                    '<input type="text" class="form-control" name="featureTranslations[' + index + '][' + lang.code + ']" placeholder="' + lang.name + '">' +
+                    '</div>';
+            });
+
+            row.innerHTML =
+                '<div style="display: flex; gap: 0.5rem; align-items: center;">' +
+                '<input type="text" name="features[' + index + ']" class="form-control" placeholder="Masalan: Cheksiz qo\'ng\'iroq">' +
+                '<button type="button" class="btn-icon btn-icon-delete" onclick="this.closest(\'.feature-row\').remove(); reindexFeatureRows(\'' + containerId + '\')">' +
+                '<i class="ph ph-trash"></i></button></div>' + translationsHtml;
+            container.appendChild(row);
+        }
+
+        // Renumbers features[i]/featureTranslations[i][lang] after a row is removed so
+        // the submitted list stays contiguous (0..n-1) and aligned with the backend's
+        // index-based translation key matching.
+        function reindexFeatureRows(containerId) {
+            const rows = document.getElementById(containerId).children;
+            Array.from(rows).forEach(function (row, index) {
+                const nameInput = row.querySelector('input[name^="features"]');
+                if (nameInput) nameInput.name = 'features[' + index + ']';
+                row.querySelectorAll('input[name^="featureTranslations"]').forEach(function (input) {
+                    const match = input.name.match(/\[([^\[\]]+)\]$/);
+                    const lang = match ? match[1] : '';
+                    input.name = 'featureTranslations[' + index + '][' + lang + ']';
+                });
+            });
         }
     </script>
 <script th:replace="~{admin/fragments :: scripts}"></script>

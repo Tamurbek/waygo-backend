@@ -22,13 +22,13 @@ public class ConfigController {
     private final MapSettingsService mapSettingsService;
 
     @GetMapping("/tariffs")
-    public ResponseEntity<List<TariffPlan>> getTariffs() {
-        return ResponseEntity.ok(configService.getActiveTariffPlans());
+    public ResponseEntity<List<TariffPlan>> getTariffs(@RequestParam(required = false) String locale) {
+        return ResponseEntity.ok(configService.getActiveTariffPlans(locale));
     }
 
     @GetMapping("/regions")
-    public ResponseEntity<List<Region>> getRegions() {
-        return ResponseEntity.ok(configService.getActiveRegions());
+    public ResponseEntity<List<Region>> getRegions(@RequestParam(required = false) String locale) {
+        return ResponseEntity.ok(configService.getActiveRegions(locale));
     }
 
     @GetMapping("/districts")
@@ -40,16 +40,17 @@ public class ConfigController {
     }
 
     @GetMapping("/car-brands")
-    public ResponseEntity<List<CarBrand>> getCarBrands() {
-        return ResponseEntity.ok(configService.getActiveCarBrands());
+    public ResponseEntity<List<CarBrand>> getCarBrands(@RequestParam(required = false) String locale) {
+        return ResponseEntity.ok(configService.getActiveCarBrands(locale));
     }
 
     @GetMapping("/car-models")
-    public ResponseEntity<List<CarModel>> getCarModels(@RequestParam(required = false) Long brandId) {
+    public ResponseEntity<List<CarModel>> getCarModels(@RequestParam(required = false) Long brandId,
+                                                         @RequestParam(required = false) String locale) {
         if (brandId != null) {
-            return ResponseEntity.ok(configService.getActiveCarModelsByBrand(brandId));
+            return ResponseEntity.ok(configService.getActiveCarModelsByBrand(brandId, locale));
         }
-        return ResponseEntity.ok(configService.getAllActiveCarModels());
+        return ResponseEntity.ok(configService.getAllActiveCarModels(locale));
     }
 
     @GetMapping("/car-colors")
@@ -58,13 +59,13 @@ public class ConfigController {
     }
 
     @GetMapping("/services")
-    public ResponseEntity<List<ServiceOption>> getServices() {
-        return ResponseEntity.ok(configService.getActiveServiceOptions());
+    public ResponseEntity<List<ServiceOption>> getServices(@RequestParam(required = false) String locale) {
+        return ResponseEntity.ok(configService.getActiveServiceOptions(locale));
     }
 
     @GetMapping("/top-up-steps")
-    public ResponseEntity<List<TopUpStep>> getTopUpSteps() {
-        return ResponseEntity.ok(configService.getTopUpSteps());
+    public ResponseEntity<List<TopUpStep>> getTopUpSteps(@RequestParam(required = false) String locale) {
+        return ResponseEntity.ok(configService.getTopUpSteps(locale));
     }
 
     /**
