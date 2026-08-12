@@ -110,6 +110,9 @@ public class SystemSettingsService {
         }
         existing.setEskizFrom(newSettings.getEskizFrom());
         existing.setOtpMessageTemplate(newSettings.getOtpMessageTemplate());
+        if (newSettings.getOtpResendSeconds() != null) {
+            existing.setOtpResendSeconds(newSettings.getOtpResendSeconds());
+        }
         existing.setBillingEnabled(newSettings.isBillingEnabled());
         existing.setVipTariffEnabled(newSettings.isVipTariffEnabled());
         if (newSettings.getFreeTrialDays() != null) {
