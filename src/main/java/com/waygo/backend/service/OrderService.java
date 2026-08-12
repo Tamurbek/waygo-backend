@@ -1409,7 +1409,7 @@ public class OrderService {
             if (other.getPassenger() == null && // driver ride announcement
                 other.getStatus() != Order.OrderStatus.CANCELLED &&
                 other.getStatus() != Order.OrderStatus.COMPLETED &&
-                departureDate.equals(other.getDepartureDate())) {
+                sameDepartureDate(departureDate, other.getDepartureDate())) {
 
                 // Compare routes
                 if (isRouteMatching(fromAddress, other.getFromAddress()) &&
@@ -1433,7 +1433,7 @@ public class OrderService {
         for (Order other : passengerOrders) {
             if (other.getPassenger() != null && // passenger request order
                 other.getStatus() == Order.OrderStatus.PENDING &&
-                departureDate.equals(other.getDepartureDate())) {
+                sameDepartureDate(departureDate, other.getDepartureDate())) {
 
                 // Compare routes
                 if (isRouteMatching(fromAddress, other.getFromAddress()) &&
@@ -1443,6 +1443,37 @@ public class OrderService {
             }
         }
         return null;
+    }
+
+    private static final java.time.format.DateTimeFormatter DEPARTURE_DATE_DOT_FORMAT =
+            java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+    /**
+     * Compares two departureDate strings as calendar dates rather than raw text.
+     * waygo_driver sends this field as "yyyy-MM-dd" while waygo_user sends "dd.MM.yyyy" —
+     * a plain String.equals() silently never matched a driver's existing route
+     * announcement against a passenger's request for the same real-world date, so
+     * accepting an offer always created a duplicate announcement instead of merging
+     * into the existing one.
+     */
+    private boolean sameDepartureDate(String a, String b) {
+        if (a == null || b == null) return false;
+        if (a.equals(b)) return true;
+        java.time.LocalDate dateA = parseDepartureDate(a);
+        java.time.LocalDate dateB = parseDepartureDate(b);
+        return dateA != null && dateA.equals(dateB);
+    }
+
+    private java.time.LocalDate parseDepartureDate(String value) {
+        try {
+            return java.time.LocalDate.parse(value); // "yyyy-MM-dd"
+        } catch (java.time.format.DateTimeParseException e) {
+            try {
+                return java.time.LocalDate.parse(value, DEPARTURE_DATE_DOT_FORMAT); // "dd.MM.yyyy"
+            } catch (java.time.format.DateTimeParseException e2) {
+                return null;
+            }
+        }
     }
 
     private boolean isRouteMatching(String addr1, String addr2) {
