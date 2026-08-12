@@ -81,6 +81,17 @@ public class ConfigController {
     }
 
     /**
+     * OTP ekranidagi "qaytadan yuborish" tugmasi qancha soniyadan keyin
+     * faollashishi kerakligini qaytaradi — admin panelda /admin/settings
+     * orqali sozlanadi.
+     */
+    @GetMapping("/otp-settings")
+    public ResponseEntity<Map<String, Integer>> getOtpSettings() {
+        int resendSeconds = settingsService.getSettings().getOtpResendSeconds();
+        return ResponseEntity.ok(Map.of("resendSeconds", resendSeconds));
+    }
+
+    /**
      * Flutter ilovalari (waygo_user, waygo_driver) ilova ochilganda chaqiradi.
      * Yandex Map kamera/zoom, road-snap, look-ahead, vizual va interval sozlamalarini qaytaradi —
      * admin panelda /admin/map-settings orqali tahrirlanadi.

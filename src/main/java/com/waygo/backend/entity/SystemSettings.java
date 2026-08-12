@@ -25,6 +25,15 @@ public class SystemSettings {
     @Builder.Default
     private String otpMessageTemplate = "WayGoUz ilovasini tasdiqlash kodi: %s";
 
+    // OTP ekranida "qaytadan yuborish" tugmasi qancha soniyadan keyin faollashishi.
+    // waygo_user/waygo_driver ilovalarida avval qattiq yozilgan 118 soniya edi.
+    @Builder.Default
+    private Integer otpResendSeconds = 118;
+
+    public Integer getOtpResendSeconds() {
+        return this.otpResendSeconds != null && this.otpResendSeconds > 0 ? this.otpResendSeconds : 118;
+    }
+
     @Builder.Default
     private Boolean billingEnabled = false;
 

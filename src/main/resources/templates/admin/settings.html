@@ -103,6 +103,12 @@
                         <textarea th:field="*{otpMessageTemplate}" rows="3" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;"></textarea>
                     </div>
 
+                    <div class="form-group">
+                        <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">"Qaytadan yuborish" tugmasi faollashguncha kutish (soniya)</label>
+                        <input type="number" min="10" max="600" th:field="*{otpResendSeconds}" placeholder="118" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        <small style="color: var(--text-dim); display: block; margin-top: 0.25rem;">waygo_user va waygo_driver ilovalarining OTP ekranidagi hisoblagichga ta'sir qiladi.</small>
+                    </div>
+
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">📱 Ilova Versiyalari (App Versions)</h3>
                     <p style="color: var(--text-dim); font-size: 0.825rem; margin-bottom: 0.75rem;">
                         Play Market'ga yangi versiya yuksaltirilganda quyidagi maydonlarga yangi versiyani kiriting va saqlang. 
