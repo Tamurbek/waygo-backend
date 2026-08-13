@@ -270,7 +270,10 @@ class OrderServiceTest {
                 .thenReturn(Arrays.asList(activeAnnouncement, order));
         when(rideBookingRepository.save(any(RideBooking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        List<String> selectedSeats = Arrays.asList("1"); // FRONT
+        // order.passengerCount is 2 (see setUp), so both seats must be
+        // selected — confirmDriverOffer now rejects a seat-count mismatch
+        // against the passenger's declared headcount.
+        List<String> selectedSeats = Arrays.asList("1", "2"); // FRONT, BACK_LEFT
         Order confirmed = orderService.confirmDriverOffer(10L, 50L, selectedSeats);
 
         assertNotNull(confirmed);
@@ -281,9 +284,9 @@ class OrderServiceTest {
 
         // Verify booking created on active announcement
         assertEquals(1, activeAnnouncement.getBookings().size());
-        // Verify FRONT seat (mapped from "1") was removed from active announcement's availableSeats
+        // Verify both selected seats were removed from active announcement's availableSeats
         assertFalse(activeAnnouncement.getAvailableSeats().contains("FRONT"));
-        assertTrue(activeAnnouncement.getAvailableSeats().contains("BACK_LEFT"));
+        assertFalse(activeAnnouncement.getAvailableSeats().contains("BACK_LEFT"));
 
         verify(rideBookingRepository, times(1)).save(any(RideBooking.class));
         verify(orderRepository, times(2)).save(any(Order.class)); // 1 for order, 1 for updated announcement

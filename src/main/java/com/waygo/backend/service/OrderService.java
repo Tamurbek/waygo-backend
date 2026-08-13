@@ -354,6 +354,20 @@ public class OrderService {
             throw new IllegalArgumentException("You must select which seats to book");
         }
 
+        // The passenger declared how many people are traveling when they created
+        // this request (shown to the driver as "Number of passengers: N, mark
+        // that many seats" — see waygo_driver's passengerCountMarkSeatsMessage).
+        // Nothing enforced that the driver's offer / the confirming client
+        // actually reserved that many seats, so a mismatch (e.g. passenger said
+        // 3 but only 1 seat gets booked) silently went through. Only enforced
+        // when passengerCount is set, to stay compatible with older orders that
+        // predate this field.
+        if (order.getPassengerCount() != null && seatsToBook.size() != order.getPassengerCount()) {
+            throw new IllegalArgumentException(
+                "Yo'lovchilar soni (" + order.getPassengerCount() + ") bilan tanlangan o'rindiqlar soni ("
+                        + seatsToBook.size() + ") mos kelmayapti");
+        }
+
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
                 .passenger(passenger)
