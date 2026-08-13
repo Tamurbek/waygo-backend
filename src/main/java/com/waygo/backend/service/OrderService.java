@@ -370,6 +370,30 @@ public class OrderService {
                         + seatsToBook.size() + ") mos kelmayapti");
         }
 
+        // The pickup string may carry a custom point the passenger chose
+        // (e.g. "Some street [LAT:41.3,LON:69.2]") distinct from the order's
+        // own fromLat/fromLon. resolvePickupAddress() below already keeps
+        // that text (and its embedded coordinate) intact for pickupAddress,
+        // but fromLat/fromLon were always being set to the order's original
+        // point regardless — silently discarding the custom coordinate, so
+        // every driver-side screen that reads fromLat/fromLon directly
+        // (rather than re-parsing pickupAddress) showed the wrong pin. Parse
+        // it out here too, same as bookRide() already does.
+        Double customPickupLat = null;
+        Double customPickupLon = null;
+        if (pickup.contains("[LAT:") && pickup.contains("LON:")) {
+            try {
+                int latIdx = pickup.indexOf("[LAT:");
+                int commaIdx = pickup.indexOf(",", latIdx);
+                int lonIdx = pickup.indexOf("LON:", commaIdx);
+                int endBracket = pickup.indexOf("]", lonIdx);
+                if (latIdx != -1 && commaIdx != -1 && lonIdx != -1 && endBracket != -1) {
+                    customPickupLat = Double.parseDouble(pickup.substring(latIdx + 5, commaIdx).trim());
+                    customPickupLon = Double.parseDouble(pickup.substring(lonIdx + 4, endBracket).trim());
+                }
+            } catch (Exception e) {}
+        }
+
         com.waygo.backend.entity.RideBooking booking = com.waygo.backend.entity.RideBooking.builder()
                 .order(order)
                 .passenger(passenger)
@@ -377,8 +401,8 @@ public class OrderService {
                 .status("ACCEPTED")
                 .passengerOrderId(order.getId())
                 .pickupAddress(resolvePickupAddress(order, pickup))
-                .fromLat(order.getFromLat())
-                .fromLon(order.getFromLon())
+                .fromLat(customPickupLat != null ? customPickupLat : order.getFromLat())
+                .fromLon(customPickupLon != null ? customPickupLon : order.getFromLon())
                 .toLat(order.getToLat())
                 .toLon(order.getToLon())
                 .notes(notes)
