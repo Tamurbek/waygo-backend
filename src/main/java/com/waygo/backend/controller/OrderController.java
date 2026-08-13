@@ -150,8 +150,11 @@ public class OrderController {
 
     @GetMapping("/pending")
     @Operation(summary = "Get list of orders waiting for a driver")
-    public ResponseEntity<ApiResponse<List<Order>>> getPending(@RequestParam(value = "region", required = false) String region) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getPendingOrders(region), "Pending orders retrieved"));
+    public ResponseEntity<ApiResponse<List<Order>>> getPending(
+            @RequestParam(value = "region", required = false) String region,
+            @RequestParam(value = "lat", required = false) Double lat,
+            @RequestParam(value = "lon", required = false) Double lon) {
+        return ResponseEntity.ok(ApiResponse.success(orderService.getPendingOrders(region, lat, lon), "Pending orders retrieved"));
     }
 
     @GetMapping("/history/passenger/{userId}")

@@ -28,6 +28,8 @@ public class OrderService {
     private final com.waygo.backend.repository.UserRepository userRepository;
     private final com.waygo.backend.service.ReferralService referralService;
     private final DriverLocationCache driverLocationCache;
+    private final com.waygo.backend.repository.config.RegionRepository regionRepository;
+    private final com.waygo.backend.repository.config.DistrictRepository districtRepository;
 
     @Transactional
     public Order createOrder(OrderCreateDTO dto) {
@@ -1503,10 +1505,14 @@ public class OrderService {
     }
 
     public List<Order> getPendingOrders() {
-        return getPendingOrders(null);
+        return getPendingOrders(null, null, null);
     }
 
     public List<Order> getPendingOrders(String region) {
+        return getPendingOrders(region, null, null);
+    }
+
+    public List<Order> getPendingOrders(String region, Double lat, Double lon) {
         User currentUser = securityUtils.getCurrentUser();
         List<Order> orders;
 
@@ -1563,9 +1569,58 @@ public class OrderService {
             }
         }
 
-        // Filter by region if provided
+        // Resolve the caller's own position: for a driver, prefer the live GPS
+        // fix already streamed continuously into DriverLocationCache while
+        // "Ish rejimi" (online) is on (same cache the nearest-first sort below
+        // already reads); for a passenger, whatever lat/lon this specific
+        // request carries (waygo_user takes a one-off GPS reading when the
+        // offers list loads/refreshes). Either can be absent — driver just
+        // went online with no GPS sample yet, or an old client that doesn't
+        // send lat/lon — in which case we fall back to the legacy
+        // manually-picked-region substring match below.
+        Double callerLat = lat;
+        Double callerLon = lon;
+        if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
+            com.waygo.backend.dto.order.DriverLocationPayload driverLocForFilter =
+                    driverLocationCache.getByDriverId(currentUser.getId());
+            if (driverLocForFilter != null && driverLocForFilter.getLatitude() != null
+                    && driverLocForFilter.getLongitude() != null) {
+                callerLat = driverLocForFilter.getLatitude();
+                callerLon = driverLocForFilter.getLongitude();
+            }
+        }
+
         List<Order> result = orders;
-        if (region != null && !region.trim().isEmpty() && !"Barchasi".equalsIgnoreCase(region.trim())) {
+        RegionMatch callerMatch = (callerLat != null && callerLon != null)
+                ? resolveRegionDistrict(callerLat, callerLon)
+                : null;
+
+        if (callerMatch != null) {
+            // Precise viloyat(+tuman) match: keep only orders whose own
+            // fromLat/fromLon resolves to the same Region as the caller's
+            // current position. District is only enforced once BOTH sides
+            // resolve to a district with seeded coordinates — most regions
+            // don't have that data yet, so this degrades gracefully to a
+            // region-only match until an admin fills in that region's
+            // districts, with no code changes needed as that happens.
+            List<Order> filtered = new java.util.ArrayList<>();
+            for (Order order : result) {
+                if (order.getFromLat() == null || order.getFromLon() == null) {
+                    continue;
+                }
+                RegionMatch orderMatch = resolveRegionDistrict(order.getFromLat(), order.getFromLon());
+                if (orderMatch == null || !orderMatch.regionId().equals(callerMatch.regionId())) {
+                    continue;
+                }
+                if (callerMatch.districtId() != null && orderMatch.districtId() != null
+                        && !callerMatch.districtId().equals(orderMatch.districtId())) {
+                    continue;
+                }
+                filtered.add(order);
+            }
+            result = filtered;
+        } else if (region != null && !region.trim().isEmpty() && !"Barchasi".equalsIgnoreCase(region.trim())) {
+            // Legacy fallback: no GPS-derived position available at all.
             List<Order> filtered = new java.util.ArrayList<>();
             for (Order order : result) {
                 if (order.getFromAddress() != null &&
@@ -1626,6 +1681,49 @@ public class OrderService {
                 * Math.sin(dLon / 2) * Math.sin(dLon / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
+    }
+
+    private record RegionMatch(Long regionId, Long districtId) {}
+
+    /**
+     * Nearest Region (by centroid distance) to the given point, and — if that
+     * region has any District with coordinates seeded — the nearest District
+     * within it too. District data is populated by admins incrementally
+     * (region by region) through the admin panel, so districtId is simply
+     * null until a region has been filled in; callers treat that as "no
+     * district-level match available yet" rather than a mismatch.
+     */
+    private RegionMatch resolveRegionDistrict(double lat, double lon) {
+        List<com.waygo.backend.entity.config.Region> regions = regionRepository.findAllByIsActiveTrue();
+        com.waygo.backend.entity.config.Region nearestRegion = null;
+        double nearestRegionDist = Double.MAX_VALUE;
+        for (com.waygo.backend.entity.config.Region r : regions) {
+            double d = distanceKm(lat, lon, r.getLatitude(), r.getLongitude());
+            if (d < nearestRegionDist) {
+                nearestRegionDist = d;
+                nearestRegion = r;
+            }
+        }
+        if (nearestRegion == null) {
+            return null;
+        }
+
+        Long districtId = null;
+        List<com.waygo.backend.entity.config.District> districts =
+                districtRepository.findAllByRegionIdAndIsActiveTrue(nearestRegion.getId());
+        double nearestDistrictDist = Double.MAX_VALUE;
+        for (com.waygo.backend.entity.config.District d : districts) {
+            if (d.getLatitude() == null || d.getLongitude() == null) {
+                continue;
+            }
+            double dist = distanceKm(lat, lon, d.getLatitude(), d.getLongitude());
+            if (dist < nearestDistrictDist) {
+                nearestDistrictDist = dist;
+                districtId = d.getId();
+            }
+        }
+
+        return new RegionMatch(nearestRegion.getId(), districtId);
     }
 
     @Transactional
