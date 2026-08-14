@@ -96,6 +96,10 @@ public class TransactionService {
         TariffPlan tariff = tariffPlanRepository.findById(tariffId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with id: " + tariffId));
 
+        if (user.getTariffExpiryDate() != null && user.getTariffExpiryDate().isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException("Sizda hali faol tarif mavjud. Yangi tarif sotib olish uchun joriy tarif muddati tugashini kuting.");
+        }
+
         if (user.getBalance().compareTo(tariff.getPrice()) < 0) {
             throw new InsufficientBalanceException("Hisobingizda mablag' yetarli emas!");
         }
