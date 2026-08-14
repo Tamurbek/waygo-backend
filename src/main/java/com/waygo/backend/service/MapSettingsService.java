@@ -65,6 +65,7 @@ public class MapSettingsService {
 
         existing.setDriverMarkerShape(newSettings.getDriverMarkerShape());
         existing.setDriverMarkerBorderColorHex(newSettings.getDriverMarkerBorderColorHex());
+        existing.setDriverMarkerSizeMultiplier(newSettings.getDriverMarkerSizeMultiplier());
         // The form has no input bound to driverMarkerImageUrl (only a file
         // upload) — Spring's binder leaves it null on every submit unless
         // AdminController explicitly set it on `newSettings` after saving a

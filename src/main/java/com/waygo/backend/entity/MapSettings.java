@@ -116,4 +116,8 @@ public class MapSettings {
     private String driverMarkerShape = "circle";
     @Builder.Default
     private String driverMarkerBorderColorHex = "#E2E8F0";
+    // Xaritadagi umumiy o'lcham koeffitsienti (zoom darajasiga qarab
+    // dinamik hisoblangan bazaviy scale'ga qo'shimcha ko'paytiruvchi).
+    @Builder.Default
+    private Double driverMarkerSizeMultiplier = 0.8;
 }

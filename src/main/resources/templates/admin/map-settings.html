@@ -221,6 +221,10 @@
                             <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker ramka rangi</label>
                             <input type="color" th:field="*{driverMarkerBorderColorHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
                         </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker o'lchami (koeffitsient, masalan 0.8 = 80%)</label>
+                            <input type="number" step="0.05" min="0.3" max="3" th:field="*{driverMarkerSizeMultiplier}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Sozlamalarni saqlash</button>
