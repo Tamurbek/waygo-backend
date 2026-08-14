@@ -227,6 +227,34 @@
                         </div>
                     </div>
 
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">📍 Yo'lovchini olib ketish markeri (Point A)</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: end;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker rasmi (bo'sh qoldirilsa, standart piyoda belgisi ishlatiladi)</label>
+                            <div th:if="${settings.pickupMarkerImageUrl != null}" style="width: 64px; height: 64px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; background: var(--input-bg);">
+                                <img th:src="${settings.pickupMarkerImageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            </div>
+                            <input type="file" name="pickupMarkerImageFile" accept="image/png,image/jpeg,image/webp" style="width: 100%; padding: 0.5rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker shakli</label>
+                            <select th:field="*{pickupMarkerShape}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                                <option value="circle">Doira</option>
+                                <option value="square">Kvadrat</option>
+                                <option value="roundedSquare">Yumaloq burchakli kvadrat</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker ramka rangi</label>
+                            <input type="color" th:field="*{pickupMarkerBorderColorHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker o'lchami (koeffitsient, masalan 1.0 = 100%)</label>
+                            <input type="number" step="0.05" min="0.3" max="3" th:field="*{pickupMarkerSizeMultiplier}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Sozlamalarni saqlash</button>
                 </div>
             </form>

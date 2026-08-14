@@ -120,4 +120,16 @@ public class MapSettings {
     // dinamik hisoblangan bazaviy scale'ga qo'shimcha ko'paytiruvchi).
     @Builder.Default
     private Double driverMarkerSizeMultiplier = 0.8;
+
+    // --- Yo'lovchini olib ketish markeri (Point A, waygo_driver'dagi
+    // "olib ketish" xaritasida yo'lovchi turgan joyni ko'rsatadi) ---
+    // Null bo'lsa, ilova o'zining standart (piyoda siluetli sariq) belgisidan foydalanadi.
+    private String pickupMarkerImageUrl;
+    // "circle" | "square" | "roundedSquare"
+    @Builder.Default
+    private String pickupMarkerShape = "circle";
+    @Builder.Default
+    private String pickupMarkerBorderColorHex = "#FFD600";
+    @Builder.Default
+    private Double pickupMarkerSizeMultiplier = 1.0;
 }

@@ -157,11 +157,21 @@ public class AdminController {
     public String updateMapSettings(
             @org.springframework.web.bind.annotation.ModelAttribute com.waygo.backend.entity.MapSettings settings,
             @org.springframework.web.bind.annotation.RequestParam(value = "markerImageFile", required = false)
-            org.springframework.web.multipart.MultipartFile markerImageFile) {
+            org.springframework.web.multipart.MultipartFile markerImageFile,
+            @org.springframework.web.bind.annotation.RequestParam(value = "pickupMarkerImageFile", required = false)
+            org.springframework.web.multipart.MultipartFile pickupMarkerImageFile) {
         if (markerImageFile != null && !markerImageFile.isEmpty()) {
             try {
                 String fileName = fileService.saveFile(markerImageFile);
                 settings.setDriverMarkerImageUrl("/uploads/" + fileName);
+            } catch (java.io.IOException e) {
+                // Log and ignore — save proceeds with the previous image untouched.
+            }
+        }
+        if (pickupMarkerImageFile != null && !pickupMarkerImageFile.isEmpty()) {
+            try {
+                String fileName = fileService.saveFile(pickupMarkerImageFile);
+                settings.setPickupMarkerImageUrl("/uploads/" + fileName);
             } catch (java.io.IOException e) {
                 // Log and ignore — save proceeds with the previous image untouched.
             }
