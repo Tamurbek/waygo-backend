@@ -2,6 +2,18 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{admin/fragments :: head(${title})}"></head>
 <body>
+    <style>
+        .icon-picker { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+        .icon-option {
+            display: flex; flex-direction: column; align-items: center; gap: 0.35rem;
+            width: 76px; padding: 0.6rem 0.4rem; border-radius: 0.5rem; cursor: pointer;
+            background: #2A2A2A; border: 2px solid rgba(255,255,255,0.1);
+        }
+        .icon-option input[type="radio"] { accent-color: var(--primary); }
+        .icon-option i { font-size: 1.4rem; color: #fff; }
+        .icon-option span { font-size: 0.65rem; color: var(--text-dim); text-align: center; line-height: 1.1; }
+        .icon-option:has(input:checked) { border-color: var(--primary); background: rgba(255,255,255,0.08); }
+    </style>
     <div th:replace="~{admin/fragments :: sidebar('map_settings')}"></div>
 
     <div class="main-content">
@@ -17,7 +29,7 @@
         </p>
 
         <div class="card" style="max-width: 800px;">
-            <form th:action="@{/admin/map-settings}" th:object="${settings}" method="post" enctype="multipart/form-data">
+            <form th:action="@{/admin/map-settings}" th:object="${settings}" method="post">
                 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">📷 Kamera / Zoom</h3>
@@ -201,14 +213,46 @@
 
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">🚗 Haydovchi markeri (xaritadagi o'z pozitsiyasi)</h3>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: end;">
-                        <div class="form-group">
-                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker rasmi (bo'sh qoldirilsa, standart WayGo belgisi ishlatiladi)</label>
-                            <div th:if="${settings.driverMarkerImageUrl != null}" style="width: 64px; height: 64px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; background: var(--input-bg);">
-                                <img th:src="${settings.driverMarkerImageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                            </div>
-                            <input type="file" name="markerImageFile" accept="image/png,image/jpeg,image/webp" style="width: 100%; padding: 0.5rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                    <div class="form-group">
+                        <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker ikonkasi</label>
+                        <div class="icon-picker">
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value=""><i class="ph ph-sparkle"></i><span>Standart</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="car"><i class="ph ph-car"></i><span>Mashina</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="steeringWheel"><i class="ph ph-steering-wheel"></i><span>Rul</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="navigationArrow"><i class="ph ph-navigation-arrow"></i><span>Yo'nalish</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="mapPin"><i class="ph ph-map-pin"></i><span>Pin</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="personSimpleWalk"><i class="ph ph-person-simple-walk"></i><span>Piyoda</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="flag"><i class="ph ph-flag"></i><span>Bayroq</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="star"><i class="ph ph-star"></i><span>Yulduz</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="house"><i class="ph ph-house"></i><span>Uy</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="user"><i class="ph ph-user"></i><span>Foydalanuvchi</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{driverMarkerIconKey}" value="suitcase"><i class="ph ph-suitcase"></i><span>Yuk</span>
+                            </label>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: end;">
                         <div class="form-group">
                             <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker shakli</label>
                             <select th:field="*{driverMarkerShape}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
@@ -229,14 +273,43 @@
 
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">📍 Yo'lovchini olib ketish markeri (Point A)</h3>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: end;">
-                        <div class="form-group">
-                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker rasmi (bo'sh qoldirilsa, standart piyoda belgisi ishlatiladi)</label>
-                            <div th:if="${settings.pickupMarkerImageUrl != null}" style="width: 64px; height: 64px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; background: var(--input-bg);">
-                                <img th:src="${settings.pickupMarkerImageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                            </div>
-                            <input type="file" name="pickupMarkerImageFile" accept="image/png,image/jpeg,image/webp" style="width: 100%; padding: 0.5rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                    <div class="form-group">
+                        <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker ikonkasi</label>
+                        <div class="icon-picker">
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value=""><i class="ph ph-sparkle"></i><span>Standart</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="personSimpleWalk"><i class="ph ph-person-simple-walk"></i><span>Piyoda</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="mapPin"><i class="ph ph-map-pin"></i><span>Pin</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="user"><i class="ph ph-user"></i><span>Foydalanuvchi</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="suitcase"><i class="ph ph-suitcase"></i><span>Yuk</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="flag"><i class="ph ph-flag"></i><span>Bayroq</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="star"><i class="ph ph-star"></i><span>Yulduz</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="house"><i class="ph ph-house"></i><span>Uy</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="car"><i class="ph ph-car"></i><span>Mashina</span>
+                            </label>
+                            <label class="icon-option">
+                                <input type="radio" th:field="*{pickupMarkerIconKey}" value="navigationArrow"><i class="ph ph-navigation-arrow"></i><span>Yo'nalish</span>
+                            </label>
                         </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: end;">
                         <div class="form-group">
                             <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker shakli</label>
                             <select th:field="*{pickupMarkerShape}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">

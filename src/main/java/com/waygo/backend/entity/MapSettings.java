@@ -109,8 +109,16 @@ public class MapSettings {
     private Integer routeCrossfadeAnimationMs = 400;
 
     // --- Haydovchi markeri (waygo_driver xaritasidagi o'z pozitsiyasi) ---
-    // Null bo'lsa, ilova o'zining standart WayGo belgisidan foydalanadi.
-    private String driverMarkerImageUrl;
+    // Tayyor Phosphor Icons ro'yxatidan tanlangan kalit (masalan "car",
+    // "steeringWheel") — bo'sh bo'lsa, ilova o'zining standart WayGo
+    // belgisidan foydalanadi. Ro'yxat admin sahifadagi icon-picker bilan
+    // bir xil bo'lishi kerak (waygo_driver'dagi CustomMarkerGenerator'ga
+    // qarang). "" (bo'sh satr), null emas — Thymeleaf'ning radio-guruh
+    // th:field'i "Standart" variantini (value="") faqat shunda to'g'ri
+    // belgilaydi, chunki bog'langan qiymat null bo'lsa hech qaysi radio
+    // checked bo'lmay qoladi.
+    @Builder.Default
+    private String driverMarkerIconKey = "";
     // "circle" | "square" | "roundedSquare"
     @Builder.Default
     private String driverMarkerShape = "circle";
@@ -123,8 +131,11 @@ public class MapSettings {
 
     // --- Yo'lovchini olib ketish markeri (Point A, waygo_driver'dagi
     // "olib ketish" xaritasida yo'lovchi turgan joyni ko'rsatadi) ---
-    // Null bo'lsa, ilova o'zining standart (piyoda siluetli sariq) belgisidan foydalanadi.
-    private String pickupMarkerImageUrl;
+    // Bo'sh bo'lsa, ilova o'zining standart (piyoda siluetli) belgisidan
+    // foydalanadi — "" default kerakligi haqida driverMarkerIconKey'ning
+    // izohiga qarang.
+    @Builder.Default
+    private String pickupMarkerIconKey = "";
     // "circle" | "square" | "roundedSquare"
     @Builder.Default
     private String pickupMarkerShape = "circle";

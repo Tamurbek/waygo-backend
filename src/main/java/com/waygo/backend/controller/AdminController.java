@@ -36,7 +36,6 @@ public class AdminController {
     private final com.waygo.backend.service.TransactionService transactionService;
     private final com.waygo.backend.service.NotificationService notificationService;
     private final com.waygo.backend.repository.config.TariffPlanRepository tariffPlanRepository;
-    private final com.waygo.backend.service.FileService fileService;
 
     @GetMapping("/login")
     public String login() {
@@ -155,27 +154,7 @@ public class AdminController {
 
     @org.springframework.web.bind.annotation.PostMapping("/map-settings")
     public String updateMapSettings(
-            @org.springframework.web.bind.annotation.ModelAttribute com.waygo.backend.entity.MapSettings settings,
-            @org.springframework.web.bind.annotation.RequestParam(value = "markerImageFile", required = false)
-            org.springframework.web.multipart.MultipartFile markerImageFile,
-            @org.springframework.web.bind.annotation.RequestParam(value = "pickupMarkerImageFile", required = false)
-            org.springframework.web.multipart.MultipartFile pickupMarkerImageFile) {
-        if (markerImageFile != null && !markerImageFile.isEmpty()) {
-            try {
-                String fileName = fileService.saveFile(markerImageFile);
-                settings.setDriverMarkerImageUrl("/uploads/" + fileName);
-            } catch (java.io.IOException e) {
-                // Log and ignore — save proceeds with the previous image untouched.
-            }
-        }
-        if (pickupMarkerImageFile != null && !pickupMarkerImageFile.isEmpty()) {
-            try {
-                String fileName = fileService.saveFile(pickupMarkerImageFile);
-                settings.setPickupMarkerImageUrl("/uploads/" + fileName);
-            } catch (java.io.IOException e) {
-                // Log and ignore — save proceeds with the previous image untouched.
-            }
-        }
+            @org.springframework.web.bind.annotation.ModelAttribute com.waygo.backend.entity.MapSettings settings) {
         com.waygo.backend.entity.MapSettings saved = mapSettingsService.updateSettings(settings);
         notificationService.notifyMapSettingsUpdated(saved);
         return "redirect:/admin/map-settings?success";
