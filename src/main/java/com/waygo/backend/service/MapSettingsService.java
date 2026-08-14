@@ -63,7 +63,6 @@ public class MapSettingsService {
         existing.setRouteDrawAnimationMs(newSettings.getRouteDrawAnimationMs());
         existing.setRouteCrossfadeAnimationMs(newSettings.getRouteCrossfadeAnimationMs());
 
-        existing.setDriverMarkerIconKey(newSettings.getDriverMarkerIconKey());
         existing.setDriverMarkerShape(newSettings.getDriverMarkerShape());
         existing.setDriverMarkerBorderColorHex(newSettings.getDriverMarkerBorderColorHex());
         existing.setDriverMarkerSizeMultiplier(newSettings.getDriverMarkerSizeMultiplier());
@@ -71,6 +70,14 @@ public class MapSettingsService {
         existing.setPickupMarkerShape(newSettings.getPickupMarkerShape());
         existing.setPickupMarkerBorderColorHex(newSettings.getPickupMarkerBorderColorHex());
         existing.setPickupMarkerSizeMultiplier(newSettings.getPickupMarkerSizeMultiplier());
+        // The form has no input bound to driverMarkerImageUrl (only a file
+        // upload) — Spring's binder leaves it null on every submit unless
+        // AdminController explicitly set it on `newSettings` after saving a
+        // newly uploaded file. Only overwrite when that happened, so a save
+        // with no new file doesn't wipe out the existing image.
+        if (newSettings.getDriverMarkerImageUrl() != null) {
+            existing.setDriverMarkerImageUrl(newSettings.getDriverMarkerImageUrl());
+        }
 
         return repository.save(existing);
     }
