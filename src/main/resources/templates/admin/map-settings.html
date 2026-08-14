@@ -17,7 +17,7 @@
         </p>
 
         <div class="card" style="max-width: 800px;">
-            <form th:action="@{/admin/map-settings}" th:object="${settings}" method="post">
+            <form th:action="@{/admin/map-settings}" th:object="${settings}" method="post" enctype="multipart/form-data">
                 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
 
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">📷 Kamera / Zoom</h3>
@@ -196,6 +196,30 @@
                         <div class="form-group">
                             <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marshrut cross-fade animatsiyasi (ms)</label>
                             <input type="number" th:field="*{routeCrossfadeAnimationMs}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                    </div>
+
+                    <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">🚗 Haydovchi markeri (xaritadagi o'z pozitsiyasi)</h3>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: end;">
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker rasmi (bo'sh qoldirilsa, standart WayGo belgisi ishlatiladi)</label>
+                            <div th:if="${settings.driverMarkerImageUrl != null}" style="width: 64px; height: 64px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; background: var(--input-bg);">
+                                <img th:src="${settings.driverMarkerImageUrl}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                            </div>
+                            <input type="file" name="markerImageFile" accept="image/png,image/jpeg,image/webp" style="width: 100%; padding: 0.5rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker shakli</label>
+                            <select th:field="*{driverMarkerShape}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                                <option value="circle">Doira</option>
+                                <option value="square">Kvadrat</option>
+                                <option value="roundedSquare">Yumaloq burchakli kvadrat</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Marker ramka rangi</label>
+                            <input type="color" th:field="*{driverMarkerBorderColorHex}" style="width: 100%; height: 3rem; padding: 0.25rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem;">
                         </div>
                     </div>
 

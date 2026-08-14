@@ -107,4 +107,13 @@ public class MapSettings {
     private Integer routeDrawAnimationMs = 1000;
     @Builder.Default
     private Integer routeCrossfadeAnimationMs = 400;
+
+    // --- Haydovchi markeri (waygo_driver xaritasidagi o'z pozitsiyasi) ---
+    // Null bo'lsa, ilova o'zining standart WayGo belgisidan foydalanadi.
+    private String driverMarkerImageUrl;
+    // "circle" | "square" | "roundedSquare"
+    @Builder.Default
+    private String driverMarkerShape = "circle";
+    @Builder.Default
+    private String driverMarkerBorderColorHex = "#E2E8F0";
 }
