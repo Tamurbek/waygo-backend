@@ -66,9 +66,6 @@ public class MapSettingsService {
         existing.setDriverMarkerShape(newSettings.getDriverMarkerShape());
         existing.setDriverMarkerBorderColorHex(newSettings.getDriverMarkerBorderColorHex());
         existing.setDriverMarkerSizeMultiplier(newSettings.getDriverMarkerSizeMultiplier());
-        existing.setPickupMarkerIconKey(newSettings.getPickupMarkerIconKey());
-        existing.setPickupMarkerShape(newSettings.getPickupMarkerShape());
-        existing.setPickupMarkerBorderColorHex(newSettings.getPickupMarkerBorderColorHex());
         existing.setPickupMarkerSizeMultiplier(newSettings.getPickupMarkerSizeMultiplier());
         // The form has no input bound to driverMarkerImageUrl (only a file
         // upload) — Spring's binder leaves it null on every submit unless

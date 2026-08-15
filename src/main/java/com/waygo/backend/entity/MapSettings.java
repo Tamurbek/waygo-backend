@@ -123,19 +123,9 @@ public class MapSettings {
 
     // --- Yo'lovchini olib ketish markeri (Point A, waygo_driver'dagi
     // "olib ketish" xaritasida yo'lovchi turgan joyni ko'rsatadi) ---
-    // "" (Standart) => ilovaning o'zining piyoda-siluetli belgisi,
-    // "mapPinFill"/"mapPinOutline" => klassik pin ko'rinishi (waygo_driver'dagi
-    // CustomMarkerGenerator.markerIconByKey'ga qarang). "" (bo'sh satr), null
-    // emas — Thymeleaf'ning radio-guruh th:field'i "Standart" variantini
-    // (value="") faqat shunda to'g'ri belgilaydi, chunki bog'langan qiymat
-    // null bo'lsa hech qaysi radio checked bo'lmay qoladi.
-    @Builder.Default
-    private String pickupMarkerIconKey = "";
-    // "circle" | "square" | "roundedSquare"
-    @Builder.Default
-    private String pickupMarkerShape = "circle";
-    @Builder.Default
-    private String pickupMarkerBorderColorHex = "#FFD600";
+    // Ikonka fixed qizil pin (CustomMarkerGenerator.getPickupPinMarkerBytes) —
+    // faqat xaritadagi o'lchami sozlanadi, ikonka/shakl/ramka rangi endi
+    // admin tomonidan tanlanmaydi.
     @Builder.Default
     private Double pickupMarkerSizeMultiplier = 1.0;
 }
