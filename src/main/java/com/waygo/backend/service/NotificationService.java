@@ -70,7 +70,18 @@ public class NotificationService {
                     payload
             );
 
-            sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
+            if (order.getStatus() == Order.OrderStatus.ARRIVED) {
+                sendFcmNotification(
+                        order.getPassenger(),
+                        "Haydovchi yetib keldi! 📍",
+                        "Haydovchi belgilangan jo'nash joyiga yetib keldi.",
+                        "ORDER_UPDATE",
+                        null,
+                        "driver_arrived_chime"
+                );
+            } else {
+                sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
+            }
         }
 
         // Notify all passengers attached to announcement bookings
@@ -594,10 +605,25 @@ public class NotificationService {
     }
 
     private void sendFcmNotification(User user, String title, String body, String type) {
-        sendFcmNotification(user, title, body, type, null);
+        sendFcmNotification(user, title, body, type, null, null);
     }
 
     private void sendFcmNotification(User user, String title, String body, String type, java.util.Map<String, String> extraData) {
+        sendFcmNotification(user, title, body, type, extraData, null);
+    }
+
+    /**
+     * @param soundName When non-null, plays a bundled custom notification sound
+     *   instead of the default channel sound — works even while the app is
+     *   backgrounded or fully killed, since the OS plays it natively rather than
+     *   any Dart code running. Requires the client to have registered an Android
+     *   notification channel named "{soundName}_channel" with that sound bundled
+     *   as android/app/src/main/res/raw/{soundName}.mp3 (channel sound settings
+     *   are immutable after first creation on-device — the channel ID must be
+     *   unique per distinct sound), and the sound file bundled in the iOS app as
+     *   "{soundName}.caf" for APNs to find by filename.
+     */
+    private void sendFcmNotification(User user, String title, String body, String type, java.util.Map<String, String> extraData, String soundName) {
         if (user == null || user.getFcmToken() == null || user.getFcmToken().isEmpty()) {
             if (user != null) {
                 System.out.println("[FCM] Skipped: user " + user.getId() + " (" + user.getPhone() + ") has no fcmToken stored");
@@ -605,6 +631,8 @@ public class NotificationService {
             return;
         }
         try {
+            String androidChannelId = soundName != null ? soundName + "_channel" : "high_importance_channel";
+
             com.google.firebase.messaging.Message.Builder builder = com.google.firebase.messaging.Message.builder()
                     .setToken(user.getFcmToken())
                     .setNotification(com.google.firebase.messaging.Notification.builder()
@@ -614,10 +642,18 @@ public class NotificationService {
                     .setAndroidConfig(com.google.firebase.messaging.AndroidConfig.builder()
                             .setPriority(com.google.firebase.messaging.AndroidConfig.Priority.HIGH)
                             .setNotification(com.google.firebase.messaging.AndroidNotification.builder()
-                                    .setChannelId("high_importance_channel")
+                                    .setChannelId(androidChannelId)
                                     .build())
                             .build())
                     .putData("type", type);
+
+            if (soundName != null) {
+                builder.setApnsConfig(com.google.firebase.messaging.ApnsConfig.builder()
+                        .setAps(com.google.firebase.messaging.Aps.builder()
+                                .setSound(soundName + ".caf")
+                                .build())
+                        .build());
+            }
 
             if (extraData != null) {
                 for (java.util.Map.Entry<String, String> entry : extraData.entrySet()) {
