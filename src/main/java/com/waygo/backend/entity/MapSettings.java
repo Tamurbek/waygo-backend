@@ -49,6 +49,15 @@ public class MapSettings {
     private Integer routeTrimIntervalMs = 80;
     @Builder.Default
     private Double routeSnapMaxMeters = 20.0;
+    // Haydovchi qadar marshrutdan bu masofadan ko'proq uzoqlashsa, yangi
+    // marshrut (Directions API) so'raladi — faqat markerni "yopishtirish"
+    // (routeSnapMaxMeters) emas, butunlay qayta chizish.
+    @Builder.Default
+    private Double offRouteThresholdMeters = 30.0;
+    // Marshrutdan chetlashgach ketma-ket Directions API so'rovlari orasidagi
+    // minimal interval — har GPS tikida (~1s) qayta so'rov yubormaslik uchun.
+    @Builder.Default
+    private Integer rerouteMinIntervalMs = 3000;
     @Builder.Default
     private Double lookAheadSeconds = 3.0;
     @Builder.Default

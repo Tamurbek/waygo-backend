@@ -37,6 +37,8 @@ public class MapSettingsService {
         existing.setCameraUpdateIntervalMs(newSettings.getCameraUpdateIntervalMs());
         existing.setRouteTrimIntervalMs(newSettings.getRouteTrimIntervalMs());
         existing.setRouteSnapMaxMeters(newSettings.getRouteSnapMaxMeters());
+        existing.setOffRouteThresholdMeters(newSettings.getOffRouteThresholdMeters());
+        existing.setRerouteMinIntervalMs(newSettings.getRerouteMinIntervalMs());
         existing.setLookAheadSeconds(newSettings.getLookAheadSeconds());
         existing.setMaxLookAheadMeters(newSettings.getMaxLookAheadMeters());
         existing.setLookAheadMinSpeedMps(newSettings.getLookAheadMinSpeedMps());
