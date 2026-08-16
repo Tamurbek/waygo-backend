@@ -835,6 +835,27 @@ public class OrderService {
                 myBooking.setFeedbackTags(tags);
             }
             rideBookingRepository.save(myBooking);
+
+            // Every read path (getPassengerHistory, getOrderById,
+            // isOrderAlreadyRated on the client) only ever inspects
+            // Order.rating, never RideBooking.rating directly — without
+            // this, the submit above succeeds but the trip permanently
+            // looks unrated everywhere else the app shows it. Mirrors the
+            // rating/comment onto this passenger's own personal Order when
+            // one exists (see confirmDriverOffer/syncPassengerOrdersToStatus
+            // for the same passengerOrderId linkage pattern). Booking-only
+            // passengers with no personal Order still rely on
+            // overlayCurrentUserBookingRating() at read time below.
+            if (myBooking.getPassengerOrderId() != null) {
+                orderRepository.findById(myBooking.getPassengerOrderId()).ifPresent(pOrder -> {
+                    pOrder.setRating(rating);
+                    pOrder.setComment(comment);
+                    if (tags != null) {
+                        pOrder.setFeedbackTags(tags);
+                    }
+                    orderRepository.save(pOrder);
+                });
+            }
         }
 
         notificationService.notifyOrderStatusUpdate(order);
@@ -1198,7 +1219,35 @@ public class OrderService {
                 }
             }
         }
+        overlayCurrentUserBookingRating(order, currentUser);
         return order;
+    }
+
+    /**
+     * For a driver-announcement order (order.getPassenger() == null) viewed
+     * by one of its RideBooking passengers, overlays that passenger's own
+     * booking-level rating/comment onto the in-memory Order object before
+     * it's returned to them. order.getRating() is otherwise always null for
+     * announcement orders — rateDriver() persists a booking-only passenger's
+     * rating on RideBooking (see its doc comment), not Order, so without
+     * this a successful rating submit looked like it silently failed
+     * everywhere the app reads order.rating (history list, order detail,
+     * the client's "already rated" check). Purely an in-memory view overlay
+     * on the object being returned for THIS request — never persisted.
+     */
+    private void overlayCurrentUserBookingRating(Order order, User currentUser) {
+        if (order == null || order.getPassenger() != null || currentUser == null || order.getBookings() == null) {
+            return;
+        }
+        for (com.waygo.backend.entity.RideBooking b : order.getBookings()) {
+            if (b.getPassenger() != null && currentUser.getId().equals(b.getPassenger().getId())) {
+                if (b.getRating() != null) {
+                    order.setRating(b.getRating());
+                    order.setComment(b.getComment());
+                }
+                break;
+            }
+        }
     }
 
     public List<Order> getPassengerHistory(Long passengerId, int page, int size) {
@@ -1242,6 +1291,7 @@ public class OrderService {
                 if (isDuplicate) {
                     continue; // Skip this driver announcement to avoid duplicate cards
                 }
+                overlayCurrentUserBookingRating(o, currentUser);
             }
             filtered.add(o);
         }
