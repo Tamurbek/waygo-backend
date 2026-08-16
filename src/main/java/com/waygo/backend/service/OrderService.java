@@ -452,6 +452,7 @@ public class OrderService {
             }
         }
 
+        boolean announcementDelivered = false;
         try {
             if (activeAnnouncement == null) {
                 Order.OrderBuilder builder = Order.builder()
@@ -511,11 +512,17 @@ public class OrderService {
             orderRepository.save(activeAnnouncement);
             notificationService.notifyNewOrder(activeAnnouncement);
             notificationService.notifyOrderStatusUpdate(activeAnnouncement);
+            announcementDelivered = true;
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        notificationService.notifyOrderStatusUpdate(savedOrder);
+        // The driver already received the trip as `activeAnnouncement` above (that's
+        // the Order row their UI is meant to render as the active trip). Pushing
+        // `savedOrder` to the driver too would show the same trip as a second card
+        // (see NotificationService#notifyOrderStatusUpdate javadoc). Only fall back
+        // to notifying the driver via `savedOrder` if the announcement push failed.
+        notificationService.notifyOrderStatusUpdate(savedOrder, !announcementDelivered);
         return savedOrder;
     }
 

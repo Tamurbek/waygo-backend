@@ -41,6 +41,17 @@ public class NotificationService {
     }
 
     public void notifyOrderStatusUpdate(Order order) {
+        notifyOrderStatusUpdate(order, true);
+    }
+
+    /**
+     * @param notifyAssignedDriver Pass false when the assigned driver has already
+     *   received (or will receive) an equivalent push for this same trip through a
+     *   different Order row — e.g. confirmDriverOffer() merges the passenger's
+     *   request into the driver's own announcement Order and pushes that instead.
+     *   Sending both here would put two cards for one trip in the driver's app.
+     */
+    public void notifyOrderStatusUpdate(Order order, boolean notifyAssignedDriver) {
         String msg = "WayGO: Buyurtmangiz holati yangilandi: " + order.getStatus();
 
         // Notify the specific passenger about their order status update if present
@@ -50,7 +61,7 @@ public class NotificationService {
                     "/queue/order-status",
                     order
             );
-            
+
             java.util.Map<String, Object> payload = new java.util.HashMap<>();
             payload.put("type", "ORDER_UPDATE");
             payload.put("order", order);
@@ -58,7 +69,7 @@ public class NotificationService {
                     "/topic/notifications/" + order.getPassenger().getId(),
                     payload
             );
-            
+
             sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
         }
 
@@ -78,13 +89,13 @@ public class NotificationService {
         }
 
         // Also notify the directly assigned driver if present
-        if (order.getDriver() != null) {
+        if (notifyAssignedDriver && order.getDriver() != null) {
             messagingTemplate.convertAndSendToUser(
                     order.getDriver().getPhone(),
                     "/queue/order-status",
                     order
             );
-            
+
             java.util.Map<String, Object> payload = new java.util.HashMap<>();
             payload.put("type", "ORDER_UPDATE");
             payload.put("order", order);
@@ -92,7 +103,7 @@ public class NotificationService {
                     "/topic/notifications/" + order.getDriver().getId(),
                     payload
             );
-            
+
             sendFcmNotification(order.getDriver(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
         }
 
