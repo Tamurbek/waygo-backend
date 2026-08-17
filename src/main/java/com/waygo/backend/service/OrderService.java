@@ -216,7 +216,13 @@ public class OrderService {
         // A new DriverOffer, not a status change (order stays PENDING) — see
         // notifyNewDriverOffer's doc comment for why this can't reuse
         // notifyOrderStatusUpdate's generic (and here, misleading) push text.
-        notificationService.notifyNewDriverOffer(savedOrder);
+        // Passes THIS offer's own price, not savedOrder.getPrice() — with
+        // several drivers able to bid different prices on one request, the
+        // order's own price is meaningless here (and, separately, is
+        // presently always a hardcoded placeholder from the passenger app —
+        // see order_form_bloc.dart — so it would show every passenger the
+        // exact same wrong number regardless of what any driver offered).
+        notificationService.notifyNewDriverOffer(savedOrder, offer.getPricePerPerson());
         return savedOrder;
     }
 
@@ -640,7 +646,11 @@ public class OrderService {
         }
 
         Order savedOrder = orderRepository.save(order);
-        notificationService.notifyOrderStatusUpdate(savedOrder);
+        // Same reasoning as lockOrder/unlockOrder — order.getStatus() is
+        // never touched here, only a RideBooking is created and seats are
+        // removed from availableSeats, so the generic "status updated" push
+        // text would be misleading.
+        notificationService.notifyOrderStatusUpdate(savedOrder, true, false);
         return savedOrder;
     }
 
@@ -2775,7 +2785,20 @@ public class OrderService {
                         }
 
                         orderRepository.save(pOrder);
-                        notificationService.notifyOrderStatusUpdate(pOrder);
+                        // pOrder.getStatus() is never touched here — only
+                        // availableSeats/booking sub-fields are synced — and
+                        // this runs once per booking on the announcement,
+                        // called from 5 different driver actions
+                        // (confirmBooking/collectBooking/uncollectBooking/
+                        // cancelBooking/updateOrder). An unconditional full
+                        // push meant every OTHER passenger on a shared
+                        // carpool got a misleading "status updated" push
+                        // every time the driver touched any ONE passenger's
+                        // seat — confirmed as the dominant remaining source
+                        // of "buyurtma holati yangilandi" spam reports.
+                        // WebSocket-only keeps every passenger's UI in sync
+                        // live without the repeated push.
+                        notificationService.notifyOrderStatusUpdate(pOrder, true, false);
                     });
                 } catch (Exception e) {
                     e.printStackTrace();

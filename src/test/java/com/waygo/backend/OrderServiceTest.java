@@ -215,7 +215,7 @@ class OrderServiceTest {
         assertEquals(driver, accepted.getDriverOffers().get(0).getDriver());
         assertEquals("PENDING", accepted.getDriverOffers().get(0).getStatus());
         // A new offer, not a status change — see NotificationService#notifyNewDriverOffer.
-        verify(notificationService).notifyNewDriverOffer(any(Order.class));
+        verify(notificationService).notifyNewDriverOffer(any(Order.class), any());
     }
 
     @Test

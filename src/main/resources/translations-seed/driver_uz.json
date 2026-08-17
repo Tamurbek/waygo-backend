@@ -436,7 +436,7 @@
   "collectedLabel": "Olindi",
   "expiredLabel": "ESKIRGAN",
   "routeLabel": "YO'NALISH",
-  "seatsOutOfFourPrefix": "O'rindiqlar 4 dan ",
+  "passengerCountBadgeLabel": "Yo'lovchilar soni: {count} ta",
   "pricePerPersonLabel": "SO'M / KISHI",
   "departureDateTimeLabel": "KETISH SANASI VA VAQTI",
   "pendingRequestsSuffix": " ta so'rov",

@@ -168,9 +168,14 @@ public class NotificationService {
      * produced a burst of near-identical "PENDING" pushes with nothing new to
      * report. This sends the same live WebSocket order refresh (so the
      * passenger's offer list updates immediately) but with FCM copy that
-     * actually describes what happened.
+     * actually describes what happened — including the specific price THIS
+     * driver offered ({@code offeredPrice}, the just-saved DriverOffer's own
+     * pricePerPerson), never {@code order.getPrice()} — with several drivers
+     * able to bid different prices on the same request, showing the order's
+     * own price here would silently show every passenger the same number
+     * regardless of which driver's offer the push was actually about.
      */
-    public void notifyNewDriverOffer(Order order) {
+    public void notifyNewDriverOffer(Order order, java.math.BigDecimal offeredPrice) {
         if (order.getPassenger() == null) {
             return;
         }
@@ -189,10 +194,21 @@ public class NotificationService {
                 payload
         );
 
+        String body;
+        if (offeredPrice != null) {
+            java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new java.util.Locale("uz", "UZ"));
+            nf.setGroupingUsed(true);
+            nf.setMaximumFractionDigits(0);
+            String formattedPrice = nf.format(offeredPrice.setScale(0, java.math.RoundingMode.HALF_UP));
+            body = "WayGO: Haydovchi sizga " + formattedPrice + " so'm narx taklif qildi.";
+        } else {
+            body = "WayGO: Haydovchi sizning so'rovingizga yangi taklif yubordi.";
+        }
+
         sendFcmNotification(
                 order.getPassenger(),
                 "Yangi taklif! 🚗",
-                "WayGO: Sizning so'rovingizga haydovchidan yangi taklif keldi.",
+                body,
                 "ORDER_UPDATE"
         );
     }
