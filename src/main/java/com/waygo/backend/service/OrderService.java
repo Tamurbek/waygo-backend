@@ -93,7 +93,10 @@ public class OrderService {
         order.setLockExpirationTime(LocalDateTime.now().plusSeconds(30));
 
         Order savedOrder = orderRepository.save(order);
-        notificationService.notifyOrderStatusUpdate(savedOrder);
+        // Locking is an internal soft-reservation (order.getStatus() never
+        // changes) — WebSocket-refresh other viewers, but don't push a
+        // misleading "status updated: PENDING" notification for it.
+        notificationService.notifyOrderStatusUpdate(savedOrder, true, false);
         return savedOrder;
     }
 
@@ -112,7 +115,8 @@ public class OrderService {
             order.setLockedByDriverId(null);
             order.setLockExpirationTime(null);
             Order savedOrder = orderRepository.save(order);
-            notificationService.notifyOrderStatusUpdate(savedOrder);
+            // Same reasoning as lockOrder above — status never changes here either.
+            notificationService.notifyOrderStatusUpdate(savedOrder, true, false);
             notificationService.notifyNewOrder(savedOrder); // Notify as new so it reappears immediately
             return savedOrder;
         }
@@ -209,7 +213,10 @@ public class OrderService {
         offer.setAvailableSeats(calculatedAvailableSeats);
 
         Order savedOrder = orderRepository.save(order);
-        notificationService.notifyOrderStatusUpdate(savedOrder);
+        // A new DriverOffer, not a status change (order stays PENDING) — see
+        // notifyNewDriverOffer's doc comment for why this can't reuse
+        // notifyOrderStatusUpdate's generic (and here, misleading) push text.
+        notificationService.notifyNewDriverOffer(savedOrder);
         return savedOrder;
     }
 

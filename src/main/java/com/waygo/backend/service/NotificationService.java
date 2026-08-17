@@ -52,6 +52,21 @@ public class NotificationService {
      *   Sending both here would put two cards for one trip in the driver's app.
      */
     public void notifyOrderStatusUpdate(Order order, boolean notifyAssignedDriver) {
+        notifyOrderStatusUpdate(order, notifyAssignedDriver, true);
+    }
+
+    /**
+     * @param sendFcmPush Pass false when the caller only needs the live WebSocket
+     *   order refresh (passenger/driver screens re-rendering with the latest
+     *   Order), not an actual push — e.g. lockOrder()/unlockOrder() re-save the
+     *   order to record a driver's 30s soft-reservation, which never changes
+     *   order.getStatus(). Those used to go through the FCM branch below too,
+     *   which sent a "Buyurtma holati yangilandi: PENDING" push describing a
+     *   status change that never happened — confirmed on a real device as a
+     *   burst of near-identical PENDING pushes whenever several drivers
+     *   locked/viewed the same fresh request within a couple of minutes.
+     */
+    public void notifyOrderStatusUpdate(Order order, boolean notifyAssignedDriver, boolean sendFcmPush) {
         String msg = "WayGO: Buyurtmangiz holati yangilandi: " + order.getStatus();
 
         // Notify the specific passenger about their order status update if present
@@ -70,17 +85,19 @@ public class NotificationService {
                     payload
             );
 
-            if (order.getStatus() == Order.OrderStatus.ARRIVED) {
-                sendFcmNotification(
-                        order.getPassenger(),
-                        "Haydovchi yetib keldi! 📍",
-                        "Haydovchi belgilangan jo'nash joyiga yetib keldi.",
-                        "ORDER_UPDATE",
-                        null,
-                        "driver_arrived_chime"
-                );
-            } else {
-                sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
+            if (sendFcmPush) {
+                if (order.getStatus() == Order.OrderStatus.ARRIVED) {
+                    sendFcmNotification(
+                            order.getPassenger(),
+                            "Haydovchi yetib keldi! 📍",
+                            "Haydovchi belgilangan jo'nash joyiga yetib keldi.",
+                            "ORDER_UPDATE",
+                            null,
+                            "driver_arrived_chime"
+                    );
+                } else {
+                    sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
+                }
             }
         }
 
@@ -115,7 +132,9 @@ public class NotificationService {
                     payload
             );
 
-            sendFcmNotification(order.getDriver(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
+            if (sendFcmPush) {
+                sendFcmNotification(order.getDriver(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
+            }
         }
 
         // Notify ALL drivers who submitted offers so they learn if accepted/rejected
@@ -136,6 +155,46 @@ public class NotificationService {
             }
         }
 
+    }
+
+    /**
+     * Notifies the passenger that a driver placed a NEW offer on their
+     * still-PENDING request — called from {@code acceptOrder()}, where a
+     * {@link DriverOffer} is added/updated but {@code order.getStatus()} itself
+     * never changes. That call site used to go through
+     * {@link #notifyOrderStatusUpdate(Order)}, which pushed "Buyurtma holati
+     * yangilandi: PENDING" — misleading (status didn't change) and, with several
+     * drivers bidding on the same fresh request within a couple of minutes,
+     * produced a burst of near-identical "PENDING" pushes with nothing new to
+     * report. This sends the same live WebSocket order refresh (so the
+     * passenger's offer list updates immediately) but with FCM copy that
+     * actually describes what happened.
+     */
+    public void notifyNewDriverOffer(Order order) {
+        if (order.getPassenger() == null) {
+            return;
+        }
+
+        messagingTemplate.convertAndSendToUser(
+                order.getPassenger().getPhone(),
+                "/queue/order-status",
+                order
+        );
+
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", "ORDER_UPDATE");
+        payload.put("order", order);
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + order.getPassenger().getId(),
+                payload
+        );
+
+        sendFcmNotification(
+                order.getPassenger(),
+                "Yangi taklif! 🚗",
+                "WayGO: Sizning so'rovingizga haydovchidan yangi taklif keldi.",
+                "ORDER_UPDATE"
+        );
     }
 
     public void notifySeatCancelled(User passenger, String seatName, Order order) {

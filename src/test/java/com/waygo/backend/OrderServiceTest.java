@@ -156,7 +156,11 @@ class OrderServiceTest {
         assertNotNull(locked);
         assertEquals(driver.getId(), locked.getLockedByDriverId());
         assertNotNull(locked.getLockExpirationTime());
-        verify(notificationService).notifyOrderStatusUpdate(any(Order.class));
+        // Locking doesn't change order.getStatus() — WebSocket-refreshes
+        // other viewers but must NOT send a misleading FCM push claiming the
+        // status changed (see NotificationService#notifyOrderStatusUpdate's
+        // sendFcmPush param doc).
+        verify(notificationService).notifyOrderStatusUpdate(any(Order.class), eq(true), eq(false));
     }
 
     @Test
@@ -192,7 +196,7 @@ class OrderServiceTest {
         assertNotNull(unlocked);
         assertNull(unlocked.getLockedByDriverId());
         assertNull(unlocked.getLockExpirationTime());
-        verify(notificationService).notifyOrderStatusUpdate(any(Order.class));
+        verify(notificationService).notifyOrderStatusUpdate(any(Order.class), eq(true), eq(false));
         verify(notificationService).notifyNewOrder(any(Order.class));
     }
 
@@ -210,7 +214,8 @@ class OrderServiceTest {
         assertEquals(1, accepted.getDriverOffers().size());
         assertEquals(driver, accepted.getDriverOffers().get(0).getDriver());
         assertEquals("PENDING", accepted.getDriverOffers().get(0).getStatus());
-        verify(notificationService).notifyOrderStatusUpdate(any(Order.class));
+        // A new offer, not a status change — see NotificationService#notifyNewDriverOffer.
+        verify(notificationService).notifyNewDriverOffer(any(Order.class));
     }
 
     @Test
