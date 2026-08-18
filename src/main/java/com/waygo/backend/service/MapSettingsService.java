@@ -39,6 +39,12 @@ public class MapSettingsService {
         existing.setRouteSnapMaxMeters(newSettings.getRouteSnapMaxMeters());
         existing.setOffRouteThresholdMeters(newSettings.getOffRouteThresholdMeters());
         existing.setRerouteMinIntervalMs(newSettings.getRerouteMinIntervalMs());
+        // Blank-guarded like driverMarkerImageUrl below — an admin leaving
+        // this field empty on submit must not silently break the OSRM
+        // fallback for every driver by overwriting it with "".
+        if (newSettings.getOsrmBaseUrl() != null && !newSettings.getOsrmBaseUrl().isBlank()) {
+            existing.setOsrmBaseUrl(newSettings.getOsrmBaseUrl());
+        }
         existing.setLookAheadSeconds(newSettings.getLookAheadSeconds());
         existing.setMaxLookAheadMeters(newSettings.getMaxLookAheadMeters());
         existing.setLookAheadMinSpeedMps(newSettings.getLookAheadMinSpeedMps());

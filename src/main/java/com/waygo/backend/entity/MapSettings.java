@@ -58,6 +58,15 @@ public class MapSettings {
     // minimal interval — har GPS tikida (~1s) qayta so'rov yubormaslik uchun.
     @Builder.Default
     private Integer rerouteMinIntervalMs = 3000;
+    // Yandex Directions API javob bermaganda (timeout/xato) ishlatiladigan
+    // zaxira marshrutlash xizmati — OSRM protokoliga mos har qanday server
+    // (masalan /route/v1/driving/{lon},{lat};{lon},{lat}?overview=full&
+    // geometries=polyline so'rovini qabul qiladigan). Standart qiymat —
+    // ochiq, kafolatsiz OSRM demo serveri; production uchun shu yerga o'z
+    // self-hosted OSRM serveringiz (yoki boshqa OSRM-mos xizmat) manzilini
+    // qo'yish tavsiya etiladi — ilova yangilanishisiz, shu paneldan.
+    @Builder.Default
+    private String osrmBaseUrl = "https://router.project-osrm.org";
     @Builder.Default
     private Double lookAheadSeconds = 3.0;
     @Builder.Default

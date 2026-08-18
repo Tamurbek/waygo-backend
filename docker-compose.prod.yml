@@ -103,6 +103,24 @@ services:
     networks:
       - waygo_net
 
+  # Self-hosted OSRM routing fallback (used when Yandex Directions API
+  # times out/errors — see MapSettings.osrmBaseUrl). Requires the .osrm
+  # data files in ./osrm to exist first — run ./osrm/setup.sh once before
+  # starting this service. Not in the default `depends_on` chain for
+  # app_blue/app_green: those must keep working even if this is never set
+  # up (osrmBaseUrl defaults to the public demo server otherwise).
+  osrm:
+    image: osrm/osrm-backend
+    container_name: waygo_osrm
+    restart: always
+    command: >
+      osrm-routed --algorithm mld --max-table-size 1
+      /data/uzbekistan-latest.osrm
+    volumes:
+      - ./osrm:/data:ro
+    networks:
+      - waygo_net
+
   gateway:
     image: nginx:alpine
     container_name: waygo_gateway
