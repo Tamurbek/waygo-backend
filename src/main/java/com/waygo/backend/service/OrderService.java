@@ -1445,16 +1445,16 @@ public class OrderService {
                 }
                 rideBookingRepository.save(userBooking);
 
-                // Update passenger's virtual order
+                // Update passenger's virtual order — notes only. dto.getFromAddress()/
+                // getFromLat()/getFromLon() here is this passenger's PICKUP point
+                // (already applied to userBooking above), not a change to the
+                // route itself; writing it into passengerOrder's from/to fields
+                // used to overwrite the route origin/destination shown in this
+                // passenger's own order list with their street-level pickup
+                // address the moment they set or edited a custom pickup.
                 if (userBooking.getPassengerOrderId() != null) {
                     Order passengerOrder = orderRepository.findById(userBooking.getPassengerOrderId()).orElse(null);
                     if (passengerOrder != null) {
-                        if (dto.getFromAddress() != null) passengerOrder.setFromAddress(dto.getFromAddress());
-                        if (dto.getFromLat() != null) passengerOrder.setFromLat(dto.getFromLat());
-                        if (dto.getFromLon() != null) passengerOrder.setFromLon(dto.getFromLon());
-                        if (dto.getToAddress() != null) passengerOrder.setToAddress(dto.getToAddress());
-                        if (dto.getToLat() != null) passengerOrder.setToLat(dto.getToLat());
-                        if (dto.getToLon() != null) passengerOrder.setToLon(dto.getToLon());
                         if (dto.getNotes() != null) passengerOrder.setNotes(dto.getNotes());
                         orderRepository.save(passengerOrder);
                     }
@@ -1909,9 +1909,15 @@ public class OrderService {
                         if (b.getPassengerOrderId() != null) {
                             Order passengerOrder = orderRepository.findById(b.getPassengerOrderId()).orElse(null);
                             if (passengerOrder != null) {
-                                if (!pickup.isEmpty()) passengerOrder.setFromAddress(pickup);
-                                if (reqLat != null) passengerOrder.setFromLat(reqLat);
-                                if (reqLon != null) passengerOrder.setFromLon(reqLon);
+                                // Pickup refines WHERE on the route this passenger boards —
+                                // it must never overwrite the passenger's own order record's
+                                // fromAddress/fromLat/fromLon, which represent the actual
+                                // route origin shown in their order list ("QAYERDAN"). That
+                                // used to happen here, and a route like "Jizzax shahri ->
+                                // Toshkent shahri" would silently start displaying the
+                                // passenger's street-level pickup address instead. The
+                                // pickup itself already lives on the booking (b.pickupAddress
+                                // / b.fromLat / b.fromLon, set above) — nothing else needs it.
                                 if (!notes.isEmpty()) passengerOrder.setNotes(notes);
                                 orderRepository.save(passengerOrder);
                             }
@@ -1964,9 +1970,9 @@ public class OrderService {
             if (b.getPassengerOrderId() != null) {
                 Order passengerOrder = orderRepository.findById(b.getPassengerOrderId()).orElse(null);
                 if (passengerOrder != null) {
-                    if (!pickup.isEmpty()) passengerOrder.setFromAddress(pickup);
-                    if (reqLat != null) passengerOrder.setFromLat(reqLat);
-                    if (reqLon != null) passengerOrder.setFromLon(reqLon);
+                    // See the matching comment in the block above (no-new-seats
+                    // branch): pickup must stay on the booking, never overwrite
+                    // the passenger's own order record's route fields.
                     if (!notes.isEmpty()) passengerOrder.setNotes(notes);
                     orderRepository.save(passengerOrder);
                 }
