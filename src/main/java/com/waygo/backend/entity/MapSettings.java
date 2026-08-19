@@ -79,6 +79,13 @@ public class MapSettings {
     private Double locationDistanceFilterMeters = 2.0;
     @Builder.Default
     private Integer locationIntervalMs = 1000;
+    // Har bir xom GPS nuqtasi shu qiymatdan (metrda) yomonroq accuracy bilan
+    // kelsa, mutlaqo e'tiborga olinmaydi — marker/marshrut hisoblashga
+    // umuman kirmaydi. Filtrlanmagan holda past aniqlikdagi nuqta (masalan
+    // shahar "kanyoni"da multipath yoki tunnel yaqinida) markerni haqiqiy
+    // yo'ldan chetga "sakratib" yuborishi mumkin edi.
+    @Builder.Default
+    private Double maxAcceptableAccuracyMeters = 30.0;
 
     // --- Vizual (ranglar / chiziqlar) ---
     @Builder.Default
