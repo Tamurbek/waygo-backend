@@ -51,6 +51,7 @@ public class MapSettingsService {
         existing.setArrivalThresholdMeters(newSettings.getArrivalThresholdMeters());
         existing.setLocationDistanceFilterMeters(newSettings.getLocationDistanceFilterMeters());
         existing.setLocationIntervalMs(newSettings.getLocationIntervalMs());
+        existing.setMaxAcceptableAccuracyMeters(newSettings.getMaxAcceptableAccuracyMeters());
 
         existing.setRouteStrokeColorHex(newSettings.getRouteStrokeColorHex());
         existing.setRouteStrokeWidth(newSettings.getRouteStrokeWidth());

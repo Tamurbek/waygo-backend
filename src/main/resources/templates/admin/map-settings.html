@@ -143,6 +143,10 @@
                             <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Joylashuv oqimi: interval (ms)</label>
                             <input type="number" th:field="*{locationIntervalMs}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
                         </div>
+                        <div class="form-group">
+                            <label style="display: block; color: var(--text-dim); margin-bottom: 0.5rem; font-size: 0.875rem;">Maksimal qabul qilinadigan accuracy (metr) — bundan yomonroq xom GPS nuqtalar butunlay rad etiladi</label>
+                            <input type="number" step="0.1" th:field="*{maxAcceptableAccuracyMeters}" style="width: 100%; padding: 0.75rem; background: #2A2A2A; border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: #fff;">
+                        </div>
                     </div>
 
                     <h3 style="color: var(--primary); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem; margin-top: 1rem;">🎨 Vizual (ranglar / chiziqlar)</h3>
