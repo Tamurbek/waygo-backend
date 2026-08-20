@@ -26,7 +26,6 @@ public class OrderService {
     private final DriverProfileRepository driverProfileRepository;
     private final com.waygo.backend.repository.RideBookingRepository rideBookingRepository;
     private final com.waygo.backend.repository.UserRepository userRepository;
-    private final com.waygo.backend.service.ReferralService referralService;
     private final DriverLocationCache driverLocationCache;
     private final com.waygo.backend.repository.config.RegionRepository regionRepository;
     private final com.waygo.backend.repository.config.DistrictRepository districtRepository;
@@ -757,10 +756,6 @@ public class OrderService {
             int currentTrips = driver.getTripsCount() != null ? driver.getTripsCount() : 0;
             driver.setTripsCount(currentTrips + 1);
             userRepository.save(driver);
-            
-            if (currentTrips == 0) {
-                // referralService.rewardInviterIfFirstTripCompleted(driver);
-            }
         }
 
         order.setStatus(Order.OrderStatus.COMPLETED);

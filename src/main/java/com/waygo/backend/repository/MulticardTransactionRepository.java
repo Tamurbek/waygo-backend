@@ -7,4 +7,5 @@ import java.util.Optional;
 public interface MulticardTransactionRepository extends JpaRepository<MulticardTransaction, Long> {
     Optional<MulticardTransaction> findByInvoiceId(String invoiceId);
     Optional<MulticardTransaction> findByUuid(String uuid);
+    void deleteByUserId(Long userId);
 }

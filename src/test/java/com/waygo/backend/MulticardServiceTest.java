@@ -79,7 +79,6 @@ class MulticardServiceTest {
                 .phone("+998901234567")
                 .fullName("Sherali Driver")
                 .balance(BigDecimal.ZERO)
-                .pointsBalance(0)
                 .role(User.Role.DRIVER)
                 .build();
 
@@ -101,7 +100,6 @@ class MulticardServiceTest {
         // Verify
         verify(multicardTransactionRepository, times(1)).save(transaction);
         verify(transactionService, times(1)).topUp(1L, new BigDecimal("50000.00"));
-        verify(userRepository, times(1)).save(any(User.class));
     }
 
     @Test

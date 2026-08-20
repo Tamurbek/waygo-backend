@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface PaymeTransactionRepository extends JpaRepository<PaymeTransaction, Long> {
     Optional<PaymeTransaction> findByPaymeId(String paymeId);
     List<PaymeTransaction> findAllByTimeBetween(Long from, Long to);
+    void deleteByUserId(Long userId);
 }

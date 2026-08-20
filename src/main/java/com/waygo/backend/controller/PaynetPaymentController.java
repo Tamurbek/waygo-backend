@@ -74,7 +74,6 @@ public class PaynetPaymentController {
         data.put("carNumber", user.getCarNumber());
         data.put("carModel", user.getCarModel());
         data.put("balance", user.getBalance() != null ? user.getBalance() : BigDecimal.ZERO);
-        data.put("pointsBalance", user.getPointsBalance() != null ? user.getPointsBalance() : 0);
 
         return ResponseEntity.ok(ApiResponse.success(data, "Haydovchi ma'lumotlari topildi"));
     }
@@ -104,11 +103,6 @@ public class PaynetPaymentController {
         BigDecimal newBalance = currentBalance.add(request.getAmount());
         user.setBalance(newBalance);
 
-        // Also credit points balance (1 point = 10 UZS ratio if applicable)
-        int currentPoints = user.getPointsBalance() != null ? user.getPointsBalance() : 0;
-        int pointsToAdd = request.getAmount().divide(BigDecimal.valueOf(10), 0, java.math.RoundingMode.DOWN).intValue();
-        user.setPointsBalance(currentPoints + pointsToAdd);
-
         userRepository.save(user);
 
         Map<String, Object> responseData = new HashMap<>();
@@ -117,7 +111,6 @@ public class PaynetPaymentController {
         responseData.put("phone", user.getPhone());
         responseData.put("addedAmount", request.getAmount());
         responseData.put("newBalance", newBalance);
-        responseData.put("newPointsBalance", user.getPointsBalance());
         responseData.put("transactionId", request.getTransactionId() != null ? request.getTransactionId() : "TX_" + System.currentTimeMillis());
 
         return ResponseEntity.ok(ApiResponse.success(responseData, "Haydovchi balansi muvaffaqiyatli to'ldirildi"));

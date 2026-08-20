@@ -263,12 +263,8 @@ public class MulticardService {
                 BigDecimal amountUzs = BigDecimal.valueOf(transaction.getAmount()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
                 
                 // Credit driver
-                User updatedUser = transactionService.topUp(driver.getId(), amountUzs);
-                int pointsToAdd = amountUzs.divide(BigDecimal.valueOf(10), 0, RoundingMode.DOWN).intValue();
-                int currentPoints = updatedUser.getPointsBalance() != null ? updatedUser.getPointsBalance() : 0;
-                updatedUser.setPointsBalance(currentPoints + pointsToAdd);
-                userRepository.save(updatedUser);
-                
+                transactionService.topUp(driver.getId(), amountUzs);
+
                 Map<String, Object> successRes = new HashMap<>();
                 successRes.put("success", true);
                 successRes.put("message", "To'lov muvaffaqiyatli amalga oshirildi");
@@ -334,19 +330,11 @@ public class MulticardService {
             log.info("Crediting driver {} balance with {} UZS from Multicard transaction {}", user.getId(), amountUzs, invoiceId);
             User updatedUser = transactionService.topUp(user.getId(), amountUzs);
 
-            int pointsToAdd = amountUzs.divide(BigDecimal.valueOf(10), 0, RoundingMode.DOWN).intValue();
-            int currentPoints = updatedUser.getPointsBalance() != null ? updatedUser.getPointsBalance() : 0;
-            updatedUser.setPointsBalance(currentPoints + pointsToAdd);
-            userRepository.save(updatedUser);
-
-            log.info("Successfully completed Multicard top up for driver {}. New balance: {}, new points: {}",
-                    user.getId(), updatedUser.getBalance(), updatedUser.getPointsBalance());
+            log.info("Successfully completed Multicard top up for driver {}. New balance: {}",
+                    user.getId(), updatedUser.getBalance());
         } else if ("revert".equals(status)) {
             log.info("Reverting Multicard transaction {} for driver {}", invoiceId, user.getId());
             user.setBalance(user.getBalance().subtract(amountUzs));
-            int pointsToDeduct = amountUzs.divide(BigDecimal.valueOf(10), 0, RoundingMode.DOWN).intValue();
-            int currentPoints = user.getPointsBalance() != null ? user.getPointsBalance() : 0;
-            user.setPointsBalance(currentPoints - pointsToDeduct);
             userRepository.save(user);
         }
     }

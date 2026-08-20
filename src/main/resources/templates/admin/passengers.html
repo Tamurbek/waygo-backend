@@ -6,7 +6,13 @@
 
     <div class="main-content">
         <h1 th:text="${title}">Mijozlar</h1>
-        
+        <div th:if="${param.success}" style="padding: 0.75rem; margin-top: 1rem; border-radius: 0.5rem; background: rgba(0, 255, 128, 0.15); color: var(--success); border: 1px solid rgba(0, 255, 128, 0.3); font-size: 0.9rem;">
+            ✓ Muvaffaqiyatli bajarildi!
+        </div>
+        <div th:if="${param.error}" style="padding: 0.75rem; margin-top: 1rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.15); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.9rem;">
+            ✕ Xatolik: <span th:text="${param.error}"></span>
+        </div>
+
         <div class="card" style="margin-top: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <h2 style="font-size: 1.125rem;">Barcha mijozlar (Yo'lovchilar)</h2>
@@ -45,8 +51,12 @@
                         <td style="font-weight: 500;" th:text="${passenger.fullName != null ? passenger.fullName : 'Kiritilmagan'}">Aziz</td>
                         <td th:text="${passenger.phone}">+998...</td>
                         <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(passenger.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
-                        <td>
+                        <td style="display: flex; gap: 0.5rem;">
                             <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Tarix</a>
+                            <form th:action="${'/admin/passengers/' + passenger.id + '/delete'}" method="post"
+                                  onsubmit="return confirm('Haqiqatan ham ushbu mijozni butunlay o\'chirmoqchimisiz? Bu amalni ortga qaytarib bo\'lmaydi!');">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">O'chirish</button>
+                            </form>
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(passengers)}">

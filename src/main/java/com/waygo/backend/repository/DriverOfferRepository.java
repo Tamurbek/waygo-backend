@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DriverOfferRepository extends JpaRepository<DriverOffer, Long> {
+    void deleteByDriverId(Long driverId);
 }

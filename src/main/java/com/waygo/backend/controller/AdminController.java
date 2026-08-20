@@ -37,6 +37,7 @@ public class AdminController {
     private final com.waygo.backend.service.NotificationService notificationService;
     private final com.waygo.backend.repository.config.TariffPlanRepository tariffPlanRepository;
     private final com.waygo.backend.service.FileService fileService;
+    private final com.waygo.backend.service.AdminUserService adminUserService;
 
     @GetMapping("/login")
     public String login() {
@@ -290,17 +291,51 @@ public class AdminController {
     }
 
     private Object handleActionResponse(jakarta.servlet.http.HttpServletRequest request, Exception error) {
+        return handleActionResponse(request, error, "/admin/drivers");
+    }
+
+    private Object handleActionResponse(jakarta.servlet.http.HttpServletRequest request, Exception error, String redirectBase) {
         boolean isXmlHttp = "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
         if (error != null) {
             if (isXmlHttp) {
                 return ResponseEntity.badRequest().body(Map.of("error", error.getMessage()));
             }
-            return "redirect:/admin/drivers?error=" + error.getMessage();
+            return "redirect:" + redirectBase + "?error=" + error.getMessage();
         } else {
             if (isXmlHttp) {
                 return ResponseEntity.ok(Map.of("success", true));
             }
-            return "redirect:/admin/drivers?success";
+            return "redirect:" + redirectBase + "?success";
+        }
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/delete")
+    @org.springframework.transaction.annotation.Transactional
+    public Object deleteDriver(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Haydovchi topilmadi"));
+            if (driver.getRole() != User.Role.DRIVER) {
+                throw new IllegalArgumentException("Bu foydalanuvchi haydovchi emas");
+            }
+            adminUserService.deleteUserCompletely(driver);
+            return handleActionResponse(request, null, "/admin/drivers");
+        } catch (Exception e) {
+            return handleActionResponse(request, e, "/admin/drivers");
+        }
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/passengers/{id}/delete")
+    @org.springframework.transaction.annotation.Transactional
+    public Object deletePassenger(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            User passenger = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Mijoz topilmadi"));
+            if (passenger.getRole() != User.Role.PASSENGER) {
+                throw new IllegalArgumentException("Bu foydalanuvchi mijoz emas");
+            }
+            adminUserService.deleteUserCompletely(passenger);
+            return handleActionResponse(request, null, "/admin/passengers");
+        } catch (Exception e) {
+            return handleActionResponse(request, e, "/admin/passengers");
         }
     }
 

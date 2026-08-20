@@ -152,6 +152,7 @@
                 <form th:id="'grantTrialForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/grant-trial'}" method="post">
                     <input type="hidden" name="days" th:id="'grantTrialDaysInput-' + ${driver.id}">
                 </form>
+                <form th:id="'deleteForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/delete'}" method="post"></form>
             </div>
         </div>
     </div>
@@ -272,6 +273,17 @@
                         <input type="number" id="settingsTrialDaysInput" value="14" placeholder="Kunlar (masalan: 14)" style="border: 1px solid var(--border); background: var(--input-bg); border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.85rem; color: var(--text); flex: 1; height: 38px; outline: none;">
                         <button type="button" class="btn btn-primary" style="height: 38px; padding: 0 1rem; font-size: 0.85rem; white-space: nowrap;" onclick="submitSettingsGrantTrial()">Berish</button>
                     </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(239, 68, 68, 0.05); padding: 1rem; border-radius: 0.75rem; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <span style="font-size: 0.875rem; color: var(--error); font-weight: 600;">⚠️ Xavfli hudud</span>
+                    <span style="font-size: 0.78rem; color: var(--text-dim); line-height: 1.4;">
+                        Haydovchini butunlay o'chirish uning profili, balansi va barcha shaxsiy ma'lumotlarini qaytarib bo'lmaydigan tarzda o'chiradi.
+                    </span>
+                    <button type="button" class="btn btn-danger" style="margin-top: 0.25rem;" onclick="confirmDeleteDriver()">
+                        <i class="ph ph-trash"></i> Haydovchini butunlay o'chirish
+                    </button>
                 </div>
             </div>
             <div class="modal-footer" style="padding: 1rem 1.5rem;">
@@ -605,6 +617,14 @@
             if (driverId) {
                 document.getElementById('grantTrialDaysInput-' + driverId).value = days;
                 submitFormWithAjax('grantTrialForm-' + driverId, days + ' kunlik bepul sinov davri berildi');
+            }
+        }
+
+        function confirmDeleteDriver() {
+            const driverId = document.getElementById('settingsDriverId').value;
+            if (!driverId) return;
+            if (confirm("Haqiqatan ham ushbu haydovchini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi!")) {
+                submitFormWithAjax('deleteForm-' + driverId, 'Haydovchi butunlay o\'chirildi');
             }
         }
     </script>

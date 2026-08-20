@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface VipChatMessageRepository extends JpaRepository<VipChatMessage, Long> {
     List<VipChatMessage> findByDriverIdOrderByCreatedAtAsc(Long driverId);
     Optional<VipChatMessage> findByTelegramMessageId(Integer telegramMessageId);
+    void deleteByDriverId(Long driverId);
 
     @org.springframework.data.jpa.repository.Query("SELECT m FROM VipChatMessage m WHERE m.id IN (SELECT MAX(m2.id) FROM VipChatMessage m2 GROUP BY m2.driver.id)")
     List<VipChatMessage> findLatestMessagesGroupedByDriver();

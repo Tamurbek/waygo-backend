@@ -2,11 +2,20 @@ package com.waygo.backend.repository;
 
 import com.waygo.backend.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
+    @Modifying
+    @Query("UPDATE Order o SET o.driver = null WHERE o.driver.id = :driverId")
+    void clearDriverReferences(@Param("driverId") Long driverId);
+
+    @Modifying
+    @Query("UPDATE Order o SET o.passenger = null WHERE o.passenger.id = :passengerId")
+    void clearPassengerReferences(@Param("passengerId") Long passengerId);
+
     @Query("SELECT o FROM Order o WHERE o.passenger.id = :passengerId OR o.id IN (SELECT b.order.id FROM RideBooking b WHERE b.passenger.id = :passengerId AND b.status != 'REJECTED') ORDER BY o.createdAt DESC")
     List<Order> findByPassengerIdOrderByCreatedAtDesc(@Param("passengerId") Long passengerId);
 

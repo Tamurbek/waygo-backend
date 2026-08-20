@@ -2,6 +2,7 @@ package com.waygo.backend.repository;
 
 import com.waygo.backend.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,6 +12,14 @@ import java.util.List;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     List<Transaction> findBySenderIdOrReceiverIdOrderByCreatedAtDesc(Long senderId, Long receiverId);
+
+    @Modifying
+    @Query("UPDATE Transaction t SET t.sender = null WHERE t.sender.id = :userId")
+    void clearSenderReferences(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("UPDATE Transaction t SET t.receiver = null WHERE t.receiver.id = :userId")
+    void clearReceiverReferences(@Param("userId") Long userId);
 
     List<Transaction> findByTypeOrderByCreatedAtDesc(Transaction.TransactionType type);
 

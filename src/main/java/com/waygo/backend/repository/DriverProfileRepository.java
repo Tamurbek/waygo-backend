@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface DriverProfileRepository extends JpaRepository<DriverProfile, Long> {
     Optional<DriverProfile> findByUser(User user);
+    void deleteByUser(User user);
 }

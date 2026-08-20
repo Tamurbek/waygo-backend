@@ -205,12 +205,11 @@ class PaymeServiceTest {
         assertNull(user.getDriverId());
         
         // Invoke lifecycle hook manually to test
-        user.generateDriverIdAndReferral();
-        
+        user.generateDriverId();
+
         assertNotNull(user.getDriverId());
         assertEquals(9, user.getDriverId().length());
         assertTrue(user.getDriverId().matches("WG\\d{7}")); // exactly WG followed by 7 digits
-        assertNotNull(user.getReferralCode());
     }
 
     @Test
@@ -221,10 +220,9 @@ class PaymeServiceTest {
                 .build();
 
         assertNull(user.getDriverId());
-        
-        user.generateDriverIdAndReferral();
-        
+
+        user.generateDriverId();
+
         assertNull(user.getDriverId());
-        assertNotNull(user.getReferralCode());
     }
 }

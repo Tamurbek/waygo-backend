@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface PaynetTransactionRepository extends JpaRepository<PaynetTransaction, Long> {
     Optional<PaynetTransaction> findByPaynetTransactionId(Long paynetTransactionId);
     List<PaynetTransaction> findByCreatedAtBetween(LocalDateTime dateFrom, LocalDateTime dateTo);
+    void deleteByUserId(Long userId);
 }
