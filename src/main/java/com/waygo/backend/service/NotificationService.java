@@ -297,6 +297,23 @@ public class NotificationService {
                 passengerOrder
         );
 
+        // Also broadcast on the numeric-ID topic — see notifyOrderStatusUpdate's
+        // use of the same pair. The STOMP-user /queue channel above depends on
+        // the phone-based principal resolving correctly on delivery; the
+        // waygo_user client's own web_socket_service.dart subscribes to this
+        // topic too, explicitly "for absolute reliability". This method used to
+        // send only the /queue message, which is why a driver's full order
+        // cancellation was confirmed to sometimes never reach the passenger —
+        // their screen kept showing the now-cancelled order until their next
+        // manual refresh.
+        java.util.Map<String, Object> passengerCancelPayload = new java.util.HashMap<>();
+        passengerCancelPayload.put("type", "ORDER_UPDATE");
+        passengerCancelPayload.put("order", passengerOrder);
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + passengerOrder.getPassenger().getId(),
+                passengerCancelPayload
+        );
+
         sendFcmNotification(passengerOrder.getPassenger(), "Buyurtma bekor qilindi", msg, "ORDER_UPDATE");
     }
 
@@ -319,6 +336,17 @@ public class NotificationService {
                 passengerOrder
         );
 
+        // Same reliability pairing as notifyPassengerOrderCancelledByDriver
+        // above — waygo_driver's web_socket_service.dart subscribes to this
+        // numeric-ID topic alongside /queue/order-status for the same reason.
+        java.util.Map<String, Object> driverCancelPayload = new java.util.HashMap<>();
+        driverCancelPayload.put("type", "ORDER_UPDATE");
+        driverCancelPayload.put("order", passengerOrder);
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + passengerOrder.getDriver().getId(),
+                driverCancelPayload
+        );
+
         sendFcmNotification(passengerOrder.getDriver(), "Buyurtma bekor qilindi", msg, "ORDER_UPDATE");
     }
 
@@ -339,6 +367,16 @@ public class NotificationService {
                     "/queue/order-status",
                     driverOrder
             );
+
+            // Same reliability pairing as notifyPassengerOrderCancelledByDriver.
+            java.util.Map<String, Object> bookingCancelPayload = new java.util.HashMap<>();
+            bookingCancelPayload.put("type", "ORDER_UPDATE");
+            bookingCancelPayload.put("order", driverOrder);
+            messagingTemplate.convertAndSend(
+                    "/topic/notifications/" + booking.getPassenger().getId(),
+                    bookingCancelPayload
+            );
+
             sendFcmNotification(booking.getPassenger(), "Joy bekor qilindi", msg, "ORDER_UPDATE");
         }
     }
