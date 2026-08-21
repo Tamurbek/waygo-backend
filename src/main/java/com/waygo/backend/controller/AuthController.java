@@ -63,7 +63,21 @@ public class AuthController {
         if (user != null) {
             // User exists, handle role update automatically if necessary
             if (request.getRole() != null && user.getRole() != request.getRole()) {
+                User.Role previousRole = user.getRole();
                 user.setRole(request.getRole());
+                // Same configurable free trial as a brand-new driver
+                // registration below, for a passenger converting to a
+                // driver for the first time. Gated on never having had a
+                // tariff/expiry set before so switching roles back and
+                // forth can't be used to keep re-granting free days.
+                if (request.getRole() == User.Role.DRIVER
+                        && previousRole != User.Role.DRIVER
+                        && user.getTariffExpiryDate() == null
+                        && user.getActiveTariff() == null) {
+                    int trialDays = com.waygo.backend.service.SystemSettingsService.getFreeTrialDaysConfig();
+                    user.setDriverBillingEnabled(true);
+                    user.setTariffExpiryDate(java.time.LocalDateTime.now().plusDays(trialDays));
+                }
                 user = userRepository.save(user);
             }
             
