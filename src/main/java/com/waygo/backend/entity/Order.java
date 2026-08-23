@@ -35,6 +35,18 @@ public class Order {
     
     private Double fromLat;
     private Double fromLon;
+
+    /**
+     * The passenger's precise, refined meeting point ("Olib ketish joyi"),
+     * distinct from {@link #fromLat}/{@link #fromLon} (the originally
+     * selected "from" address used for matching/routing). Updated via the
+     * dedicated {@code PATCH /orders/{id}/pickup-location} endpoint so it
+     * can change even after a driver has already accepted the order,
+     * without touching fromLat/fromLon or re-triggering full order
+     * validation.
+     */
+    private Double pickupLat;
+    private Double pickupLon;
     private Double toLat;
     private Double toLon;
 

@@ -765,6 +765,45 @@ public class OrderService {
         return savedOrder;
     }
 
+    /**
+     * Updates the passenger's precise pickup point ("Olib ketish joyi") on an
+     * already-created order and pings the assigned driver over WebSocket so
+     * their live map redraws the route to the new point immediately.
+     * Deliberately independent of {@link #updateOrder}: that method blocks
+     * any edit once the order is ACCEPTED/ARRIVED/STARTED because it also
+     * covers destination/price/seat changes a driver has already committed
+     * to, but adjusting just the meeting pin is expected to keep working
+     * right up until the trip actually starts.
+     */
+    @Transactional
+    public Order updatePickupLocation(Long orderId, Double lat, Double lon) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser == null || order.getPassenger() == null
+                || !currentUser.getId().equals(order.getPassenger().getId())) {
+            throw new UnauthorizedAccessException("You can only update the pickup location of your own order");
+        }
+
+        boolean editable = order.getStatus() == Order.OrderStatus.PENDING
+                || order.getStatus() == Order.OrderStatus.ACCEPTED
+                || order.getStatus() == Order.OrderStatus.ARRIVED;
+        if (!editable) {
+            throw new IllegalStateException("Pickup location can no longer be changed for this trip");
+        }
+
+        order.setPickupLat(lat);
+        order.setPickupLon(lon);
+        Order saved = orderRepository.save(order);
+
+        // WS-only ping (no FCM) — a moved pin isn't significant enough to
+        // interrupt the driver with a push, unlike a real status change.
+        notificationService.notifyOrderStatusUpdate(saved, true, false);
+
+        return saved;
+    }
+
     @Transactional
     public Order rateDriver(Long orderId, Double rating, String comment, List<String> tags) {
         Order order = orderRepository.findById(orderId)

@@ -43,6 +43,16 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(order, "Order updated successfully"));
     }
 
+    @PatchMapping("/{orderId}/pickup-location")
+    @Operation(summary = "Passenger updates the precise pickup point (\"Olib ketish joyi\") of an active order")
+    public ResponseEntity<ApiResponse<Order>> updatePickupLocation(
+            @PathVariable("orderId") Long orderId,
+            @RequestParam Double lat,
+            @RequestParam Double lon) {
+        Order order = orderService.updatePickupLocation(orderId, lat, lon);
+        return ResponseEntity.ok(ApiResponse.success(order, "Pickup location updated successfully"));
+    }
+
     @PostMapping("/{orderId}/lock")
     @Operation(summary = "Driver locks a passenger's order for exclusive viewing")
     public ResponseEntity<ApiResponse<Order>> lock(@PathVariable("orderId") Long orderId) {
