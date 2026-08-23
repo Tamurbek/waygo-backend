@@ -40,6 +40,23 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Re-broadcasts a still-PENDING (unassigned) passenger order on the same
+     * public channel {@link #notifyNewOrder} uses, for a field edit (e.g. the
+     * pickup point) rather than the order's initial creation. A driver who's
+     * already viewing this order's detail page before making any offer isn't
+     * "the assigned driver" yet — {@code order.getDriver()} is still null —
+     * so there's no single recipient to target a personal push at; every
+     * browsing driver's client filters by matching order id anyway, the same
+     * way it already does for the initial new-order broadcast.
+     */
+    public void notifyPendingOrderUpdated(Order order) {
+        if (order == null || order.getPassenger() == null || order.getDriver() != null) {
+            return;
+        }
+        messagingTemplate.convertAndSend("/topic/orders/new-for-drivers", order);
+    }
+
     public void notifyOrderStatusUpdate(Order order) {
         notifyOrderStatusUpdate(order, true);
     }

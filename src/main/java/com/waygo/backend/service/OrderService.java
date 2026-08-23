@@ -776,7 +776,7 @@ public class OrderService {
      * right up until the trip actually starts.
      */
     @Transactional
-    public Order updatePickupLocation(Long orderId, Double lat, Double lon) {
+    public Order updatePickupLocation(Long orderId, Double lat, Double lon, String address) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
@@ -795,14 +795,28 @@ public class OrderService {
 
         order.setPickupLat(lat);
         order.setPickupLon(lon);
+        if (address != null) {
+            order.setPickupAddress(address);
+        }
         Order saved = orderRepository.save(order);
 
-        // WS ping to move the driver's live map, plus a dedicated push (not
-        // the generic status-update one, which would misleadingly say
-        // "Buyurtma holati yangilandi" for something that isn't a status
-        // change) so the driver actually notices the pin moved.
-        notificationService.notifyOrderStatusUpdate(saved, true, false);
-        notificationService.notifyPickupLocationChanged(saved);
+        if (saved.getDriver() != null) {
+            // WS ping to move the driver's live map, plus a dedicated push
+            // (not the generic status-update one, which would misleadingly
+            // say "Buyurtma holati yangilandi" for something that isn't a
+            // status change) so the driver actually notices the pin moved.
+            notificationService.notifyOrderStatusUpdate(saved, true, false);
+            notificationService.notifyPickupLocationChanged(saved);
+        } else {
+            // Still PENDING — no single assigned driver exists yet to target
+            // a personal push at. Any driver currently previewing this
+            // order's details before making an offer needs the same live
+            // update, so re-broadcast on the same public channel new pending
+            // orders go out on; their already-open detail page's WS listener
+            // picks it up by matching order id, same as an assigned driver's
+            // does above.
+            notificationService.notifyPendingOrderUpdated(saved);
+        }
 
         return saved;
     }

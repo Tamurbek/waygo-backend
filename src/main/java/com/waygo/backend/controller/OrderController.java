@@ -48,8 +48,9 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Order>> updatePickupLocation(
             @PathVariable("orderId") Long orderId,
             @RequestParam Double lat,
-            @RequestParam Double lon) {
-        Order order = orderService.updatePickupLocation(orderId, lat, lon);
+            @RequestParam Double lon,
+            @RequestParam(required = false) String address) {
+        Order order = orderService.updatePickupLocation(orderId, lat, lon, address);
         return ResponseEntity.ok(ApiResponse.success(order, "Pickup location updated successfully"));
     }
 

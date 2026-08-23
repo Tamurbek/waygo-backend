@@ -47,6 +47,7 @@ public class Order {
      */
     private Double pickupLat;
     private Double pickupLon;
+    private String pickupAddress;
     private Double toLat;
     private Double toLon;
 
