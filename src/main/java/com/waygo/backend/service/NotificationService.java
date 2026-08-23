@@ -95,6 +95,21 @@ public class NotificationService {
                             null,
                             "driver_arrived_chime"
                     );
+                } else if (order.getStatus() == Order.OrderStatus.COMPLETED) {
+                    // Distinct TRIP_COMPLETED push (not the generic ORDER_UPDATE
+                    // one below) so the client can route a tap straight to the
+                    // rating screen instead of the live-tracking map — mirrors
+                    // notifyTripCompleted()'s push to route-booking passengers,
+                    // which this direct/primary passenger was missing out on.
+                    java.util.Map<String, String> extraData = new java.util.HashMap<>();
+                    extraData.put("orderId", String.valueOf(order.getId()));
+                    sendFcmNotification(
+                            order.getPassenger(),
+                            "Safar yakunlandi! 🏁",
+                            "Safar yakunlandi! Haydovchini baholashni unutmang.",
+                            "TRIP_COMPLETED",
+                            extraData
+                    );
                 } else {
                     sendFcmNotification(order.getPassenger(), "Buyurtma holati yangilandi", msg, "ORDER_UPDATE");
                 }
