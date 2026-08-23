@@ -573,6 +573,31 @@ public class NotificationService {
     }
 
     /**
+     * Notifies the assigned driver that a passenger changed their precise
+     * pickup point ("Olib ketish joyi") on an order the driver has already
+     * accepted. A real, dedicated push (not just the silent WebSocket ping
+     * that {@code notifyOrderStatusUpdate(order, true, false)} already sends
+     * to move the driver's map) so the driver actually notices the pin
+     * moved, instead of the generic/misleading "Buyurtma holati yangilandi"
+     * text a plain status-update push would show for something that isn't
+     * actually a status change.
+     */
+    public void notifyPickupLocationChanged(Order order) {
+        if (order == null || order.getDriver() == null) {
+            return;
+        }
+        java.util.Map<String, String> extraData = new java.util.HashMap<>();
+        extraData.put("orderId", String.valueOf(order.getId()));
+        sendFcmNotification(
+                order.getDriver(),
+                "Olib ketish joyi o'zgartirildi 📍",
+                "Yo'lovchi olib ketish manzilini o'zgartirdi.",
+                "PICKUP_LOCATION_UPDATED",
+                extraData
+        );
+    }
+
+    /**
      * Notifies every booked passenger on a driver's route announcement that
      * the driver un-started the trip (reverted STARTED back to ACCEPTED),
      * mirroring {@link #notifyTripStarted}. Passengers who already received

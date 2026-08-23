@@ -797,9 +797,12 @@ public class OrderService {
         order.setPickupLon(lon);
         Order saved = orderRepository.save(order);
 
-        // WS-only ping (no FCM) — a moved pin isn't significant enough to
-        // interrupt the driver with a push, unlike a real status change.
+        // WS ping to move the driver's live map, plus a dedicated push (not
+        // the generic status-update one, which would misleadingly say
+        // "Buyurtma holati yangilandi" for something that isn't a status
+        // change) so the driver actually notices the pin moved.
         notificationService.notifyOrderStatusUpdate(saved, true, false);
+        notificationService.notifyPickupLocationChanged(saved);
 
         return saved;
     }
@@ -1494,8 +1497,11 @@ public class OrderService {
                     }
                 }
 
-                // Notify order update via WebSocket
-                notificationService.notifyOrderStatusUpdate(order);
+                // WS ping to move the driver's live map, plus a dedicated
+                // pickup-changed push instead of the generic status-update
+                // one (misleading here since order.status hasn't changed).
+                notificationService.notifyOrderStatusUpdate(order, true, false);
+                notificationService.notifyPickupLocationChanged(order);
 
                 // Return the updated driver order
                 return orderRepository.save(order);
@@ -1959,7 +1965,11 @@ public class OrderService {
                     }
                 }
                 Order savedOrder = orderRepository.save(order);
-                notificationService.notifyOrderStatusUpdate(savedOrder);
+                // WS ping to move the driver's live map, plus a dedicated
+                // pickup-changed push instead of the generic status-update
+                // one (misleading here since order.status hasn't changed).
+                notificationService.notifyOrderStatusUpdate(savedOrder, true, false);
+                notificationService.notifyPickupLocationChanged(savedOrder);
                 return savedOrder;
             }
         }
