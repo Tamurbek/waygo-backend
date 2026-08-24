@@ -96,7 +96,12 @@ public class TransactionService {
         TariffPlan tariff = tariffPlanRepository.findById(tariffId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tariff not found with id: " + tariffId));
 
-        if (user.getTariffExpiryDate() != null && user.getTariffExpiryDate().isAfter(LocalDateTime.now())) {
+        // Only a genuinely purchased tariff (activeTariff != null) should block a
+        // new purchase — tariffExpiryDate alone is also set for the free-trial
+        // period granted at registration (see AuthController), so checking it by
+        // itself incorrectly blocked brand-new drivers still in their trial (no
+        // activeTariff, plenty of balance) from ever buying their first tariff.
+        if (user.getActiveTariff() != null && user.getTariffExpiryDate() != null && user.getTariffExpiryDate().isAfter(LocalDateTime.now())) {
             throw new IllegalStateException("Sizda hali faol tarif mavjud. Yangi tarif sotib olish uchun joriy tarif muddati tugashini kuting.");
         }
 
