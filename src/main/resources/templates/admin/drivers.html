@@ -108,8 +108,8 @@
                                 </div>
                             </td>
                             <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(driver.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
-                            <td style="text-align: right;">
-                                <button type="button" class="btn-icon" 
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button type="button" class="btn-icon"
                                         style="color: var(--text-dim); background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 0.5rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;"
                                         onmouseover="this.style.background='var(--overlay-light)'; this.style.color='var(--text)';"
                                         onmouseout="this.style.background='rgba(255,255,255,0.02)'; this.style.color='var(--text-dim)';"
@@ -124,6 +124,14 @@
                                         th:onclick="'openDriverSettingsModal(this)'"
                                         title="Sozlamalar">
                                     <i class="ph ph-gear" style="font-size: 1.25rem;"></i>
+                                </button>
+                                <button type="button" class="btn-icon"
+                                        style="color: var(--error); background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 0.5rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; margin-left: 0.35rem;"
+                                        onmouseover="this.style.background='rgba(239, 68, 68, 0.15)';"
+                                        onmouseout="this.style.background='rgba(239, 68, 68, 0.05)';"
+                                        th:onclick="'confirmDeleteDriver(' + ${driver.id} + ')'"
+                                        title="Butunlay o'chirish">
+                                    <i class="ph ph-trash" style="font-size: 1.15rem;"></i>
                                 </button>
                             </td>
                         </tr>
@@ -620,11 +628,11 @@
             }
         }
 
-        function confirmDeleteDriver() {
-            const driverId = document.getElementById('settingsDriverId').value;
-            if (!driverId) return;
+        function confirmDeleteDriver(driverId) {
+            const id = driverId || document.getElementById('settingsDriverId').value;
+            if (!id) return;
             if (confirm("Haqiqatan ham ushbu haydovchini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi!")) {
-                submitFormWithAjax('deleteForm-' + driverId, 'Haydovchi butunlay o\'chirildi');
+                submitFormWithAjax('deleteForm-' + id, 'Haydovchi butunlay o\'chirildi');
             }
         }
     </script>
