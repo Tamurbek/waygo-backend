@@ -253,6 +253,45 @@ public class TranslationService {
         return count;
     }
 
+    /**
+     * Like {@link #importJson}, but never overwrites a key/language pair that already has a
+     * value — it only fills in gaps (a brand-new key the app started using, or an existing key
+     * that never had a value for this language). Used to keep the DB in sync with each app's
+     * compiled ARB source on every startup, without ever clobbering an admin's hand-edited text.
+     * Returns the number of key/language pairs actually created.
+     */
+    @Transactional
+    public int addMissingKeys(AppTarget appTarget, String languageCode, Map<String, Object> raw) {
+        Language language = languageRepository.findByCode(languageCode)
+                .orElseThrow(() -> new IllegalArgumentException("Til topilmadi: " + languageCode));
+
+        int added = 0;
+        for (Map.Entry<String, Object> entry : raw.entrySet()) {
+            String keyCode = entry.getKey();
+            if (keyCode.startsWith("@") || entry.getValue() == null) {
+                continue;
+            }
+            String value = String.valueOf(entry.getValue());
+
+            TranslationKey key = translationKeyRepository.findByKeyCodeAndAppTarget(keyCode, appTarget)
+                    .orElseGet(() -> translationKeyRepository.save(TranslationKey.builder()
+                            .keyCode(keyCode)
+                            .appTarget(appTarget)
+                            .build()));
+
+            if (translationValueRepository.findByTranslationKeyIdAndLanguage_Code(key.getId(), languageCode).isPresent()) {
+                continue;
+            }
+            translationValueRepository.save(TranslationValue.builder()
+                    .translationKey(key)
+                    .language(language)
+                    .value(value)
+                    .build());
+            added++;
+        }
+        return added;
+    }
+
     /** Exports current values of a given (app, languageCode) as a flat key->value map. */
     @Transactional(readOnly = true)
     public Map<String, String> exportJson(AppTarget appTarget, String languageCode) {
