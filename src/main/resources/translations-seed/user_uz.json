@@ -117,13 +117,8 @@
   "call": "Qo'ng'iroq",
   "blackColor": "Qora rang",
   "seatSelected": "{count} ta o'rindiq tanlandi",
-  "@seatSelected": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
+  "requiredSeatsHint": "{count} kishi uchun {count} ta o'rindiq tanlang",
+  "seatCountMismatchMessage": "Siz {required} kishi ko'rsatgansiz, lekin {selected} ta o'rindiq tanladingiz. Iltimos, mos qiling",
   "selectSeatTitle": "O'RINDIQNI TANLANG",
   "bookFullCar": "Barcha o'rinlarni band qilish",
   "seatDriver": "HAYDOVCHI",
@@ -328,6 +323,7 @@
   "locationDetectionFailedDetailMessage": "Joylashuvni avtomatik aniqlab bo'lmadi. Xaritadan o'zingiz belgilang.",
   "locationDetectionErrorPrefix": "Joylashuvni aniqlashda xatolik:",
   "searchLocationHint": "Qidirish (masalan: Chilonzor metro)...",
+  "organizationLabel": "TASHKILOT",
   "selectedAddressCaps": "TANLANGAN MANZIL",
   "rejectedExclamationLabel": "Rad etildi!",
   "driverRejectedRequestApologyMessage": "Afsuski, haydovchi sizning so'rovingizni rad etdi. Boshqa haydovchi izlang.",
@@ -479,8 +475,6 @@
   "phoneNumberCaps": "TELEFON RAQAM",
   "emailOptionalCaps": "EMAIL (IXTIYORIY)",
   "notAvailableLabel": "Mavjud emas",
-  "copyAction": "Nusxa olish",
-  "shareAction": "Ulashish",
   "helpCenterPageTitle": "Yordam markazi",
   "faqSectionHeaderCaps": "KO'P SO'RALADIGAN SAVOLLAR",
   "faqPaymentMethodsQuestion": "To'lov usullarini qanday o'zgartirish mumkin?",
@@ -493,5 +487,10 @@
   "offlineRegionSamarkandDescription": "Samarqand viloyatining turistik va asosiy qatnov yo'llari xaritasi.",
   "offlineRegionUzbekistanName": "Butun O'zbekiston (Barcha hududlar)",
   "offlineRegionUzbekistanDescription": "O'zbekiston Respublikasining barcha viloyat va shaharlari to'liq oflayn xaritasi.",
-  "offlineMapsPageTitle": "Oflayn xaritalar"
+  "offlineMapsPageTitle": "Oflayn xaritalar",
+  "travelHistoryPageTitle": "Safarlar tarixi",
+  "noHistoryYetMessage": "Hozircha tarix mavjud emas",
+  "completedStatusCaps": "BAJARILDI",
+  "cancelledPastTenseCaps": "BEKOR QILINDI",
+  "finishedStatusCaps": "YAKUNLANDI"
 }
