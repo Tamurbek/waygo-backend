@@ -1272,7 +1272,14 @@ public class OrderService {
         boolean isPassenger = currentUser != null && order.getPassenger() != null && currentUser.getId().equals(order.getPassenger().getId());
         boolean isDriver = currentUser != null && order.getDriver() != null && currentUser.getId().equals(order.getDriver().getId());
         boolean isAdmin = currentUser != null && currentUser.getRole() == User.Role.ADMIN;
-        if (!isPassenger && !isDriver && !isAdmin) {
+        // A route/announcement order has order.getPassenger() == null — each
+        // seat-booker is only ever attached via their own RideBooking, so the
+        // plain isPassenger check above never matches them and they'd
+        // otherwise get a 403 fetching an order they're legitimately on.
+        boolean isBookingPassenger = currentUser != null && !isPassenger && order.getBookings() != null
+                && order.getBookings().stream().anyMatch(b -> b != null && b.getPassenger() != null
+                        && currentUser.getId().equals(b.getPassenger().getId()));
+        if (!isPassenger && !isDriver && !isAdmin && !isBookingPassenger) {
             throw new UnauthorizedAccessException("You are not authorized to view this order");
         }
 
