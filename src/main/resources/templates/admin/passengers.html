@@ -29,7 +29,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr th:each="passenger : ${passengers}">
+                    <tr th:each="passenger : ${passengers}"
+                        th:with="isDeleted=${passenger.active != null and !passenger.active},
+                                 displayName=${(isDeleted and passenger.deletedOriginalFullName != null) ? passenger.deletedOriginalFullName : passenger.fullName},
+                                 displayPhone=${(isDeleted and passenger.deletedOriginalPhone != null) ? passenger.deletedOriginalPhone : passenger.phone}">
                         <td>
                             <div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">
                                 <th:block th:if="${!#strings.isEmpty(passenger.imageUrl)}">
@@ -49,14 +52,14 @@
                             </div>
                         </td>
                         <td style="font-weight: 500;">
-                            <span th:text="${passenger.fullName != null ? passenger.fullName : 'Kiritilmagan'}">Aziz</span>
-                            <span th:if="${passenger.active != null and !passenger.active}" class="status-badge" style="background: rgba(239, 68, 68, 0.12); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.1rem 0.4rem; font-size: 0.65rem; border-radius: 4px; font-weight: 600; text-transform: none; margin-left: 0.4rem;">O'chirilgan</span>
+                            <span th:text="${displayName != null ? displayName : 'Kiritilmagan'}">Aziz</span>
+                            <span th:if="${isDeleted}" class="status-badge" style="background: rgba(239, 68, 68, 0.12); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.1rem 0.4rem; font-size: 0.65rem; border-radius: 4px; font-weight: 600; text-transform: none; margin-left: 0.4rem;">O'chirilgan</span>
                         </td>
-                        <td th:text="${passenger.phone}">+998...</td>
+                        <td th:text="${displayPhone}">+998...</td>
                         <td style="color: var(--text-dim); font-size: 0.85rem;" th:text="${#temporals.format(passenger.createdAt, 'dd.MM.yyyy HH:mm')}">Date</td>
                         <td style="display: flex; gap: 0.5rem;">
                             <a href="#" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">Tarix</a>
-                            <form th:if="${passenger.active != null and !passenger.active}" th:action="${'/admin/passengers/' + passenger.id + '/reactivate'}" method="post"
+                            <form th:if="${isDeleted}" th:action="${'/admin/passengers/' + passenger.id + '/reactivate'}" method="post"
                                   onsubmit="return confirm('Ushbu mijoz hisobini qayta faollashtirmoqchimisiz? Asl telefon raqami va ismi tiklanadi.');">
                                 <button type="submit" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; color: var(--success); border-color: rgba(0, 255, 128, 0.3);">Faollashtirish</button>
                             </form>
