@@ -92,6 +92,9 @@ public class User implements UserDetails {
 
     private Long frozenTariffDuration;
 
+    @Builder.Default
+    private Boolean active = true;
+
     @Transient
     public boolean isBillingEnabled() {
         if (this.role == Role.DRIVER && !isDriverBillingEnabled()) {
@@ -228,7 +231,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return active == null || active;
     }
 
     @PrePersist

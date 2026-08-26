@@ -231,4 +231,31 @@ public class AuthController {
         user = userRepository.save(user);
         return ResponseEntity.ok(ApiResponse.success(user, "FCM token updated successfully"));
     }
+
+    @DeleteMapping("/delete-account")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(@RequestHeader("Authorization") String token) {
+        try {
+            String phone = jwtService.extractUsername(token.substring(7));
+            User user = userRepository.findByPhone(phone).orElseThrow();
+
+            // Orders, transactions and other records reference this user by id, so the
+            // row is anonymized rather than hard-deleted to keep that history intact.
+            // Mangling the phone/email also breaks future OTP login and invalidates any
+            // JWT already issued, since JwtAuthenticationFilter re-resolves the user by
+            // the phone encoded in the token.
+            String anonymizedSuffix = "deleted_" + user.getId() + "_" + System.currentTimeMillis();
+            user.setPhone(user.getPhone() != null ? anonymizedSuffix : null);
+            user.setEmail(user.getEmail() != null ? anonymizedSuffix + "@deleted.waygo.uz" : null);
+            user.setFullName("Deleted user");
+            user.setImageUrl(null);
+            user.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString()));
+            user.setFcmToken(null);
+            user.setActive(false);
+            userRepository.save(user);
+
+            return ResponseEntity.ok(ApiResponse.success(null, "Account deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ApiResponse.error("Failed to delete account: " + e.getMessage()));
+        }
+    }
 }

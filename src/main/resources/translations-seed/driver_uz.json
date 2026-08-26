@@ -658,5 +658,11 @@
   "completedStatusCaps": "BAJARILDI",
   "cancelledPastTenseCaps": "BEKOR QILINDI",
   "finishedStatusCaps": "YAKUNLANDI",
-  "passengerCountLabel": "{count} yo'lovchi"
+  "passengerCountLabel": "{count} yo'lovchi",
+  "deleteAccount": "Hisobni o'chirish",
+  "deleteAccountConfirmTitle": "Hisobni o'chirish",
+  "deleteAccountConfirmMessage": "Haqiqatan ham hisobingizni o'chirmoqchimisiz? Bu amalni orqaga qaytarib bo'lmaydi va barcha shaxsiy ma'lumotlaringiz o'chiriladi.",
+  "yesDeleteAccount": "Ha, o'chirish",
+  "deleteAccountSuccessMessage": "Hisobingiz muvaffaqiyatli o'chirildi",
+  "deleteAccountErrorMessage": "Hisobni o'chirishda xatolik yuz berdi"
 }
