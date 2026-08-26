@@ -888,6 +888,7 @@ public class OrderService {
         driver.setRating(updatedRating);
         driver.setRatingCount(newRatingCount);
         userRepository.save(driver);
+        notificationService.notifyRatingUpdate(driver, updatedRating, newRatingCount);
 
         if (isDirectPassenger) {
             order.setRating(rating);

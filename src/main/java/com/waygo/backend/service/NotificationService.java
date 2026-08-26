@@ -705,6 +705,26 @@ public class NotificationService {
         sendFcmNotification(user, "Balans yangilandi", msg, "BALANCE_UPDATE");
     }
 
+    // Lets an online driver's app refresh its own cached profile (via
+    // AuthBloc's notificationStream listener) right after a passenger rates
+    // them, mirroring notifyBalanceUpdate/notifyTariffUpdate — without this,
+    // the new rating is correct in the DB/API but the app keeps showing the
+    // stale value until the driver manually pulls-to-refresh or restarts.
+    public void notifyRatingUpdate(User driver, Double newRating, Integer ratingCount) {
+        if (driver == null || driver.getId() == null) {
+            return;
+        }
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", "RATING_UPDATE");
+        payload.put("rating", newRating);
+        payload.put("ratingCount", ratingCount);
+
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + driver.getId(),
+                payload
+        );
+    }
+
     public void notifyTariffUpdate(User user, String message) {
         if (user == null || user.getPhone() == null) {
             return;
