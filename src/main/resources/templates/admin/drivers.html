@@ -417,8 +417,15 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => {
-                if (!res.ok) throw new Error('Action failed');
+            .then(async res => {
+                if (!res.ok) {
+                    let message = 'Action failed';
+                    try {
+                        const body = await res.json();
+                        if (body && body.error) message = body.error;
+                    } catch (e) {}
+                    throw new Error(message);
+                }
                 return fetch(window.location.pathname, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
