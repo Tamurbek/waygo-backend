@@ -339,6 +339,65 @@ public class AdminController {
         }
     }
 
+    @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/reactivate")
+    @org.springframework.transaction.annotation.Transactional
+    public Object reactivateDriver(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            User driver = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Haydovchi topilmadi"));
+            if (driver.getRole() != User.Role.DRIVER) {
+                throw new IllegalArgumentException("Bu foydalanuvchi haydovchi emas");
+            }
+            reactivateUser(driver);
+            return handleActionResponse(request, null, "/admin/drivers");
+        } catch (Exception e) {
+            return handleActionResponse(request, e, "/admin/drivers");
+        }
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/passengers/{id}/reactivate")
+    @org.springframework.transaction.annotation.Transactional
+    public Object reactivatePassenger(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {
+        try {
+            User passenger = userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Mijoz topilmadi"));
+            if (passenger.getRole() != User.Role.PASSENGER) {
+                throw new IllegalArgumentException("Bu foydalanuvchi mijoz emas");
+            }
+            reactivateUser(passenger);
+            return handleActionResponse(request, null, "/admin/passengers");
+        } catch (Exception e) {
+            return handleActionResponse(request, e, "/admin/passengers");
+        }
+    }
+
+    // Restores the phone/email/fullName/imageUrl snapshotted at delete-account time
+    // (see AuthController.deleteAccount) and clears the "deleted" flag. Fails loudly
+    // if another account has since taken the original phone/email, rather than
+    // silently overwriting that other account's uniqueness — the admin needs to
+    // resolve that conflict with the user manually in that rare case.
+    private void reactivateUser(User user) {
+        if (Boolean.TRUE.equals(user.getActive())) {
+            throw new IllegalArgumentException("Bu hisob allaqachon faol");
+        }
+        if (user.getDeletedOriginalPhone() == null) {
+            throw new IllegalArgumentException("Bu hisob uchun tiklanadigan ma'lumot topilmadi");
+        }
+        userRepository.findByPhone(user.getDeletedOriginalPhone()).ifPresent(existing -> {
+            if (!existing.getId().equals(user.getId())) {
+                throw new IllegalArgumentException("Bu telefon raqami boshqa hisobda band");
+            }
+        });
+        user.setPhone(user.getDeletedOriginalPhone());
+        user.setEmail(user.getDeletedOriginalEmail());
+        user.setFullName(user.getDeletedOriginalFullName());
+        user.setImageUrl(user.getDeletedOriginalImageUrl());
+        user.setDeletedOriginalPhone(null);
+        user.setDeletedOriginalEmail(null);
+        user.setDeletedOriginalFullName(null);
+        user.setDeletedOriginalImageUrl(null);
+        user.setActive(true);
+        userRepository.save(user);
+    }
+
     @org.springframework.web.bind.annotation.PostMapping("/drivers/{id}/toggle-billing")
     @org.springframework.transaction.annotation.Transactional
     public Object toggleDriverBilling(@org.springframework.web.bind.annotation.PathVariable Long id, jakarta.servlet.http.HttpServletRequest request) {

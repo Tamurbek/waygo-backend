@@ -53,7 +53,10 @@
                                          </div>
                                     </div>
                                     <div style="display: flex; flex-direction: column; gap: 0.15rem;">
-                                        <span style="font-weight: 600; color: var(--text);" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</span>
+                                        <div style="display: flex; align-items: center; gap: 0.4rem;">
+                                            <span style="font-weight: 600; color: var(--text);" th:text="${driver.fullName != null ? driver.fullName : '-'}">-</span>
+                                            <span th:if="${!driver.active}" class="status-badge" style="background: rgba(239, 68, 68, 0.12); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); padding: 0.1rem 0.4rem; font-size: 0.65rem; border-radius: 4px; font-weight: 600; text-transform: none;">O'chirilgan</span>
+                                        </div>
                                         <span style="font-size: 0.8rem; color: var(--text-dim);" th:text="${driver.phone}">+998...</span>
                                         <th:block th:if="${driver.carModel != null}">
                                             <span style="font-size: 0.75rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.25rem;">
@@ -125,6 +128,14 @@
                                         title="Sozlamalar">
                                     <i class="ph ph-gear" style="font-size: 1.25rem;"></i>
                                 </button>
+                                <button th:if="${!driver.active}" type="button" class="btn-icon"
+                                        style="color: var(--success); background: rgba(0, 255, 128, 0.05); border: 1px solid rgba(0, 255, 128, 0.2); border-radius: 0.5rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; margin-left: 0.35rem;"
+                                        onmouseover="this.style.background='rgba(0, 255, 128, 0.15)';"
+                                        onmouseout="this.style.background='rgba(0, 255, 128, 0.05)';"
+                                        th:onclick="'confirmReactivateDriver(' + ${driver.id} + ')'"
+                                        title="Qayta faollashtirish">
+                                    <i class="ph ph-arrow-counter-clockwise" style="font-size: 1.15rem;"></i>
+                                </button>
                                 <button type="button" class="btn-icon"
                                         style="color: var(--error); background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 0.5rem; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; margin-left: 0.35rem;"
                                         onmouseover="this.style.background='rgba(239, 68, 68, 0.15)';"
@@ -161,6 +172,7 @@
                     <input type="hidden" name="days" th:id="'grantTrialDaysInput-' + ${driver.id}">
                 </form>
                 <form th:id="'deleteForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/delete'}" method="post"></form>
+                <form th:id="'reactivateForm-' + ${driver.id}" th:action="${'/admin/drivers/' + driver.id + '/reactivate'}" method="post"></form>
             </div>
         </div>
     </div>
@@ -633,6 +645,12 @@
             if (!id) return;
             if (confirm("Haqiqatan ham ushbu haydovchini butunlay o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi!")) {
                 submitFormWithAjax('deleteForm-' + id, 'Haydovchi butunlay o\'chirildi');
+            }
+        }
+
+        function confirmReactivateDriver(driverId) {
+            if (confirm("Ushbu haydovchi hisobini qayta faollashtirmoqchimisiz? Asl telefon raqami va ismi tiklanadi.")) {
+                submitFormWithAjax('reactivateForm-' + driverId, 'Hisob qayta faollashtirildi');
             }
         }
     </script>

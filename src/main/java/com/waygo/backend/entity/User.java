@@ -95,6 +95,15 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean active = true;
 
+    // Snapshot of phone/email/fullName/imageUrl taken right before delete-account
+    // anonymizes those columns, so an admin can restore a user's original identity
+    // if they later contact support asking to reactivate. Cleared back to null once
+    // reactivated.
+    private String deletedOriginalPhone;
+    private String deletedOriginalEmail;
+    private String deletedOriginalFullName;
+    private String deletedOriginalImageUrl;
+
     @Transient
     public boolean isBillingEnabled() {
         if (this.role == Role.DRIVER && !isDriverBillingEnabled()) {

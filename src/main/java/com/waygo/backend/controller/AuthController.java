@@ -242,7 +242,14 @@ public class AuthController {
             // row is anonymized rather than hard-deleted to keep that history intact.
             // Mangling the phone/email also breaks future OTP login and invalidates any
             // JWT already issued, since JwtAuthenticationFilter re-resolves the user by
-            // the phone encoded in the token.
+            // the phone encoded in the token. The original values are kept in the
+            // deletedOriginal* columns so an admin can restore them if the user later
+            // contacts support asking to reactivate (see AdminController.reactivateUser).
+            user.setDeletedOriginalPhone(user.getPhone());
+            user.setDeletedOriginalEmail(user.getEmail());
+            user.setDeletedOriginalFullName(user.getFullName());
+            user.setDeletedOriginalImageUrl(user.getImageUrl());
+
             String anonymizedSuffix = "deleted_" + user.getId() + "_" + System.currentTimeMillis();
             user.setPhone(user.getPhone() != null ? anonymizedSuffix : null);
             user.setEmail(user.getEmail() != null ? anonymizedSuffix + "@deleted.waygo.uz" : null);
