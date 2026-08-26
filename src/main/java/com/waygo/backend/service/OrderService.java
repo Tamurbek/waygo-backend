@@ -2371,6 +2371,32 @@ public class OrderService {
         sendNextPassengerTurnNotification(booking, driver, order.getId());
     }
 
+    // Manual "I've arrived" trigger for a single route passenger — unlike the
+    // solo-order ARRIVED status (which is a persisted Order state the driver
+    // sets once), a route trip has one Order shared by several bookings, so
+    // there's no single "arrived" status that would make sense for all of
+    // them at once. The driver instead presses this per booking, right as
+    // they reach that specific passenger's pickup point.
+    @Transactional
+    public void notifyBookingArrived(Long bookingId) {
+        User driver = securityUtils.getCurrentUser();
+        if (driver == null || driver.getRole() != User.Role.DRIVER) {
+            throw new UnauthorizedAccessException("Only drivers can send an arrival notification");
+        }
+
+        com.waygo.backend.entity.RideBooking booking = rideBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id: " + bookingId));
+        Order order = booking.getOrder();
+        if (order.getDriver() == null || !order.getDriver().getId().equals(driver.getId())) {
+            throw new UnauthorizedAccessException("You are not the driver of this ride offer");
+        }
+        if (booking.getPassenger() == null) {
+            return;
+        }
+
+        notificationService.notifyBookingArrived(booking.getPassenger(), driver, order.getId());
+    }
+
     @Transactional
     public Order uncollectBooking(Long bookingId) {
         User driver = securityUtils.getCurrentUser();

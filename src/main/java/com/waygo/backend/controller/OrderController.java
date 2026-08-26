@@ -223,6 +223,13 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(null, "Pickup notification sent successfully"));
     }
 
+    @PostMapping("/bookings/{bookingId}/notify-arrived")
+    @Operation(summary = "Driver notifies a passenger that they have arrived at the pickup point")
+    public ResponseEntity<ApiResponse<Void>> notifyArrived(@PathVariable("bookingId") Long bookingId) {
+        orderService.notifyBookingArrived(bookingId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Arrival notification sent successfully"));
+    }
+
     @PostMapping("/bookings/{bookingId}/uncollect")
     @Operation(summary = "Driver marks a collected passenger booking back to accepted (uncollected)")
     public ResponseEntity<ApiResponse<Order>> uncollectBooking(@PathVariable("bookingId") Long bookingId) {

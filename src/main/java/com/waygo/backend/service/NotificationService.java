@@ -483,6 +483,47 @@ public class NotificationService {
         sendFcmNotification(nextPassenger, "Navbat sizga keldi! 🚖", msg, "NEXT_PASSENGER_TURN");
     }
 
+    // Driver-triggered "I've arrived" for a single route/booking passenger —
+    // the multi-passenger equivalent of the solo-order ARRIVED push above,
+    // since a shared route Order has no single "arrived" status that would
+    // make sense for every booking on it at once (see OrderService.notifyBookingArrived).
+    public void notifyBookingArrived(User passenger, User driver, Long orderId) {
+        if (passenger == null) {
+            return;
+        }
+
+        String driverName = (driver != null && driver.getFullName() != null && !driver.getFullName().isEmpty())
+                ? driver.getFullName()
+                : "Haydovchi";
+
+        String msg = driverName + " olib ketish joyingizga yetib keldi. Sizni kutmoqda!";
+
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", "BOOKING_ARRIVED");
+        payload.put("message", msg);
+        if (orderId != null) {
+            payload.put("orderId", orderId);
+        }
+        if (driver != null) {
+            payload.put("driverId", driver.getId());
+        }
+
+        messagingTemplate.convertAndSend(
+                "/topic/notifications/" + passenger.getId(),
+                payload
+        );
+
+        if (passenger.getPhone() != null) {
+            messagingTemplate.convertAndSendToUser(
+                    passenger.getPhone(),
+                    "/queue/notifications",
+                    payload
+            );
+        }
+
+        sendFcmNotification(passenger, "Haydovchi yetib keldi! 📍", msg, "BOOKING_ARRIVED", null, "driver_arrived_chime");
+    }
+
     /**
      * Notifies every booked passenger on a driver's route announcement that the
      * trip has actually started (fired once, from the "SAFARNI BOSHLASH" action,

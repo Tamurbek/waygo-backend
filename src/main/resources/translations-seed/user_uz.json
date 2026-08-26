@@ -342,6 +342,8 @@
   "tariffUpdatedTitle": "Tarif yangilandi 🎫",
   "yourTurnDriverEnRouteMessage": "Navbat sizga keldi! Haydovchi sizni olib ketgani yo'lga chiqdi.",
   "yourTurnCaps": "Navbat sizga keldi! 🚖",
+  "driverArrivedTitle": "Haydovchi yetib keldi! 📍",
+  "driverArrivedFallbackMessage": "Haydovchi olib ketish joyingizga yetib keldi. Sizni kutmoqda!",
   "newAnnouncementTitle": "Yangi e'lon! {price} 🚗",
   "newDriverAnnouncementTitle": "Yangi haydovchi e'loni! 🚗",
   "priceLabelWithValue": "Narxi: {price}",

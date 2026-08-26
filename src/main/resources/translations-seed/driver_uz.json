@@ -664,5 +664,8 @@
   "deleteAccountConfirmMessage": "Haqiqatan ham hisobingizni o'chirmoqchimisiz? Bu amalni orqaga qaytarib bo'lmaydi va barcha shaxsiy ma'lumotlaringiz o'chiriladi.",
   "yesDeleteAccount": "Ha, o'chirish",
   "deleteAccountSuccessMessage": "Hisobingiz muvaffaqiyatli o'chirildi",
-  "deleteAccountErrorMessage": "Hisobni o'chirishda xatolik yuz berdi"
+  "deleteAccountErrorMessage": "Hisobni o'chirishda xatolik yuz berdi",
+  "iArrivedCapsLabel": "MEN KELDIM",
+  "arrivalNotificationSentMessage": "Yo'lovchiga yetib kelganingiz haqida xabar yuborildi",
+  "arrivalNotificationErrorMessage": "Xabar yuborishda xatolik yuz berdi"
 }
