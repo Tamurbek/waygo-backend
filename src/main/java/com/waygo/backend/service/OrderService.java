@@ -1636,6 +1636,17 @@ public class OrderService {
         // Re-announce driver offers so passengers receive the "Yangi haydovchi e'loni!" push notification
         if (savedOrder.getDriver() != null && savedOrder.getPassenger() == null) {
             notificationService.notifyNewOrder(savedOrder);
+        } else if (savedOrder.getPassenger() != null && savedOrder.getDriver() == null) {
+            // A passenger's still-PENDING request, edited before any driver
+            // has offered on it — notifyOrderStatusUpdate above only reaches
+            // this passenger themself, the (nonexistent) assigned driver,
+            // and any existing driverOffers (none yet). Without this call,
+            // drivers browsing/already viewing this request never learn the
+            // route/time/etc. changed — confirmed as "editing gets no
+            // notification to drivers at all" whether their app was open or
+            // closed, since neither the WS broadcast nor the FCM push this
+            // method sends ever fired for this case.
+            notificationService.notifyPendingOrderUpdated(savedOrder);
         }
 
         return savedOrder;

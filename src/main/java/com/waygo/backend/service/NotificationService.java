@@ -80,12 +80,18 @@ public class NotificationService {
      * so there's no single recipient to target a personal push at; every
      * browsing driver's client filters by matching order id anyway, the same
      * way it already does for the initial new-order broadcast.
+     *
+     * Also sends the same FCM push every driver gets for the order's initial
+     * creation (see {@link #notifyNewOrder}) — without it, an edit to a
+     * request no driver has offered on yet reached no one whose app wasn't
+     * open and connected to the WebSocket at that exact moment.
      */
     public void notifyPendingOrderUpdated(Order order) {
         if (order == null || order.getPassenger() == null || order.getDriver() != null) {
             return;
         }
         messagingTemplate.convertAndSend("/topic/orders/new-for-drivers", order);
+        broadcastNewOrderPush(User.Role.DRIVER, order, "Buyurtma yangilandi! 🚕");
     }
 
     public void notifyOrderStatusUpdate(Order order) {
