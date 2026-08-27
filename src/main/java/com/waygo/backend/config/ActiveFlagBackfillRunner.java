@@ -25,5 +25,15 @@ public class ActiveFlagBackfillRunner implements CommandLineRunner {
         if (updated > 0) {
             log.info("Backfilled active=true for {} pre-existing user(s)", updated);
         }
+
+        int ratingsUpdated = userRepository.backfillNullRatings();
+        if (ratingsUpdated > 0) {
+            log.info("Backfilled rating=5.0 for {} pre-existing user(s)", ratingsUpdated);
+        }
+
+        int ratingCountsUpdated = userRepository.backfillNullRatingCounts();
+        if (ratingCountsUpdated > 0) {
+            log.info("Backfilled ratingCount=0 for {} pre-existing user(s)", ratingCountsUpdated);
+        }
     }
 }

@@ -20,4 +20,22 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("UPDATE User u SET u.active = true WHERE u.active IS NULL")
     int backfillNullActiveFlags();
+
+    // Same ddl-auto=update gap as backfillNullActiveFlags, for `rating`/
+    // `ratingCount`: both fields carry a @Builder.Default of 5.0/0 on the
+    // entity, but that only ever applies to a User built fresh through
+    // User.builder() — rows that existed before these columns were added
+    // have them as NULL in the DB, not 5.0/0. A driver on such a row who
+    // has never been rated yet reads back NULL from every list/order
+    // endpoint, and every client papers over that with its own local
+    // "?? 5.0" fallback — which reads identically to a driver who really
+    // does have a clean 5.0 average, silently hiding that this row was
+    // never actually initialized.
+    @Modifying
+    @Query("UPDATE User u SET u.rating = 5.0 WHERE u.rating IS NULL")
+    int backfillNullRatings();
+
+    @Modifying
+    @Query("UPDATE User u SET u.ratingCount = 0 WHERE u.ratingCount IS NULL")
+    int backfillNullRatingCounts();
 }

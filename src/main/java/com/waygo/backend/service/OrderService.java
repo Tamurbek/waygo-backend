@@ -894,7 +894,28 @@ public class OrderService {
         driver.setRating(updatedRating);
         driver.setRatingCount(newRatingCount);
         userRepository.save(driver);
-        notificationService.notifyRatingUpdate(driver, updatedRating, newRatingCount);
+
+        // Deferred to after this @Transactional method actually commits — sent
+        // eagerly here (mid-transaction), a driver app that reacts to the
+        // RATING_UPDATE push by immediately calling GET /auth/me could have
+        // that request served (by a different DB connection) before this
+        // transaction's UPDATE is visible, reading back the pre-rating value
+        // and making the new rating look like it never took effect.
+        User driverToNotify = driver;
+        double ratingToNotify = updatedRating;
+        int ratingCountToNotify = newRatingCount;
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        notificationService.notifyRatingUpdate(driverToNotify, ratingToNotify, ratingCountToNotify);
+                    }
+                }
+            );
+        } else {
+            notificationService.notifyRatingUpdate(driverToNotify, ratingToNotify, ratingCountToNotify);
+        }
 
         if (isDirectPassenger) {
             order.setRating(rating);
