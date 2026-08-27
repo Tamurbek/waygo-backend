@@ -726,7 +726,11 @@ public class OrderService {
                                 if (pOrder.getStatus() != Order.OrderStatus.COMPLETED && pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
                                     pOrder.setStatus(Order.OrderStatus.COMPLETED);
                                     orderRepository.save(pOrder);
-                                    notificationService.notifyOrderStatusUpdate(pOrder);
+                                    // sendFcmPush=false: notifyTripCompleted(savedOrder) below already
+                                    // sends this same passenger the TRIP_COMPLETED push via the route's
+                                    // bookings loop — sending it here too doubled the "rate your trip"
+                                    // notification.
+                                    notificationService.notifyOrderStatusUpdate(pOrder, true, false);
                                 }
                             });
                         } else {
@@ -739,7 +743,9 @@ public class OrderService {
                                     pOrder.getStatus() != Order.OrderStatus.CANCELLED) {
                                     pOrder.setStatus(Order.OrderStatus.COMPLETED);
                                     orderRepository.save(pOrder);
-                                    notificationService.notifyOrderStatusUpdate(pOrder);
+                                    // sendFcmPush=false: see comment above — avoids doubling the
+                                    // TRIP_COMPLETED push that notifyTripCompleted(savedOrder) sends.
+                                    notificationService.notifyOrderStatusUpdate(pOrder, true, false);
                                 }
                             }
                         }
@@ -992,9 +998,36 @@ public class OrderService {
                 ex.printStackTrace();
             }
 
-            // 2. Notify the driver if they were already assigned
+            // 2. Notify the driver if they were already assigned, and — since a
+            // contract had already been formed — release the order back to the
+            // public pool instead of leaving it CANCELLED-but-still-assigned
+            // (which getPendingOrders()'s status=PENDING/driver=null query would
+            // never surface again, hiding it from every other driver forever).
+            // Also clear the winning offer's ACCEPTED status so it stops showing
+            // as the confirmed driver in the passenger's own offers list.
             if (order.getDriver() != null) {
                 notificationService.notifyDriverOrderCancelledByPassenger(order);
+
+                if (order.getDriverOffers() != null) {
+                    for (DriverOffer offer : order.getDriverOffers()) {
+                        if (offer.getDriver() != null
+                                && offer.getDriver().getId().equals(order.getDriver().getId())
+                                && "ACCEPTED".equals(offer.getStatus())) {
+                            offer.setStatus("CANCELLED");
+                        }
+                    }
+                }
+
+                order.setDriver(null);
+                order.setPassengerConfirmed(false);
+                order.setLockedByDriverId(null);
+                order.setLockExpirationTime(null);
+                order.setStatus(Order.OrderStatus.PENDING);
+
+                Order savedOrder = orderRepository.save(order);
+                notificationService.notifyOrderStatusUpdate(savedOrder);
+                notificationService.notifyNewOrder(savedOrder);
+                return savedOrder;
             }
         }
 
@@ -1031,7 +1064,21 @@ public class OrderService {
                         rideBookingRepository.delete(booking);
                     }
 
-                    order.setStatus(Order.OrderStatus.CANCELLED);
+                    // Released back to PENDING (not left CANCELLED), same as the
+                    // no-mirrored-booking branch just below — a contract the
+                    // driver walks away from must become visible to other
+                    // drivers again, not vanish from the pool.
+                    if (order.getDriverOffers() != null) {
+                        for (DriverOffer offer : order.getDriverOffers()) {
+                            if (offer.getDriver() != null
+                                    && offer.getDriver().getId().equals(currentUser.getId())
+                                    && "ACCEPTED".equals(offer.getStatus())) {
+                                offer.setStatus("CANCELLED");
+                            }
+                        }
+                    }
+
+                    order.setStatus(Order.OrderStatus.PENDING);
                     order.setDriver(null);
                     order.setPassengerConfirmed(false);
                     order.setLockedByDriverId(null);
@@ -1040,6 +1087,7 @@ public class OrderService {
                     Order savedOrder = orderRepository.save(order);
                     notificationService.notifyPassengerOrderCancelledByDriver(savedOrder, savedOrder);
                     notificationService.notifyOrderStatusUpdate(savedOrder);
+                    notificationService.notifyNewOrder(savedOrder);
                     return savedOrder;
                 }
 
@@ -2933,15 +2981,36 @@ public class OrderService {
         }
     }
 
+    /**
+     * Priority: (1) an explicit "PICKUP:" token the driver just passed in
+     * this call (fallbackPickup) — the most current input; (2) the
+     * passenger's own saved Order.pickupAddress/pickupLat/pickupLon, set via
+     * PATCH /orders/{id}/pickup-location — without this tier, a pickup point
+     * the passenger deliberately fine-tuned before a driver confirmed their
+     * offer was silently discarded and the booking fell back to the route's
+     * plain fromAddress/fromLat/fromLon instead; (3) that route fallback
+     * itself, for orders with no pickup ever set.
+     */
     private String resolvePickupAddress(Order order, String fallbackPickup) {
-        if (order != null && order.getFromLat() != null && order.getFromLon() != null) {
-            String baseAddr = (fallbackPickup == null || fallbackPickup.trim().isEmpty()) 
-                ? (order.getFromAddress() != null ? order.getFromAddress() : "") 
-                : fallbackPickup;
-            // Prevent duplicate LAT/LON appending
+        if (fallbackPickup != null && !fallbackPickup.trim().isEmpty()) {
+            if (fallbackPickup.contains("[LAT:")) {
+                return fallbackPickup;
+            }
+            if (order != null && order.getFromLat() != null && order.getFromLon() != null) {
+                return String.format("%s [LAT:%s, LON:%s]", fallbackPickup, order.getFromLat(), order.getFromLon());
+            }
+            return fallbackPickup;
+        }
+        if (order != null && order.getPickupAddress() != null && !order.getPickupAddress().trim().isEmpty()
+                && order.getPickupLat() != null && order.getPickupLon() != null) {
+            String baseAddr = order.getPickupAddress();
             if (baseAddr.contains("[LAT:")) {
                 return baseAddr;
             }
+            return String.format("%s [LAT:%s, LON:%s]", baseAddr, order.getPickupLat(), order.getPickupLon());
+        }
+        if (order != null && order.getFromLat() != null && order.getFromLon() != null) {
+            String baseAddr = order.getFromAddress() != null ? order.getFromAddress() : "";
             return String.format("%s [LAT:%s, LON:%s]", baseAddr, order.getFromLat(), order.getFromLon());
         }
         return fallbackPickup;

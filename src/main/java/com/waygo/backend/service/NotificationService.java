@@ -6,6 +6,7 @@ import com.waygo.backend.entity.Order;
 import com.waygo.backend.entity.RideBooking;
 import com.waygo.backend.entity.User;
 import com.waygo.backend.entity.VipChatMessage;
+import com.waygo.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -16,14 +17,17 @@ public class NotificationService {
     private final SimpMessagingTemplate messagingTemplate;
     private final SmsService smsService;
     private final SmsService realSmsService;
+    private final UserRepository userRepository;
 
     public NotificationService(
             SimpMessagingTemplate messagingTemplate,
-            @Qualifier("dynamicSmsService") SmsService realSmsService
+            @Qualifier("dynamicSmsService") SmsService realSmsService,
+            UserRepository userRepository
     ) {
         this.messagingTemplate = messagingTemplate;
         this.smsService = realSmsService;
         this.realSmsService = realSmsService;
+        this.userRepository = userRepository;
     }
 
     public void notifyNewOrder(Order order) {
@@ -35,8 +39,35 @@ public class NotificationService {
         // regardless of role.
         if (order.getPassenger() != null) {
             messagingTemplate.convertAndSend("/topic/orders/new-for-drivers", order);
+            broadcastNewOrderPush(User.Role.DRIVER, order, "Yangi buyurtma! 🚕");
         } else {
             messagingTemplate.convertAndSend("/topic/orders/new-for-passengers", order);
+            broadcastNewOrderPush(User.Role.PASSENGER, order, "Yangi qatnov! 🚗");
+        }
+    }
+
+    /**
+     * The STOMP broadcast above only reaches a client with a live socket
+     * connection, which drops the moment the app process is killed (not
+     * just backgrounded) — confirmed on a real device as "new order never
+     * arrives while the driver app is fully closed, but works fine while
+     * it's open". An FCM push is delivered by the OS itself even when the
+     * app isn't running at all, so every recipient with a stored token gets
+     * one alongside the socket broadcast, exactly mirroring who the socket
+     * topic above already targets (every driver for a passenger's request,
+     * every passenger for a driver's announcement — this app has no
+     * "online now" roster to narrow that down to, same as the STOMP topic).
+     */
+    private void broadcastNewOrderPush(User.Role role, Order order, String title) {
+        String fromLoc = order.getFromAddress() != null ? order.getFromAddress() : "";
+        String toLoc = order.getToAddress() != null ? order.getToAddress() : "";
+        String body = "Qatnov: " + fromLoc + " -> " + toLoc;
+
+        java.util.Map<String, String> extraData = new java.util.HashMap<>();
+        extraData.put("orderId", String.valueOf(order.getId()));
+
+        for (User recipient : userRepository.findByRoleOrderByCreatedAtDesc(role)) {
+            sendFcmNotification(recipient, title, body, "NEW_ORDER", extraData);
         }
     }
 
@@ -133,18 +164,32 @@ public class NotificationService {
             }
         }
 
-        // Notify all passengers attached to announcement bookings
+        // Notify passengers attached to announcement bookings — only the ones
+        // still actually on this route (ACCEPTED/COLLECTED). A RideBooking is
+        // never removed from order.getBookings() when rejected/cancelled
+        // (only its status flag changes, see rejectBooking()), so without this
+        // filter a passenger whose request was long rejected/cancelled still
+        // received every later ORDER_UPDATE for this order — including a
+        // STARTED push that made waygo_user auto-open the live-tracking map
+        // for a trip they have nothing to do with (see notifyTripStarted,
+        // which already applies this same filter).
         if (order.getBookings() != null) {
             for (RideBooking b : order.getBookings()) {
-                if (b != null && b.getPassenger() != null) {
-                    java.util.Map<String, Object> payload = new java.util.HashMap<>();
-                    payload.put("type", "ORDER_UPDATE");
-                    payload.put("order", order);
-                    messagingTemplate.convertAndSend(
-                            "/topic/notifications/" + b.getPassenger().getId(),
-                            payload
-                    );
+                if (b == null || b.getPassenger() == null) {
+                    continue;
                 }
+                String bStatus = b.getStatus();
+                boolean isActivePassenger = "ACCEPTED".equalsIgnoreCase(bStatus) || "COLLECTED".equalsIgnoreCase(bStatus);
+                if (!isActivePassenger) {
+                    continue;
+                }
+                java.util.Map<String, Object> payload = new java.util.HashMap<>();
+                payload.put("type", "ORDER_UPDATE");
+                payload.put("order", order);
+                messagingTemplate.convertAndSend(
+                        "/topic/notifications/" + b.getPassenger().getId(),
+                        payload
+                );
             }
         }
 
