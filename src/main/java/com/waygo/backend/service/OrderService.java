@@ -1177,6 +1177,15 @@ public class OrderService {
                                                 }
                                             }
                                         }
+                                        if (pOrder.getDriverOffers() != null) {
+                                            for (DriverOffer offer : pOrder.getDriverOffers()) {
+                                                if (offer.getDriver() != null
+                                                        && offer.getDriver().getId().equals(order.getDriver().getId())
+                                                        && "ACCEPTED".equals(offer.getStatus())) {
+                                                    offer.setStatus("CANCELLED");
+                                                }
+                                            }
+                                        }
                                         orderRepository.save(pOrder);
                                         if (isConfirmed) {
                                             notificationService.notifyPassengerOrderCancelledByDriver(pOrder, order);
@@ -1205,6 +1214,15 @@ public class OrderService {
                                                 if (pb.getPassenger().getId().equals(booking.getPassenger().getId())) {
                                                     pb.setStatus("REJECTED");
                                                     rideBookingRepository.save(pb);
+                                                }
+                                            }
+                                        }
+                                        if (pOrder.getDriverOffers() != null) {
+                                            for (DriverOffer offer : pOrder.getDriverOffers()) {
+                                                if (offer.getDriver() != null
+                                                        && offer.getDriver().getId().equals(order.getDriver().getId())
+                                                        && "ACCEPTED".equals(offer.getStatus())) {
+                                                    offer.setStatus("CANCELLED");
                                                 }
                                             }
                                         }
