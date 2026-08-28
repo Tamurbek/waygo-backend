@@ -186,7 +186,19 @@ public class OrderController {
             @PathVariable("userId") Long userId,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size) {
-        return ResponseEntity.ok(ApiResponse.success(orderService.getPassengerHistory(userId, page, size), "User history retrieved"));
+        List<Order> orders = orderService.getPassengerHistory(userId, page, size);
+        // Same display-only CANCELLED-offer filter as getOrderById above: a
+        // driver's offer set to CANCELLED (e.g. after cancelling a contract
+        // they'd already won) must stop appearing in the passenger's
+        // request list here too, not just on the single-order fetch.
+        for (Order order : orders) {
+            if (order.getDriverOffers() != null) {
+                order.setDriverOffers(order.getDriverOffers().stream()
+                        .filter(offer -> offer != null && !"CANCELLED".equals(offer.getStatus()))
+                        .collect(java.util.stream.Collectors.toList()));
+            }
+        }
+        return ResponseEntity.ok(ApiResponse.success(orders, "User history retrieved"));
     }
 
     @GetMapping("/history/driver/{userId}")
