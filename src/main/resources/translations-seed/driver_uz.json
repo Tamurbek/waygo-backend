@@ -527,7 +527,7 @@
   "offerConfirmedNotifTitle": "Taklifingiz tasdiqlandi! 🎉",
   "offerConfirmedContractMessage": "Yo'lovchi sizning taklifingizni tasdiqladi va shartnoma tuzildi!",
   "passengerFallbackLabel": "Yo'lovchi",
-  "passengerJoinedNotifTitle": "Yo'lovchi qo'shildi! 🎉 ({price} so'm)",
+  "passengerJoinedNotifTitle": "Yo'lovchi qo'shildi! 🎉",
   "passengerJoinedNotifBody": "{name} buyurtmangizga qo'shildi.",
   "newRequestNotifTitle": "Yangi so'rov! 🔔",
   "newSeatRequestNotifBody": "Buyurtmangizga yangi joy so'rovi keldi",

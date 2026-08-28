@@ -33,6 +33,18 @@ public class OrderController {
     @Operation(summary = "Get order details by ID")
     public ResponseEntity<ApiResponse<Order>> getOrderById(@PathVariable("orderId") Long orderId) {
         Order order = orderService.getOrderById(orderId);
+        // The transaction that loaded this order has already committed by
+        // this point, so replacing the collection reference here (rather
+        // than in the @Transactional service method) is display-only and
+        // never triggers orphanRemoval deletes of the CANCELLED offer rows.
+        // A driver's offer set to CANCELLED (e.g. after cancelling a
+        // contract they'd already won) must stop appearing in the
+        // passenger's request list, not just change status invisibly.
+        if (order.getDriverOffers() != null) {
+            order.setDriverOffers(order.getDriverOffers().stream()
+                    .filter(offer -> offer != null && !"CANCELLED".equals(offer.getStatus()))
+                    .collect(java.util.stream.Collectors.toList()));
+        }
         return ResponseEntity.ok(ApiResponse.success(order, "Order details fetched successfully"));
     }
 
