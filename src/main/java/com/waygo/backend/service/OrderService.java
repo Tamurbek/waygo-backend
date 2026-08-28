@@ -411,8 +411,10 @@ public class OrderService {
                 .status("ACCEPTED")
                 .passengerOrderId(order.getId())
                 .pickupAddress(resolvePickupAddress(order, pickup))
-                .fromLat(customPickupLat != null ? customPickupLat : order.getFromLat())
-                .fromLon(customPickupLon != null ? customPickupLon : order.getFromLon())
+                .fromLat(customPickupLat != null ? customPickupLat
+                        : order.getPickupLat() != null ? order.getPickupLat() : order.getFromLat())
+                .fromLon(customPickupLon != null ? customPickupLon
+                        : order.getPickupLon() != null ? order.getPickupLon() : order.getFromLon())
                 .toLat(order.getToLat())
                 .toLon(order.getToLon())
                 .notes(notes)
@@ -475,8 +477,10 @@ public class OrderService {
                         .toLat(order.getToLat())
                         .toLon(order.getToLon())
                         .pickupAddress(resolvePickupAddress(order, pickup))
-                        .pickupLat(customPickupLat != null ? customPickupLat : order.getFromLat())
-                        .pickupLon(customPickupLon != null ? customPickupLon : order.getFromLon())
+                        .pickupLat(customPickupLat != null ? customPickupLat
+                                : order.getPickupLat() != null ? order.getPickupLat() : order.getFromLat())
+                        .pickupLon(customPickupLon != null ? customPickupLon
+                                : order.getPickupLon() != null ? order.getPickupLon() : order.getFromLon())
                         .departureDate(order.getDepartureDate())
                         .departureTime(order.getDepartureTime())
                         .price(chosenOffer.getPricePerPerson())
@@ -497,8 +501,10 @@ public class OrderService {
                     .status("ACCEPTED")
                     .passengerOrderId(order.getId())
                     .pickupAddress(resolvePickupAddress(order, pickup))
-                    .fromLat(customPickupLat != null ? customPickupLat : order.getFromLat())
-                    .fromLon(customPickupLon != null ? customPickupLon : order.getFromLon())
+                    .fromLat(customPickupLat != null ? customPickupLat
+                            : order.getPickupLat() != null ? order.getPickupLat() : order.getFromLat())
+                    .fromLon(customPickupLon != null ? customPickupLon
+                            : order.getPickupLon() != null ? order.getPickupLon() : order.getFromLon())
                     .toLat(order.getToLat())
                     .toLon(order.getToLon())
                     .notes(notes)
