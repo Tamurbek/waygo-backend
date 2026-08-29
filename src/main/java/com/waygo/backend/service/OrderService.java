@@ -1072,7 +1072,8 @@ public class OrderService {
                     for (DriverOffer offer : order.getDriverOffers()) {
                         if (offer.getDriver() != null
                                 && offer.getDriver().getId().equals(order.getDriver().getId())
-                                && "ACCEPTED".equals(offer.getStatus())) {
+                                && !"CANCELLED".equals(offer.getStatus())
+                                && !"REJECTED".equals(offer.getStatus())) {
                             offer.setStatus("CANCELLED");
                         }
                     }
@@ -1132,7 +1133,8 @@ public class OrderService {
                         for (DriverOffer offer : order.getDriverOffers()) {
                             if (offer.getDriver() != null
                                     && offer.getDriver().getId().equals(currentUser.getId())
-                                    && "ACCEPTED".equals(offer.getStatus())) {
+                                    && !"CANCELLED".equals(offer.getStatus())
+                                    && !"REJECTED".equals(offer.getStatus())) {
                                 offer.setStatus("CANCELLED");
                             }
                         }
@@ -1160,7 +1162,8 @@ public class OrderService {
                     for (DriverOffer offer : order.getDriverOffers()) {
                         if (offer.getDriver() != null
                                 && offer.getDriver().getId().equals(currentUser.getId())
-                                && "ACCEPTED".equals(offer.getStatus())) {
+                                && !"CANCELLED".equals(offer.getStatus())
+                                && !"REJECTED".equals(offer.getStatus())) {
                             offer.setStatus("CANCELLED");
                         }
                     }
@@ -1211,7 +1214,8 @@ public class OrderService {
                                             for (DriverOffer offer : pOrder.getDriverOffers()) {
                                                 if (offer.getDriver() != null
                                                         && offer.getDriver().getId().equals(order.getDriver().getId())
-                                                        && "ACCEPTED".equals(offer.getStatus())) {
+                                                        && !"CANCELLED".equals(offer.getStatus())
+                                                        && !"REJECTED".equals(offer.getStatus())) {
                                                     offer.setStatus("CANCELLED");
                                                 }
                                             }
@@ -1251,7 +1255,8 @@ public class OrderService {
                                             for (DriverOffer offer : pOrder.getDriverOffers()) {
                                                 if (offer.getDriver() != null
                                                         && offer.getDriver().getId().equals(order.getDriver().getId())
-                                                        && "ACCEPTED".equals(offer.getStatus())) {
+                                                        && !"CANCELLED".equals(offer.getStatus())
+                                                        && !"REJECTED".equals(offer.getStatus())) {
                                                     offer.setStatus("CANCELLED");
                                                 }
                                             }
