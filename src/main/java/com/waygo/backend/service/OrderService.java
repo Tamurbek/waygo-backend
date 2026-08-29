@@ -1042,12 +1042,15 @@ public class OrderService {
                 ex.printStackTrace();
             }
 
-            // 1b. The order itself is being cancelled outright, so any driver
-            // requests still waiting for a passenger response (no contract
-            // formed yet) no longer have anything to respond to — reject
-            // them so they stop showing as an active/pending request on the
-            // driver's side.
-            if (order.getDriverOffers() != null) {
+            // 1b. If no contract had been formed yet (no driver assigned),
+            // the order itself is being cancelled outright, so any driver
+            // requests still waiting for a passenger response no longer have
+            // anything to respond to — reject them so they stop showing as
+            // an active/pending request on the driver's side. Once a
+            // contract exists (order.getDriver() != null, handled below),
+            // cancelling it just reopens the order to the pool — other
+            // drivers' still-pending bids must stay untouched.
+            if (order.getDriver() == null && order.getDriverOffers() != null) {
                 for (DriverOffer offer : order.getDriverOffers()) {
                     if ("PENDING".equals(offer.getStatus())) {
                         offer.setStatus("REJECTED");
