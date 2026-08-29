@@ -1859,23 +1859,18 @@ public class OrderService {
 
                 // Removed rejected offer filtering so orders can reappear for all drivers after cancellations
 
-                // Find driver's active announcement on the same route and date
-                Order matchingAnnouncement = findActiveAnnouncementForRoute(
-                    currentUser.getId(),
-                    o.getDepartureDate(),
-                    o.getFromAddress(),
-                    o.getToAddress()
-                );
-
-                int emptySeats = 4;
-                if (matchingAnnouncement != null) {
-                    emptySeats = matchingAnnouncement.getAvailableSeats() != null ? matchingAnnouncement.getAvailableSeats().size() : 0;
-                }
-
-                int requestedCount = o.getPassengerCount() != null ? o.getPassengerCount() : 1;
-                if (requestedCount <= emptySeats) {
-                    orders.add(o);
-                }
+                // Previously hid this request whenever the driver's own separate
+                // announcement on the same route/date didn't currently have enough
+                // free seats — acceptOrder() already independently validates seat
+                // availability (and rejects with a clear error) at accept time, so
+                // this was a redundant pre-filter. Its real effect was hiding a
+                // request from the one driver it had just been reopened for: a
+                // cancelled contract reopens the request via this exact query, but
+                // the driver's own mirrored announcement for that same route can
+                // still be short on seats (other unrelated bookings, restoration
+                // lag), silently dropping the request from their list right after
+                // it was supposed to reappear for them.
+                orders.add(o);
             }
         } else {
             // Passengers see driver ride offers (and started ones where they are accepted)
