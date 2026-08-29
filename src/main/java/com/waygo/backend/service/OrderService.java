@@ -265,6 +265,20 @@ public class OrderService {
             throw new IllegalStateException("Order is not in a state to be rejected");
         }
 
+        // Clear the confirmed driver's own offer, otherwise it stays ACCEPTED
+        // and keeps showing as a live request/contract on both the passenger's
+        // and the driver's side even after the contract itself is cancelled.
+        if (order.getDriverOffers() != null) {
+            for (DriverOffer offer : order.getDriverOffers()) {
+                if (offer.getDriver() != null
+                        && offer.getDriver().getId().equals(order.getDriver().getId())
+                        && !"CANCELLED".equals(offer.getStatus())
+                        && !"REJECTED".equals(offer.getStatus())) {
+                    offer.setStatus("CANCELLED");
+                }
+            }
+        }
+
         order.setDriver(null);
         order.setStatus(Order.OrderStatus.PENDING);
         order.setPassengerConfirmed(false);
