@@ -1042,6 +1042,19 @@ public class OrderService {
                 ex.printStackTrace();
             }
 
+            // 1b. The order itself is being cancelled outright, so any driver
+            // requests still waiting for a passenger response (no contract
+            // formed yet) no longer have anything to respond to — reject
+            // them so they stop showing as an active/pending request on the
+            // driver's side.
+            if (order.getDriverOffers() != null) {
+                for (DriverOffer offer : order.getDriverOffers()) {
+                    if ("PENDING".equals(offer.getStatus())) {
+                        offer.setStatus("REJECTED");
+                    }
+                }
+            }
+
             // 2. Notify the driver if they were already assigned, and — since a
             // contract had already been formed — release the order back to the
             // public pool instead of leaving it CANCELLED-but-still-assigned
