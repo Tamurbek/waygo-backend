@@ -2878,9 +2878,19 @@ public class OrderService {
                             if (pOrder.getAvailableSeats() != null) {
                                 pOrder.getAvailableSeats().clear();
                             }
-                            if (pOrder.getDriverOffers() != null) {
+                            // Cancel this driver's own offer, same as rejectDriver()/updateStatus()
+                            // do for every other cancel path — leaving it PENDING made it keep
+                            // showing as a live request on the passenger's side and kept the
+                            // driver's own app thinking it still had an active pending offer,
+                            // instead of resetting to "no request sent" so a fresh one can be made.
+                            if (pOrder.getDriverOffers() != null && order.getDriver() != null) {
                                 for (DriverOffer offer : pOrder.getDriverOffers()) {
-                                    offer.setStatus("PENDING");
+                                    if (offer.getDriver() != null
+                                            && offer.getDriver().getId().equals(order.getDriver().getId())
+                                            && !"CANCELLED".equals(offer.getStatus())
+                                            && !"REJECTED".equals(offer.getStatus())) {
+                                        offer.setStatus("CANCELLED");
+                                    }
                                 }
                             }
                             orderRepository.save(pOrder);
