@@ -1135,9 +1135,23 @@ public class OrderService {
                     return savedOrder;
                 }
 
-                // No mirrored booking — this is a plain direct-assign order (no
-                // driver bidding/offer involved). Release it back to PENDING so
-                // another driver can pick it up, same as before.
+                // No mirrored booking — this is a plain direct-assign order that
+                // was still confirmed via a DriverOffer (the contract). Clear that
+                // offer too, otherwise it stays ACCEPTED and shows as a live
+                // request/contract to the passenger even after the order is
+                // released back to PENDING.
+                if (order.getDriverOffers() != null) {
+                    for (DriverOffer offer : order.getDriverOffers()) {
+                        if (offer.getDriver() != null
+                                && offer.getDriver().getId().equals(currentUser.getId())
+                                && "ACCEPTED".equals(offer.getStatus())) {
+                            offer.setStatus("CANCELLED");
+                        }
+                    }
+                }
+
+                // Release it back to PENDING so another driver can pick it up,
+                // same as before.
                 order.setStatus(Order.OrderStatus.PENDING);
                 order.setDriver(null);
                 order.setLockedByDriverId(null);
