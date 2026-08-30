@@ -124,7 +124,7 @@ public class MulticardService {
             requestBody.put("amount", amountTiyins);
             requestBody.put("invoice_id", invoiceId);
             requestBody.put("lang", "ru");
-            requestBody.put("return_url", "https://waygo.uz/payment-result");
+            requestBody.put("return_url", backendUrl + "/payment-success");
             requestBody.put("callback_url", backendUrl + "/api/v1/payments/multicard/callback");
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
