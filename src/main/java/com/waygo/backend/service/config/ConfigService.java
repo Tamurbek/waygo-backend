@@ -62,12 +62,20 @@ public class ConfigService {
         return regions;
     }
 
-    public List<District> getActiveDistrictsByRegion(Long regionId) {
-        return districtRepository.findAllByRegionIdAndIsActiveTrue(regionId);
+    public List<District> getActiveDistrictsByRegion(Long regionId, String locale) {
+        List<District> districts = districtRepository.findAllByRegionIdAndIsActiveTrue(regionId);
+        for (District district : districts) {
+            district.setName(entityTranslationService.resolve(district.getNameKeyId(), locale, district.getName()));
+        }
+        return districts;
     }
 
-    public List<District> getAllActiveDistricts() {
-        return districtRepository.findAllByIsActiveTrue();
+    public List<District> getAllActiveDistricts(String locale) {
+        List<District> districts = districtRepository.findAllByIsActiveTrue();
+        for (District district : districts) {
+            district.setName(entityTranslationService.resolve(district.getNameKeyId(), locale, district.getName()));
+        }
+        return districts;
     }
 
     public List<CarBrand> getActiveCarBrands(String locale) {

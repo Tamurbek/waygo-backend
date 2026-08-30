@@ -32,11 +32,12 @@ public class ConfigController {
     }
 
     @GetMapping("/districts")
-    public ResponseEntity<List<District>> getDistricts(@RequestParam(required = false) Long regionId) {
+    public ResponseEntity<List<District>> getDistricts(@RequestParam(required = false) Long regionId,
+                                                         @RequestParam(required = false) String locale) {
         if (regionId != null) {
-            return ResponseEntity.ok(configService.getActiveDistrictsByRegion(regionId));
+            return ResponseEntity.ok(configService.getActiveDistrictsByRegion(regionId, locale));
         }
-        return ResponseEntity.ok(configService.getAllActiveDistricts());
+        return ResponseEntity.ok(configService.getAllActiveDistricts(locale));
     }
 
     @GetMapping("/car-brands")

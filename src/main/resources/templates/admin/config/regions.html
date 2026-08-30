@@ -107,6 +107,11 @@
                             <span th:text="${d.name}"></span>
                             <i class="ph ph-pencil-simple" style="color: var(--text-dim); font-size: 0.8rem;"></i>
                         </span>
+                        <span style="display:none;" th:each="d : ${r.districts}" th:id="'districtTr-' + ${d.id}">
+                            <span th:each="lang : ${activeLanguages}" class="t"
+                                  th:data-lang="${lang.code}"
+                                  th:data-value="${districtTranslations.get(d.id) != null ? districtTranslations.get(d.id).get(lang.code) : ''}"></span>
+                        </span>
                     </div>
                 </div>
                 <div th:if="${#lists.isEmpty(regions)}" class="card" style="text-align: center; color: var(--text-dim); padding: 3rem;">
@@ -220,6 +225,10 @@
                         <label class="form-label">Tuman Nomi</label>
                         <input type="text" name="name" required class="form-control" placeholder="Masalan: Yunusobod">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
+                    </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                         <div class="form-group">
                             <label class="form-label">Kenglik (latitude)</label>
@@ -259,6 +268,10 @@
                     <div class="form-group">
                         <label class="form-label">Tuman Nomi</label>
                         <input type="text" id="editDistrictName" name="name" required class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tarjimalar</label>
+                        <div th:replace="~{admin/fragments :: translationInputs('nameTranslations', ${activeLanguages}, null)}"></div>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                         <div class="form-group">
@@ -317,6 +330,14 @@
             document.getElementById('editDistrictLat').value = el.dataset.lat || '';
             document.getElementById('editDistrictLon').value = el.dataset.lon || '';
             document.getElementById('editDistrictActive').checked = (el.dataset.active === 'true');
+
+            const store = document.getElementById('districtTr-' + el.dataset.id);
+            document.querySelectorAll('#editDistrictModal [name^="nameTranslations"]').forEach(function (input) {
+                const lang = input.name.match(/\[(.+)\]/)[1];
+                const span = store ? store.querySelector('[data-lang="' + lang + '"]') : null;
+                input.value = span ? span.dataset.value : '';
+            });
+
             openModal('editDistrictModal');
         }
 

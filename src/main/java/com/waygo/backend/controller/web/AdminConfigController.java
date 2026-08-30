@@ -143,6 +143,13 @@ public class AdminConfigController {
             regionTranslations.put(r.getId(), entityTranslationService.valuesFor(r.getNameKeyId()));
         }
         model.addAttribute("regionTranslations", regionTranslations);
+        Map<Long, Map<String, String>> districtTranslations = new java.util.HashMap<>();
+        for (Region r : regions) {
+            for (District d : r.getDistricts()) {
+                districtTranslations.put(d.getId(), entityTranslationService.valuesFor(d.getNameKeyId()));
+            }
+        }
+        model.addAttribute("districtTranslations", districtTranslations);
         if (editRegion != null) {
             regionRepository.findById(editRegion).ifPresent(region -> {
                 model.addAttribute("editRegion", region);
@@ -194,7 +201,10 @@ public class AdminConfigController {
         Region region = regionRepository.findById(regionId).orElseThrow();
         district.setRegion(region);
         district.setActive(true);
-        districtRepository.save(district);
+        District saved = districtRepository.save(district);
+        saved.setNameKeyId(entityTranslationService.upsertField(null,
+                "cfg.district.name." + saved.getId(), district.getNameTranslations()));
+        districtRepository.save(saved);
         return "redirect:/admin/config/regions?success";
     }
 
@@ -207,6 +217,8 @@ public class AdminConfigController {
             existing.setActive(district.isActive());
             existing.setLatitude(district.getLatitude());
             existing.setLongitude(district.getLongitude());
+            existing.setNameKeyId(entityTranslationService.upsertField(existing.getNameKeyId(),
+                    "cfg.district.name." + id, district.getNameTranslations()));
             districtRepository.save(existing);
         });
         return "redirect:/admin/config/regions?updated";
