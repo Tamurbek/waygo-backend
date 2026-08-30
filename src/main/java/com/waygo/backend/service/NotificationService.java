@@ -118,6 +118,18 @@ public class NotificationService {
     public void notifyOrderStatusUpdate(Order order, boolean notifyAssignedDriver, boolean sendFcmPush) {
         String msg = "WayGO: Buyurtmangiz holati yangilandi: " + order.getStatus();
 
+        // Driver's own ride announcement (no passenger attached to the Order
+        // itself) has no single recipient to target — every passenger browsing
+        // the "Haydovchilar" tab needs to see this live, the same way drivers
+        // already get passenger requests pushed via /topic/orders/new-for-drivers.
+        // WS-only (no FCM): this fires on every status change of the announcement
+        // (new bookings, seat updates, cancellation), and a push notification per
+        // change to every passenger would be spam — the point here is just to
+        // keep an already-open browsing list in sync, not to alert anyone.
+        if (order.getPassenger() == null && order.getDriver() != null) {
+            messagingTemplate.convertAndSend("/topic/orders/new-for-passengers", order);
+        }
+
         // Notify the specific passenger about their order status update if present
         if (order.getPassenger() != null) {
             messagingTemplate.convertAndSendToUser(
