@@ -31,18 +31,13 @@ public class NotificationService {
     }
 
     public void notifyNewOrder(Order order) {
-        // A fresh PENDING order is either a passenger's ride request (relevant to
-        // drivers deciding whether to bid) or a driver's own announcement (relevant
-        // to passengers browsing rides to book) — never both at once. Route each to
-        // the audience that actually needs it, instead of broadcasting every order's
-        // full details (name, phone, pickup/dropoff) to every connected client
-        // regardless of role.
+        // Only a passenger's ride request should notify anyone on creation — it's
+        // relevant to drivers deciding whether to bid. A driver's own announcement
+        // (passenger == null) must stay silent for passengers here; drivers browse
+        // the announcement list on demand instead of being pushed a notification.
         if (order.getPassenger() != null) {
             messagingTemplate.convertAndSend("/topic/orders/new-for-drivers", order);
             broadcastNewOrderPush(User.Role.DRIVER, order, "Yangi buyurtma! 🚕");
-        } else {
-            messagingTemplate.convertAndSend("/topic/orders/new-for-passengers", order);
-            broadcastNewOrderPush(User.Role.PASSENGER, order, "Yangi qatnov! 🚗");
         }
     }
 
