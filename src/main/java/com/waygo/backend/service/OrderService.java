@@ -1207,7 +1207,14 @@ public class OrderService {
                         try {
                             if (booking.getPassengerOrderId() != null) {
                                 orderRepository.findById(booking.getPassengerOrderId()).ifPresent(pOrder -> {
-                                    if (pOrder.getStatus() == Order.OrderStatus.ACCEPTED) {
+                                    // Not gated to ACCEPTED only: a seat booked via the
+                                    // direct /book flow never promotes the passenger's own
+                                    // tracking order past PENDING (see requestBooking()),
+                                    // so requiring ACCEPTED here left it stuck PENDING and
+                                    // still visible to the passenger after the driver
+                                    // deleted the announcement it pointed to.
+                                    if (pOrder.getStatus() != Order.OrderStatus.CANCELLED
+                                            && pOrder.getStatus() != Order.OrderStatus.COMPLETED) {
                                         pOrder.setStatus(Order.OrderStatus.CANCELLED);
                                         pOrder.setDriver(null);
                                         pOrder.setPassengerConfirmed(false);
