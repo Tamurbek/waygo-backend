@@ -19,6 +19,8 @@
   "language": "Til",
   "notifications": "Bildirishnomalar",
   "markAllAsRead": "Barchasini o'qilgan deb belgilash",
+  "deleteAllNotifications": "Barchasini o'chirish",
+  "deleteAllNotificationsConfirm": "Haqiqatan ham barcha bildirishnomalarni o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.",
   "darkMode": "Tungi rejim",
   "travelHistory": "Sayohatlar tarixi",
   "promoCodes": "Promo-kodlar",
