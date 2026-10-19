@@ -32,9 +32,17 @@ public class Order {
 
     private String fromAddress;
     private String toAddress;
-    
+
     private Double fromLat;
     private Double fromLon;
+
+    /**
+     * Admin-defined region (e.g. "Jizzax") the pickup point falls into,
+     * resolved from fromLat/fromLon against {@code Region} centroids at
+     * creation time. Used for driver region filtering instead of matching
+     * free-text fromAddress, which doesn't reliably contain the region name.
+     */
+    private String region;
 
     /**
      * The passenger's precise, refined meeting point ("Olib ketish joyi"),

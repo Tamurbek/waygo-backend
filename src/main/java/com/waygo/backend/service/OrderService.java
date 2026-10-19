@@ -27,6 +27,27 @@ public class OrderService {
     private final com.waygo.backend.repository.RideBookingRepository rideBookingRepository;
     private final com.waygo.backend.repository.UserRepository userRepository;
     private final DriverLocationCache driverLocationCache;
+    private final com.waygo.backend.repository.config.RegionRepository regionRepository;
+
+    /** Nearest active region (by centroid) to the given point, or null if no region has coordinates. */
+    private String resolveRegion(Double lat, Double lon) {
+        if (lat == null || lon == null) {
+            return null;
+        }
+        String closest = null;
+        double minDist = Double.MAX_VALUE;
+        for (com.waygo.backend.entity.config.Region r : regionRepository.findAllByIsActiveTrue()) {
+            if (r.getLatitude() == null || r.getLongitude() == null) {
+                continue;
+            }
+            double dist = distanceKm(lat, lon, r.getLatitude(), r.getLongitude());
+            if (dist < minDist) {
+                minDist = dist;
+                closest = r.getName();
+            }
+        }
+        return closest;
+    }
 
     @Transactional
     public Order createOrder(OrderCreateDTO dto) {
@@ -50,6 +71,7 @@ public class OrderService {
                 .price(dto.getPrice())
                 .baggageDescription(dto.getBaggageDescription())
                 .selectedServices(dto.getSelectedServices() != null ? dto.getSelectedServices() : new java.util.ArrayList<>())
+                .region(resolveRegion(dto.getFromLat(), dto.getFromLon()))
                 .status(Order.OrderStatus.PENDING);
 
         if (currentUser.getRole() == User.Role.DRIVER) {
@@ -1906,19 +1928,31 @@ public class OrderService {
         // Region is an explicit choice the driver made in the app's filter —
         // when set, it takes priority over proximity so a driver who wants a
         // specific region sees that region regardless of their current GPS
-        // position. Nearest-region-centroid matching used to be applied
-        // automatically instead of/alongside this, but that approximation
-        // misclassified drivers/orders near a region or district border
-        // (points get assigned to whichever centroid is closest, which
-        // doesn't track the real administrative boundary), hiding orders
-        // that were genuinely in the driver's own area. Proximity is now
-        // handled purely by real distance below (driver's live GPS vs the
-        // order's pickup coordinates), which doesn't have that failure mode.
+        // position. Matching is done against the order's own resolved
+        // region (set from fromLat/fromLon at creation time against Region
+        // centroids), not a substring search on the free-text fromAddress —
+        // that text doesn't reliably contain the region name (different
+        // wording, district-only text, apostrophe variants), which silently
+        // hid genuinely-matching orders from drivers. Orders created before
+        // this field existed fall back to resolving it on the fly here.
         if (region != null && !region.trim().isEmpty() && !"Barchasi".equalsIgnoreCase(region.trim())) {
             List<Order> filtered = new java.util.ArrayList<>();
             for (Order order : result) {
-                if (order.getFromAddress() != null &&
-                    order.getFromAddress().toLowerCase().contains(region.toLowerCase().trim())) {
+                String orderRegion = order.getRegion();
+                if (orderRegion == null) {
+                    orderRegion = resolveRegion(order.getFromLat(), order.getFromLon());
+                }
+                boolean matches;
+                if (orderRegion != null) {
+                    matches = orderRegion.equalsIgnoreCase(region.trim());
+                } else {
+                    // No region centroid data available at all (e.g. admin hasn't set
+                    // Region.latitude/longitude yet) — fall back to the old free-text
+                    // match instead of hiding every order.
+                    matches = order.getFromAddress() != null
+                            && order.getFromAddress().toLowerCase().contains(region.toLowerCase().trim());
+                }
+                if (matches) {
                     filtered.add(order);
                 }
             }
