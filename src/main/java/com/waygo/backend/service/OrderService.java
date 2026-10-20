@@ -26,7 +26,6 @@ public class OrderService {
     private final DriverProfileRepository driverProfileRepository;
     private final com.waygo.backend.repository.RideBookingRepository rideBookingRepository;
     private final com.waygo.backend.repository.UserRepository userRepository;
-    private final DriverLocationCache driverLocationCache;
     private final com.waygo.backend.repository.config.RegionRepository regionRepository;
 
     /** Nearest active region (by centroid) to the given point, or null if no region has coordinates. */
@@ -1959,40 +1958,17 @@ public class OrderService {
             result = filtered;
         }
 
-        // Nearest-first for drivers, using their last known live location —
-        // continuously reported to DriverLocationCache while "Ish rejimi"
-        // (online) is on, independent of any active trip. If we don't have a
-        // live fix yet for this driver (e.g. just went online, no GPS sample
-        // reported yet), leave the list in its existing order rather than
-        // guessing.
-        if (currentUser != null && currentUser.getRole() == User.Role.DRIVER) {
-            com.waygo.backend.dto.order.DriverLocationPayload driverLoc = driverLocationCache.getByDriverId(currentUser.getId());
-            if (driverLoc != null && driverLoc.getLatitude() != null && driverLoc.getLongitude() != null) {
-                double driverLat = driverLoc.getLatitude();
-                double driverLon = driverLoc.getLongitude();
-
-                // Admin-configurable cutoff (SystemSettings.orderVisibilityRadiusKm,
-                // 0 = no limit). Applied before sorting so a huge order list isn't
-                // sorted needlessly, and so an order missing fromLat/fromLon (which
-                // distanceKm treats as "infinitely far") is correctly excluded
-                // rather than kept because it couldn't be measured.
-                int radiusKm = com.waygo.backend.service.SystemSettingsService.getOrderVisibilityRadiusKmConfig();
-                if (radiusKm > 0) {
-                    List<Order> withinRadius = new java.util.ArrayList<>();
-                    for (Order o : result) {
-                        if (distanceKm(driverLat, driverLon, o.getFromLat(), o.getFromLon()) <= radiusKm) {
-                            withinRadius.add(o);
-                        }
-                    }
-                    result = withinRadius;
-                }
-
-                List<Order> sorted = new java.util.ArrayList<>(result);
-                sorted.sort(java.util.Comparator.comparingDouble(o -> distanceKm(driverLat, driverLon, o.getFromLat(), o.getFromLon())));
-                result = sorted;
-            }
-        }
-
+        // Visibility is decided by region match alone (see the filter block
+        // above) — not by the driver's live GPS fix. This used to also cut
+        // the list down to an admin-configurable radius around the driver's
+        // last-known location (DriverLocationCache, populated only while
+        // "Ish rejimi" is on and reporting) and sort it nearest-first. That
+        // meant a driver whose GPS cache was stale/empty (just went online,
+        // background location reporting stalled, server restarted and
+        // dropped the in-memory cache) or an order missing fromLat/fromLon
+        // could lose orders from the list entirely — confirmed as "buyurtma
+        // ko'rinmay qolishi" whenever the radius setting was enabled and
+        // live location data was unavailable for either side.
         return result;
     }
 
