@@ -9,7 +9,9 @@ import com.waygo.backend.entity.VipChatMessage;
 import com.waygo.backend.entity.PassengerChatMessage;
 import com.waygo.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,16 +21,28 @@ public class NotificationService {
     private final SmsService smsService;
     private final SmsService realSmsService;
     private final UserRepository userRepository;
+    private final ApplicationContext applicationContext;
 
     public NotificationService(
             SimpMessagingTemplate messagingTemplate,
             @Qualifier("dynamicSmsService") SmsService realSmsService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            ApplicationContext applicationContext
     ) {
         this.messagingTemplate = messagingTemplate;
         this.smsService = realSmsService;
         this.realSmsService = realSmsService;
         this.userRepository = userRepository;
+        this.applicationContext = applicationContext;
+    }
+
+    // @Async is AOP-proxy-based — calling broadcastNewOrderPush(...) directly
+    // (self-invocation) bypasses the proxy and would run it synchronously on
+    // the caller's thread regardless of the annotation. Going through the
+    // bean fetched from the context routes the call through the real proxy,
+    // same workaround DynamicSmsService uses for its own @Async delegate.
+    private NotificationService self() {
+        return applicationContext.getBean(NotificationService.class);
     }
 
     public void notifyNewOrder(Order order) {
@@ -38,7 +52,32 @@ public class NotificationService {
         // the announcement list on demand instead of being pushed a notification.
         if (order.getPassenger() != null) {
             messagingTemplate.convertAndSend("/topic/orders/new-for-drivers", order);
-            broadcastNewOrderPush(User.Role.DRIVER, order, "Yangi buyurtma! 🚕");
+            runAfterCommit(() -> self().broadcastNewOrderPush(User.Role.DRIVER, order, "Yangi buyurtma! 🚕"));
+        }
+    }
+
+    /**
+     * Defers {@code task} until the enclosing transaction (createOrder's, in
+     * the common case) actually commits, same as notifyNewChatMessage already
+     * did — without this, the FCM push below reads/sends while the order row
+     * may not even be committed yet, and more importantly used to run
+     * in-line on the request thread, holding up the passenger's HTTP response
+     * (and the open DB connection) for as long as the broadcast took. Runs
+     * immediately if there's no active transaction (e.g. called from a
+     * non-transactional context).
+     */
+    private void runAfterCommit(Runnable task) {
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        task.run();
+                    }
+                }
+            );
+        } else {
+            task.run();
         }
     }
 
@@ -54,7 +93,8 @@ public class NotificationService {
      * every passenger for a driver's announcement — this app has no
      * "online now" roster to narrow that down to, same as the STOMP topic).
      */
-    private void broadcastNewOrderPush(User.Role role, Order order, String title) {
+    @Async
+    public void broadcastNewOrderPush(User.Role role, Order order, String title) {
         String fromLoc = order.getFromAddress() != null ? order.getFromAddress() : "";
         String toLoc = order.getToAddress() != null ? order.getToAddress() : "";
         String body = "Qatnov: " + fromLoc + " -> " + toLoc;
@@ -62,9 +102,7 @@ public class NotificationService {
         java.util.Map<String, String> extraData = new java.util.HashMap<>();
         extraData.put("orderId", String.valueOf(order.getId()));
 
-        for (User recipient : userRepository.findByRoleOrderByCreatedAtDesc(role)) {
-            sendFcmNotification(recipient, title, body, "NEW_ORDER", extraData);
-        }
+        sendFcmNotificationBatch(userRepository.findByRoleOrderByCreatedAtDesc(role), title, body, "NEW_ORDER", extraData);
     }
 
     /**
@@ -87,7 +125,7 @@ public class NotificationService {
             return;
         }
         messagingTemplate.convertAndSend("/topic/orders/new-for-drivers", order);
-        broadcastNewOrderPush(User.Role.DRIVER, order, "Buyurtma yangilandi! 🚕");
+        runAfterCommit(() -> self().broadcastNewOrderPush(User.Role.DRIVER, order, "Buyurtma yangilandi! 🚕"));
     }
 
     public void notifyOrderStatusUpdate(Order order) {
@@ -927,6 +965,57 @@ public class NotificationService {
      */
     public void notifyMapSettingsUpdated(MapSettings settings) {
         messagingTemplate.convertAndSend("/topic/map-settings", settings);
+    }
+
+    /**
+     * Pushes the same title/body/type to many recipients in one go via
+     * Firebase's batch {@code sendEachAsync} (up to 500 tokens per call,
+     * chunked below) instead of one blocking {@code send()} per recipient —
+     * see {@link #broadcastNewOrderPush}, which used to loop a synchronous
+     * send() per driver and could take tens of seconds with a large roster.
+     */
+    private void sendFcmNotificationBatch(java.util.List<User> recipients, String title, String body, String type, java.util.Map<String, String> extraData) {
+        java.util.List<com.google.firebase.messaging.Message> messages = new java.util.ArrayList<>();
+        for (User recipient : recipients) {
+            if (recipient == null || recipient.getFcmToken() == null || recipient.getFcmToken().isEmpty()) {
+                continue;
+            }
+            com.google.firebase.messaging.Message.Builder builder = com.google.firebase.messaging.Message.builder()
+                    .setToken(recipient.getFcmToken())
+                    .setNotification(com.google.firebase.messaging.Notification.builder()
+                            .setTitle(title)
+                            .setBody(body)
+                            .build())
+                    .setAndroidConfig(com.google.firebase.messaging.AndroidConfig.builder()
+                            .setPriority(com.google.firebase.messaging.AndroidConfig.Priority.HIGH)
+                            .setNotification(com.google.firebase.messaging.AndroidNotification.builder()
+                                    .setChannelId("high_importance_channel")
+                                    .build())
+                            .build())
+                    .putData("type", type);
+            if (extraData != null) {
+                for (java.util.Map.Entry<String, String> entry : extraData.entrySet()) {
+                    builder.putData(entry.getKey(), entry.getValue());
+                }
+            }
+            messages.add(builder.build());
+        }
+
+        if (messages.isEmpty()) {
+            return;
+        }
+
+        // FCM caps a single sendEachAsync batch at 500 messages.
+        int batchSize = 500;
+        for (int i = 0; i < messages.size(); i += batchSize) {
+            java.util.List<com.google.firebase.messaging.Message> chunk =
+                    messages.subList(i, Math.min(i + batchSize, messages.size()));
+            try {
+                com.google.firebase.messaging.FirebaseMessaging.getInstance().sendEachAsync(chunk);
+            } catch (Exception e) {
+                System.err.println("[FCM] Batch send failed: " + e.getMessage());
+            }
+        }
     }
 
     private void sendFcmNotification(User user, String title, String body, String type) {
